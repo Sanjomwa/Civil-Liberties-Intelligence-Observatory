@@ -5,7 +5,7 @@ description = "Civil liberties and Analysis with Bruin in Kenya end-to-end batch
 readme = "README.md"
 requires-python = ">=3.12.3"
 
-dependencies = [
+dependencies =  [
     "requests>=2.31.0,<3.0",
     "google-cloud-bigquery>=3.13.0,<4.0",
     "google-cloud-bigquery-storage>=2.24.0,<3.0",
@@ -13,6 +13,8 @@ dependencies = [
     "python-dotenv>=1.0.0,<2.0",
     "bruin>=0.1.2",
     "duckdb>=1.5.0",
+    "pandas>=2.2.0,<3.0",
+    "pyarrow>=19.0.0,<20.0"
 ]
 
 [project.optional-dependencies]
