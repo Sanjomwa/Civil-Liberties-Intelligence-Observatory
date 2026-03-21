@@ -50,6 +50,10 @@ Built end-to-end with **[Bruin](https://getbruin.com)** (ingestion, SQL/Python t
 - All datasets ingested via Bruin (API,CSV file/URL, HTTP connectors).
 
 ---
+**Entity Relationship Diagram(ERD)**
+![erd_civil_liberties](https://github.com/user-attachments/assets/e5b2ef23-84db-489b-9b79-af472e8b9ac6)
+
+---
 
 ## Architecture and Workflow
 
