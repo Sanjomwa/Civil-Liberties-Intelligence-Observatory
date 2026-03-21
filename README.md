@@ -143,11 +143,11 @@ Python 3.12 + uv for dependency management.
 - Install Bruin CLI.
 
 - Create virtual environment:
-  `bash
-uv venv
-source .venv/bin/activate
+
+```bash
+uv venv source .venv/bin/activate
 uv pip install -e ".[dev,test]"
-  `
+  ```
 - Add pyproject.toml + uv.lock for reproducibility.
 
 # Step 3: Ingest Assets
