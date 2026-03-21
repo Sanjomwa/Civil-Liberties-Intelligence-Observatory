@@ -51,7 +51,8 @@ Built end-to-end with **[Bruin](https://getbruin.com)** (ingestion, SQL/Python t
 
 ---
 **Entity Relationship Diagram(ERD)**
-![erd_civil_liberties](https://github.com/user-attachments/assets/e5b2ef23-84db-489b-9b79-af472e8b9ac6)
+![erd-civil-liberties-2](https://github.com/user-attachments/assets/f78193ef-8de3-4bfa-8d1d-e46634a263b2)
+
 
 ---
 
