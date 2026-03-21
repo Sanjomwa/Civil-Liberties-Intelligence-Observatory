@@ -90,23 +90,39 @@ Built end-to-end with **[Bruin](https://getbruin.com)** (ingestion, SQL/Python t
 ## Repo Structure
 
 civil-liberties-censorship-kenya-bruin/
+
 ├── bruin/
+
 │   ├── assets/
+
 │   │   ├── ingest/          # ingestion YAML/SQL/Python
+
 │   │   ├── staging/         # cleaning & normalization
+
 │   │   └── marts/           # enriched tables, risk index
+
 │   └── pipeline.yml         # main DAG definition
+
 ├── src/
 │   └── streamlit_app/       # app.py + visualizations.py
+
 ├── terraform/               # GCP infra (BigQuery, GCS, Cloud Run)
+
 ├── tests/                   # asset tests, pytest
+
 ├── docs/
 │   └── screenshots/         # Bruin lineage, flows, dashboards
+
 ├── .env.example
+
 ├── Makefile                 # infra-apply, run-pipeline, deploy-app
+
 ├── pyproject.toml
+
 ├── uv.lock
+
 ├── README.md
+
 └── LICENSE
 
 
