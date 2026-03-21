@@ -88,7 +88,7 @@ Built end-to-end with **[Bruin](https://getbruin.com)** (ingestion, SQL/Python t
 ---
 
 ## Repo Structure
-
+```
 civil-liberties-censorship-kenya-bruin/
 ├── bruin/
 │   ├── assets
@@ -108,7 +108,7 @@ civil-liberties-censorship-kenya-bruin/
 ├── uv.lock
 ├── README.md
 └── LICENSE
-
+```
 
 ---
 
