@@ -1,7 +1,61 @@
-name: bruin-duckdb
-schedule: daily
-start_date: "2024-01-01"
+# Civil Liberties & Censorship Analysis Pipeline
+
+name: civil_liberties_pipeline
+description: >
+    End-to-end pipeline integrating ACLED, OONI, Google Transparency,
+    and Lumen datasets into staging and mart layers for civil liberties analysis.
+
+# Multiple schedules for freshness
+schedules:
+    - cron: "@daily" # daily run for OONI + Lumen freshness
+      start_date: "2024-01-01"
+    - cron: "@quarterly" # quarterly deep refresh for Google Transparency
+      start_date: "2024-01-01"
+
 default_connections:
     duckdb: "duckdb-default"
-default:
-    type: duckdb.sql
+
+variables:
+    country:
+        type: string
+        default: "Kenya"
+    start_date:
+        type: string
+        default: "2024-01-01"
+    end_date:
+        type: string
+        default: "2026-02-28"
+
+assets:
+    # Raw ingestion
+    - name: acled_raw
+      path: assets/raw/acled_raw.py
+    - name: ooni_raw
+      path: assets/raw/ooni_raw.py
+    - name: google_transparency_raw
+      path: assets/raw/google_transparency_raw.py
+    - name: lumen_raw
+      path: assets/raw/lumen_raw.py
+
+    # Staging
+    - name: acled_staging
+      path: assets/staging/acled_staging.py
+      depends_on: [acled_raw]
+    - name: ooni_staging
+      path: assets/staging/ooni_staging.py
+      depends_on: [ooni_raw]
+    - name: google_transparency_staging
+      path: assets/staging/google_transparency_staging.py
+      depends_on: [google_transparency_raw]
+    - name: lumen_staging
+      path: assets/staging/lumen_staging.py
+      depends_on: [lumen_raw]
+
+    # Mart
+    - name: civil_liberties_mart
+      path: assets/mart/civil_liberties_mart.py
+      depends_on:
+          - acled_staging
+          - ooni_staging
+          - google_transparency_staging
+          - lumen_staging
