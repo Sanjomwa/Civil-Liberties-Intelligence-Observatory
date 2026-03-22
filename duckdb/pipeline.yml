@@ -46,25 +46,25 @@ assets:
     connection: duckdb-lumen
 
   # Staging
-  - name: acled_staging
+  - name: staging.acled
     path: assets/staging/acled_staging.py
     type: python
     connection: duckdb-acled
     depends_on: [acled_raw]
 
-  - name: ooni_staging
+  - name: staging.ooni
     path: assets/staging/ooni_staging.py
     type: python
     connection: duckdb-ooni
     depends_on: [ooni_raw]
 
-  - name: google_transparency_staging
+  - name: staging.google_transparency
     path: assets/staging/google_transparency_staging.py
     type: python
     connection: duckdb-google
     depends_on: [google_transparency_raw]
 
-  - name: lumen_staging
+  - name: staging.lumen
     path: assets/staging/lumen_staging.py
     type: python
     connection: duckdb-lumen
