@@ -2,60 +2,81 @@
 
 name: civil_liberties_pipeline
 description: >
-    End-to-end pipeline integrating ACLED, OONI, Google Transparency,
-    and Lumen datasets into staging and mart layers for civil liberties analysis.
+  End-to-end pipeline integrating ACLED, OONI, Google Transparency,
+  and Lumen datasets into staging and mart layers for civil liberties analysis.
 
 # Multiple schedules for freshness
 schedules:
-    - cron: "@daily" # daily run for OONI + Lumen freshness
-      start_date: "2024-01-01"
-    - cron: "@quarterly" # quarterly deep refresh for Google Transparency
-      start_date: "2024-01-01"
-
-default_connections:
-    duckdb: "duckdb-default"
+  - cron: "@daily" # daily run for OONI + Lumen freshness
+    start_date: "2024-01-01"
+  - cron: "@quarterly" # quarterly deep refresh for Google Transparency
+    start_date: "2024-01-01"
 
 variables:
-    country:
-        type: string
-        default: "Kenya"
-    start_date:
-        type: string
-        default: "2024-01-01"
-    end_date:
-        type: string
-        default: "2026-02-28"
+  country:
+    type: string
+    default: "Kenya"
+  start_date:
+    type: string
+    default: "2024-01-01"
+  end_date:
+    type: string
+    default: "2026-03-01"
 
 assets:
-    # Raw ingestion
-    - name: acled_raw
-      path: assets/raw/acled_raw.py
-    - name: ooni_raw
-      path: assets/raw/ooni_raw.py
-    - name: google_transparency_raw
-      path: assets/raw/google_transparency_raw.py
-    - name: lumen_raw
-      path: assets/raw/lumen_raw.py
+  # Raw ingestion
+  - name: acled_raw
+    path: assets/raw/acled_raw.py
+    type: python
+    connection: duckdb-acled
 
-    # Staging
-    - name: acled_staging
-      path: assets/staging/acled_staging.py
-      depends_on: [acled_raw]
-    - name: ooni_staging
-      path: assets/staging/ooni_staging.py
-      depends_on: [ooni_raw]
-    - name: google_transparency_staging
-      path: assets/staging/google_transparency_staging.py
-      depends_on: [google_transparency_raw]
-    - name: lumen_staging
-      path: assets/staging/lumen_staging.py
-      depends_on: [lumen_raw]
+  - name: ooni_raw
+    path: assets/raw/ooni_raw.py
+    type: python
+    connection: duckdb-ooni
 
-    # Mart
-    - name: civil_liberties_mart
-      path: assets/mart/civil_liberties_mart.py
-      depends_on:
-          - acled_staging
-          - ooni_staging
-          - google_transparency_staging
-          - lumen_staging
+  - name: google_transparency_raw
+    path: assets/raw/google_transparency_raw.py
+    type: python
+    connection: duckdb-google
+
+  - name: lumen_raw
+    path: assets/raw/lumen_raw.py
+    type: python
+    connection: duckdb-lumen
+
+  # Staging
+  - name: acled_staging
+    path: assets/staging/acled_staging.py
+    type: python
+    connection: duckdb-acled
+    depends_on: [acled_raw]
+
+  - name: ooni_staging
+    path: assets/staging/ooni_staging.py
+    type: python
+    connection: duckdb-ooni
+    depends_on: [ooni_raw]
+
+  - name: google_transparency_staging
+    path: assets/staging/google_transparency_staging.py
+    type: python
+    connection: duckdb-google
+    depends_on: [google_transparency_raw]
+
+  - name: lumen_staging
+    path: assets/staging/lumen_staging.py
+    type: python
+    connection: duckdb-lumen
+    depends_on: [lumen_raw]
+
+  # Mart
+  - name: civil_liberties_mart
+    path: assets/mart/civil_liberties_mart.py
+    type: python
+    connection: duckdb-mart
+    depends_on:
+      - acled_staging
+      - ooni_staging
+      - google_transparency_staging
+      - lumen_staging
