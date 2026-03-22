@@ -25,23 +25,23 @@ variables:
 
 assets:
   # Raw ingestion
-  - name: acled_raw
-    path: assets/raw/acled_raw.py
+  - name: raw.acled_aggregated
+    path: assets/ingest/raw_acled_aggregated.py
     type: python
     connection: duckdb-acled
 
-  - name: ooni_raw
-    path: assets/raw/ooni_raw.py
+  - name: raw.ooni_raw
+    path: assets/ingest/ooni_raw.py
     type: python
     connection: duckdb-ooni
 
-  - name: google_transparency_raw
-    path: assets/raw/google_transparency_raw.py
+  - name: raw.google_transparency
+    path: assets/ingest/google_transparency_raw.py
     type: python
     connection: duckdb-google
 
-  - name: lumen_raw
-    path: assets/raw/lumen_raw.py
+  - name: raw.lumen_raw
+    path: assets/ingest/lumen_raw.py
     type: python
     connection: duckdb-lumen
 

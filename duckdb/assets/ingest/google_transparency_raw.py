@@ -1,5 +1,5 @@
 """@bruin
-name: raw.takedowns_raw
+name: raw.google_transparency
 type: python
 image: python:3.11
 connection: duckdb-default
