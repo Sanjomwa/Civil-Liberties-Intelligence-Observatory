@@ -48,8 +48,8 @@ import pandas as pd
 
 # Bruin runtime imports with local fallbacks
 try:
-    from facts import conflict_events, censorship_tests, takedown_requests, legal_requests
-    from dims import country
+    from marts.facts import conflict_events, censorship_tests, takedown_requests, legal_requests
+    from marts.dims import country
 except ImportError:
     import assets.marts.facts.fact_conflict_events as conflict_events
     import assets.marts.facts.fact_censorship_tests as censorship_tests
