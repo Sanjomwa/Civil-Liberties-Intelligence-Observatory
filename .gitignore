@@ -3,6 +3,9 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# data files
+/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data
+
 # C extensions
 *.so
 
