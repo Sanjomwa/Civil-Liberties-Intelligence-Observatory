@@ -48,24 +48,25 @@ Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality ch
 ---
 
 ## 📑 Table of Contents
-- [Tech Stack](#tech-stack)
-- [Project Architecture](#project-architecture)
-- [Entity Relationship Diagram (ERD)](#entity-relationship-diagram-erd)
-- [Project Structure](#project-structure)
-- [Datasets](#datasets)
-- [Dataset Lineage](#dataset-lineage)
-- [Data Pipeline](#data-pipeline)
-- [Ethics and Responsible Use](#ethics-and-responsible-use)
-- [Dashboard + Visualizations](#dashboard--visualizations)
-- [Setup Instructions](#setup-instructions)
-- [Milestones and Next Steps](#milestones-and-next-steps)
-- [Contact Information](#contact-information)
+1. [Tech Stack](#tech-stack)
+2. [Project Architecture](#project-architecture)
+3. [Entity Relationship Diagram (ERD)](#entity-relationship-diagram-erd)
+4. [Project Structure](#project-structure)
+5. [Datasets](#datasets)
+6. [Dataset Lineage](#dataset-lineage)
+7. [Data Pipeline](#data-pipeline)
+8. [Ethics and Responsible Use](#ethics-and-responsible-use)
+9. [Dashboard + Visualizations](#dashboard--visualizations)
+10. [Setup Instructions](#setup-instructions)
+11. [Milestones and Next Steps](#milestones-and-next-steps)
+12. [Contact Information](#contact-information)
+
 
 
 ---
 
 ⚙️
-## Tech Stack
+## 1. Tech Stack
 
 - Bruin → ingestion, transformations, orchestration, lineage
     
@@ -92,7 +93,7 @@ Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality ch
 ---
   
 🏗
-## Project Architecture
+## 2. Project Architecture
 
 ```mermaid
 flowchart TD
@@ -132,7 +133,7 @@ This dual setup mirrors industry practice: DuckDB ensures reproducibility, while
 ---
 
 📊
-## Entity Relationship Diagram (ERD)
+## 3. Entity Relationship Diagram (ERD)
 ```mermaid
 erDiagram
     %% RAW INGESTION
@@ -255,7 +256,7 @@ erDiagram
 
 ---
 📂
-## Project Structure
+## 4. Project Structure
 ```
 civil-liberties-censorship-kenya-bruin/
 ├── bruin/
@@ -286,7 +287,7 @@ civil-liberties-censorship-kenya-bruin/
 ---
 
 📊
-## Datasets
+## 5. Datasets
 
 | Dataset | Source | Access Method | Coverage Focus | Key Fields |
 | --- | --- | --- | --- | --- |
@@ -299,7 +300,7 @@ civil-liberties-censorship-kenya-bruin/
 ---
 
 📊
-## Dataset Lineage
+## 6. Dataset Lineage
 | Dataset (Raw) | Staging Table | Fact Table | Reporting Layer |
 | --- | --- | --- | --- |
 | **Google Transparency Report** | ``stg_google_transparency.sql`` | ``fact_takedown_requests.sql`` | ``civil_liberties_mart.sql`` |
@@ -325,7 +326,7 @@ civil-liberties-censorship-kenya-bruin/
 ---
 
 🔄
-## Data Pipeline 
+## 7. Data Pipeline 
 
 1. **Ingestion**  
    Bruin + ingestr connectors:  
@@ -352,7 +353,7 @@ civil-liberties-censorship-kenya-bruin/
 ---
 
 ⚖️
-## Ethics and Responsible Use
+## 8. Ethics and Responsible Use
 
 - Data is public/aggregated — no personal information processed.
 - Analysis is descriptive and neutral; no causal claims without evidence.
@@ -362,7 +363,7 @@ civil-liberties-censorship-kenya-bruin/
 ---
 
 📊
-## Dashboard & Visualizations
+## 9. Dashboard & Visualizations
 
 Kenya county heatmap (takedowns + ACLED)
 
@@ -377,7 +378,7 @@ Kenya county heatmap (takedowns + ACLED)
 ---
 
 🚀
-## Setup Instructions
+## 10. Setup Instructions
 
 ### Step 1: Clone the repo:
    ```bash
@@ -474,7 +475,7 @@ Include screenshots + demo link (Cloud Run if deployed).
 ---
 
 📅
-## Milestones and Next Steps
+## 11. Milestones and Next Steps
 [x] Ingestion assets defined
 
 [x] Staging + marts built
@@ -490,7 +491,7 @@ Include screenshots + demo link (Cloud Run if deployed).
 ---
 
 📬
-## Contact Information
+## 12. Contact Information
 Project Owner: Samwel Njogu
 
 Focus: Civil liberties, censorship analysis, reproducible pipelines
