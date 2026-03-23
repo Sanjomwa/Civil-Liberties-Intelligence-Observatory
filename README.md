@@ -87,7 +87,8 @@ Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality ch
 
 ---
 
-## ⚙️ Tech Stack
+⚙️
+## Tech Stack
 
 - Bruin → ingestion, transformations, orchestration, lineage
     
@@ -113,8 +114,8 @@ Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality ch
 
 ---
   
-
-## 🏗 Project Architecture
+🏗
+## Project Architecture
 
 ```mermaid
 flowchart TD
@@ -135,8 +136,8 @@ flowchart TD
 ```
 
 ---
-
-## 📊 Entity Relationship Diagram (ERD)
+📊
+## Entity Relationship Diagram (ERD)
 ```mermaid
 erDiagram
     %% RAW INGESTION
@@ -258,8 +259,8 @@ erDiagram
 
 
 ---
-
-## 📂 Project Structure
+📂
+## Project Structure
 ```
 civil-liberties-censorship-kenya-bruin/
 ├── bruin/
@@ -289,7 +290,8 @@ civil-liberties-censorship-kenya-bruin/
 ```
 ---
 
-## 📊 Datasets
+📊
+## Datasets
 
 | Dataset | Source | Access Method | Coverage Focus | Key Fields |
 | --- | --- | --- | --- | --- |
@@ -301,7 +303,8 @@ civil-liberties-censorship-kenya-bruin/
 
 ---
 
-## 📊 Dataset Lineage
+📊
+## Dataset Lineage
 | Dataset (Raw) | Staging Table | Fact Table | Reporting Layer |
 | --- | --- | --- | --- |
 | **Google Transparency Report** | ``stg_google_transparency.sql`` | ``fact_takedown_requests.sql`` | ``civil_liberties_mart.sql`` |
@@ -326,7 +329,8 @@ civil-liberties-censorship-kenya-bruin/
 
 ---
 
-## 🔄 Data Pipeline 
+🔄
+## Data Pipeline 
 
 1. **Ingestion**  
    Bruin + ingestr connectors:  
@@ -352,9 +356,8 @@ civil-liberties-censorship-kenya-bruin/
 
 ---
 
-
-
-## ⚖️ Ethics and Responsible Use
+⚖️
+## Ethics and Responsible Use
 
 - Data is public/aggregated — no personal information processed.
 - Analysis is descriptive and neutral; no causal claims without evidence.
@@ -363,7 +366,8 @@ civil-liberties-censorship-kenya-bruin/
 
 ---
 
-## 📊 Dashboard & Visualizations
+📊
+## Dashboard & Visualizations
 
 Kenya county heatmap (takedowns + ACLED)
 
@@ -375,8 +379,10 @@ Kenya county heatmap (takedowns + ACLED)
     
     👉 Placeholder: screenshots to be added before submission.
 
+---
 
-## 🚀 Setup Instructions
+🚀
+## Setup Instructions
 
 ### Step 1: Clone the repo:
    ```bash
@@ -472,8 +478,8 @@ Include screenshots + demo link (Cloud Run if deployed).
 
 ---
 
-
-## 📅 Milestones and Next Steps
+📅
+## Milestones and Next Steps
 [x] Ingestion assets defined
 
 [x] Staging + marts built
@@ -488,7 +494,8 @@ Include screenshots + demo link (Cloud Run if deployed).
 
 ---
 
-## 📬 Contact Information
+📬
+## Contact Information
 Project Owner: Samwel Njogu
 
 Focus: Civil liberties, censorship analysis, reproducible pipelines
