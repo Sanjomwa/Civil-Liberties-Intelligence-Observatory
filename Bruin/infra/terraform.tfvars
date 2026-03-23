@@ -1,0 +1,5 @@
+project_id   = "civil-liberties-prod"
+region       = "us-central1"
+bucket_name  = "civil-liberties-data"
+dataset_id   = "civil_liberties"
+admin_email  = "njogumwaniki9@gmail.com"
