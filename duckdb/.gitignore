@@ -3,3 +3,4 @@ logs/runs
 logs/*.log
 __pycache__/
 *.py[cod]
+/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data
