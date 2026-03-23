@@ -26,7 +26,7 @@ variables:
 assets:
   # Raw ingestion
   - name: raw.acled_aggregated
-    path: assets/ingest/raw_acled_aggregated.py
+    path: assets/ingest/acled_aggregated.py
     type: python
     connection: duckdb-acled
 
@@ -36,39 +36,39 @@ assets:
     connection: duckdb-ooni
 
   - name: raw.google_transparency
-    path: assets/ingest/google_transparency_raw.py
+    path: assets/ingest/google_transparency.py
     type: python
     connection: duckdb-google
 
-  - name: raw.lumen_raw
-    path: assets/ingest/lumen_raw.py
+  - name: raw.lumen_requests
+    path: assets/ingest/lumen_requests.py
     type: python
     connection: duckdb-lumen
 
   # Staging
-  - name: staging.acled
-    path: assets/staging/acled_staging.py
+  - name: stg.acled
+    path: assets/staging/stg_acled.py
     type: python
     connection: duckdb-acled
-    depends_on: [acled_raw]
+    depends_on: [raw.acled_aggregated]
 
-  - name: staging.ooni
-    path: assets/staging/ooni_staging.py
+  - name: stg.ooni
+    path: assets/staging/stg_ooni.py
     type: python
     connection: duckdb-ooni
-    depends_on: [ooni_raw]
+    depends_on: [raw.ooni_raw]
 
-  - name: staging.google_transparency
-    path: assets/staging/google_transparency_staging.py
+  - name: stg.google_transparency
+    path: assets/staging/stg_google_transparency.py
     type: python
     connection: duckdb-google
-    depends_on: [google_transparency_raw]
+    depends_on: [raw.google_transparency]
 
-  - name: staging.lumen
-    path: assets/staging/lumen_staging.py
+  - name: stg.lumen
+    path: assets/staging/stg_lumen.py
     type: python
     connection: duckdb-lumen
-    depends_on: [lumen_raw]
+    depends_on: [raw.lumen_requests]
 
   # Mart
   - name: civil_liberties_mart
@@ -76,7 +76,7 @@ assets:
     type: python
     connection: duckdb-mart
     depends_on:
-      - acled_staging
-      - ooni_staging
-      - google_transparency_staging
-      - lumen_staging
+      - stg.acled
+      - stg.ooni
+      - stg.google_transparency
+      - stg.lumen
