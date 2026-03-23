@@ -7,7 +7,7 @@ run:
   - Simple aggregation: count events per dims.event_type.
 
 
-## 1.Censorship Regime Analysis (Crown Jewel)
+## 1. Censorship Regime Analysis (Crown Jewel)
 Question
 ```
 What is the current censorship regime in Kenya?
