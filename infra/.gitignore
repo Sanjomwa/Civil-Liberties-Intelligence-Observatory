@@ -1,0 +1,10 @@
+# Terraform local state
+*.tfstate
+*.tfstate.backup
+*.plan
+
+# Terraform working directory
+.terraform/
+
+# Service account keys
+terraform-key.json
