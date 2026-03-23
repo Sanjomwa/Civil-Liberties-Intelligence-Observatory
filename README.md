@@ -71,6 +71,7 @@ Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality ch
 ## Table of Contents
 - [Tech Stack](#tech-stack)
 - [Project Architecture](#project-architecture)
+- [Entity Relationship Diagram(ERD)](entity-relationship-diagram)
 - [Project Structure](#project-structure)
 - [Datasets](#datasets)
 - [Dataset Lineage](dataset-lineage)
@@ -126,7 +127,7 @@ flowchart TD
     Dev --> Prod
 ```
 
-**Entity Relationship Diagram(ERD)**
+# Entity Relationship Diagram(ERD)
 ```mermaid
 erDiagram
     %% RAW INGESTION
@@ -279,7 +280,7 @@ civil-liberties-censorship-kenya-bruin/
 ├── README.md
 └── LICENSE
 ```
-
+---
 
 # 📊 Datasets
 
@@ -291,7 +292,9 @@ civil-liberties-censorship-kenya-bruin/
 | OONI (Open Observatory of Network Interference) | [OONI Data](https://ooni.org/data/) | API / CSV download | Kenya‑specific | test_id, date, platform, shutdown_type, measurement |
 | WHO Infodemic Proxies *(Optional)* | WHO datasets / reports | Manual CSV / API | Kenya‑specific | misinfo_event_id, date, topic, severity |
 
-📊 Dataset Lineage
+---
+
+# 📊 Dataset Lineage
 | Dataset (Raw) | Staging Table | Fact Table | Reporting Layer |
 | --- | --- | --- | --- |
 | **Google Transparency Report** | ``stg_google_transparency.sql`` | ``fact_takedown_requests.sql`` | ``civil_liberties_mart.sql`` |
@@ -300,7 +303,7 @@ civil-liberties-censorship-kenya-bruin/
 | **ACLED Conflict Events** | ``stg_acled.sql`` | ``fact_conflict_events.sql`` | ``civil_liberties_mart.sql`` |
 | **Dims (Reference Tables)** | ``dims_country.sql``, ``dims_event_type.sql``, ``dims_platform.sql`` | Join into facts for normalization | Used in reporting joins |
 
-📊 Dataset Lineage with Environments
+## 📊 Dataset Lineage with Environments
 | Dataset (Raw) | Staging Table | Fact Table | Reporting Layer | DEV (DuckDB) | PROD (GCP) |
 | --- | --- | --- | --- | --- | --- |
 | **Google Transparency Report** | ``stg_google_transparency.sql`` | ``fact_takedown_requests.sql`` | ``civil_liberties_mart.sql`` | DuckDB local tables | BigQuery dataset ``fact_takedown_requests`` |
