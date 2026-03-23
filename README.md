@@ -9,58 +9,62 @@ Kenya provides a timely case study. Between 2024 and 2026, the country has exper
 
 This project builds a reproducible, low‑cost data engineering pipeline using Bruin to:
 
-Ingest Google Transparency Report takedown data (filtered to Kenya),
-
-Enrich it with ACLED conflict/protest events and global social media censorship incidents,
-
-Compute temporal and geospatial alignments across datasets,
-
-Generate a composite Civil Liberties Risk Index that quantifies suppression patterns,
-
-Produce interactive dashboards highlighting trends in Kenya (2024–2026) and offering a template for global replication.
+    - Ingest Google Transparency Report takedown data (filtered to Kenya),
+    
+    - Enrich it with ACLED conflict/protest events and global social media censorship incidents,
+    
+    - Compute temporal and geospatial alignments across datasets,
+    
+    - Generate a composite Civil Liberties Risk Index that quantifies suppression patterns,
+    
+    - Produce interactive dashboards highlighting trends in Kenya (2024–2026) and offering a template for global replication.
 
 Core question: How do government takedown requests correlate with political events, protests, and conflict spikes in Kenya — and what lessons can be drawn for other countries facing similar dynamics?
 
-# 🔹 Development vs. Production Environments
+## 🔹 Development vs. Production Environments
+
 A central design principle of this project is reproducibility across environments:
 
 ## Development (DuckDB):  
+
 All assets, marts, and dashboards can be run locally using DuckDB. This ensures low‑cost experimentation, fast iteration, and reproducibility for students, researchers, and collaborators without requiring cloud credits.
 
 ## Production (GCP + Bruin Cloud):  
+
 The same pipeline can be deployed to Google Cloud Platform (GCP) using Terraform.
 
-GCS serves as the data lake for raw and staged assets.
-
-BigQuery acts as the warehouse for marts and analytical queries.
-
-Bruin Cloud Dashboard provides a hosted environment for pipeline monitoring, lineage visualization, and orchestration in production.
-
-Cloud Run + Streamlit hosts the interactive dashboard for public access, complementing Bruin’s cloud dashboard with custom visualizations tailored to civil liberties analysis.
+    - GCS serves as the data lake for raw and staged assets.
+    
+    - BigQuery acts as the warehouse for marts and analytical queries.
+    
+    - Bruin Cloud Dashboard provides a hosted environment for pipeline monitoring, lineage visualization, and orchestration in production.
+    
+    - Cloud Run + Streamlit hosts the interactive dashboard for public access, complementing Bruin’s cloud dashboard with custom visualizations tailored to civil liberties analysis.
 
 This dual setup mirrors industry practice: Bruin Cloud ensures scalability, durability, and collaborative state management for the pipeline, while Streamlit remains the flexible, researcher‑friendly interface for storytelling and custom analysis. Together, they provide both operational reliability and narrative clarity.
 By designing the pipeline to run seamlessly in both DuckDB (dev) and GCP (prod), we guarantee that findings are reproducible, infrastructure is transparent, and collaborators can choose the environment that fits their resources.
 
 ## 🔹 Why It Matters Globally
+
 Although Kenya is the focal case study, the methodology is globally relevant:
 
-Governments worldwide are increasing reliance on takedown requests and censorship measures.
-
-Researchers and journalists need reproducible tools to audit these actions.
-
-Civil society organizations benefit from transparent dashboards that highlight suppression patterns.
-
-Data engineers can showcase how modern pipelines (Bruin, DuckDB, BigQuery, Terraform) can be applied to socially impactful problems.
+    - Governments worldwide are increasing reliance on takedown requests and censorship measures.
+    
+    - Researchers and journalists need reproducible tools to audit these actions.
+    
+    - Civil society organizations benefit from transparent dashboards that highlight suppression patterns.
+    
+    - Data engineers can showcase how modern pipelines (Bruin, DuckDB, BigQuery, Terraform) can be applied to socially impactful problems.
 
 ## Audience:
 
-- Researchers studying freedom of expression and digital rights
-
-- Journalists investigating censorship and government transparency
-
-- Civil society and policy analysts monitoring democratic resilience
-
-- Data engineers and students seeking reproducible, impactful pipeline projects
+    - Researchers studying freedom of expression and digital rights
+    
+    - Journalists investigating censorship and government transparency
+    
+    - Civil society and policy analysts monitoring democratic resilience
+    
+    - Data engineers and students seeking reproducible, impactful pipeline projects
 
 Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality checks, orchestration — this project demonstrates how reproducible pipelines can illuminate one of the most pressing issues of our time: the balance between state authority and civil liberties in the digital age.
 
@@ -79,27 +83,27 @@ Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality ch
 ---
 
 # ⚙️ Tech Stack
-- Bruin → ingestion, transformations, orchestration, lineage
-
-- DuckDB (Dev) → local, low‑cost, reproducible runs
-
-- GCP (Prod) → scalable deployment
-
-- GCS (data lake)
-
-- BigQuery (warehouse)
-
-- Bruin Cloud Dashboard (pipeline monitoring, lineage, orchestration)
-
-- Cloud Run + Streamlit (public dashboard)
-
-- Terraform → infrastructure as code (GCS, BigQuery, IAM, Cloud Run)
-
-- Python 3.12 + uv → dependency management
-
-- Streamlit → interactive dashboards
-
-- GitHub Actions → CI/CD (tests, linting, infra deploy, app deploy)
+    - Bruin → ingestion, transformations, orchestration, lineage
+    
+    - DuckDB (Dev) → local, low‑cost, reproducible runs
+    
+    - GCP (Prod) → scalable deployment
+    
+    - GCS (data lake)
+    
+    - BigQuery (warehouse)
+    
+    - Bruin Cloud Dashboard (pipeline monitoring, lineage, orchestration)
+    
+    - Cloud Run + Streamlit (public dashboard)
+    
+    - Terraform → infrastructure as code (GCS, BigQuery, IAM, Cloud Run)
+    
+    - Python 3.12 + uv → dependency management
+    
+    - Streamlit → interactive dashboards
+    
+    - GitHub Actions → CI/CD (tests, linting, infra deploy, app deploy)
 
 # 🏗 Project Architecture
 ```mermaid
@@ -192,10 +196,10 @@ civil-liberties-censorship-kenya-bruin/
 
 4. **Analysis & Visualization**  
    Bruin cloud + Streamlit dashboard:  
-   - Kenya county heatmap (takedowns + ACLED)  
-   - Timeline (spikes vs known protest periods)  
-   - Actor breakdown (e.g., CAK vs platforms)  
-   - Risk index map & motive pie charts
+       - Kenya county heatmap (takedowns + ACLED)  
+       - Timeline (spikes vs known protest periods)  
+       - Actor breakdown (e.g., CAK vs platforms)  
+       - Risk index map & motive pie charts
 
 ---
 
@@ -213,13 +217,13 @@ civil-liberties-censorship-kenya-bruin/
 # 📊 Dashboard & Visualizations
 Kenya county heatmap (takedowns + ACLED)
 
-Timeline (spikes vs protests)
-
-Actor breakdown (CAK vs platforms)
-
-Risk index map & motive pie charts
-
-👉 Placeholder: screenshots to be added before submission.
+    - Timeline (spikes vs protests)
+    
+    - Actor breakdown (CAK vs platforms)
+    
+    - Risk index map & motive pie charts
+    
+    👉 Placeholder: screenshots to be added before submission.
 
 
 # 🚀 Setup Instructions
