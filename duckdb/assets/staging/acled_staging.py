@@ -1,11 +1,11 @@
 """@bruin
-name: staging.acled
+name: stg.acled
 type: python
 image: python:3.11
-connection: duckdb-acled
+connection: duckdb-default
 description: |
-  Cleans and normalizes ACLED aggregated raw data.
-  Ensures consistent schema for downstream mart joins.
+  Staging layer for ACLED aggregated conflict data (Africa).
+  Reads raw Parquet, normalizes schema, filters for 2024–2026.
 
 materialization:
   type: table
@@ -14,53 +14,41 @@ materialization:
 columns:
   - name: country
     type: VARCHAR
-    description: Country where the events occurred
   - name: admin1
     type: VARCHAR
-    description: First-level administrative division
   - name: event_type
     type: VARCHAR
-    description: Type of event (e.g. battles, protests)
   - name: fatalities
     type: INTEGER
-    description: Number of reported fatalities
   - name: event_count
     type: INTEGER
-    description: Number of events in the aggregation
   - name: year
     type: INTEGER
-    description: Year of the aggregated data
   - name: month
     type: INTEGER
-    description: Month of the aggregated data
   - name: extracted_at
     type: TIMESTAMP
-    description: Timestamp when the data was ingested
 @bruin"""
 
-import pandas as pd
+import duckdb
 
 
 def materialize():
-    # Load from the raw asset
-    from raw import acled_aggregated
+    con = duckdb.connect("duckdb-default.db")
+    df = con.execute("""
+        SELECT 
+            country,
+            admin1,
+            event_type,
+            fatalities,
+            event_count,
+            year,
+            month,
+            extracted_at
+        FROM parquet_scan('./data/acled/acled.parquet')
+        WHERE year BETWEEN 2024 AND 2026
+    """).df()
 
-    df = acled_aggregated.materialize()
-
-    # Example staging transformations:
-    # - Drop duplicates
-    # - Ensure proper dtypes
-    # - Normalize event_type values
-    df = df.drop_duplicates()
-    df["event_type"] = df["event_type"].str.lower().str.strip()
-    df["year"] = df["year"].astype(int)
-    df["month"] = df["month"].astype(int)
-
-    # Optional: filter by country variable if passed in
-    # (Bruin injects pipeline variables as environment variables)
-    import os
-    country = os.getenv("BRUIN_COUNTRY", "Kenya")
-    df = df[df["country"].str.lower() == country.lower()]
-
-    print(f"ACLED staging rows: {len(df)}")
+    # Register staging table
+    con.execute("CREATE TABLE IF NOT EXISTS stg_acled AS SELECT * FROM df")
     return df

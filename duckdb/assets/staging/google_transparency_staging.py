@@ -1,11 +1,11 @@
 """@bruin
-name: staging.google_transparency
+name: stg.google_transparency
 type: python
 image: python:3.11
-connection: duckdb-google
+connection: duckdb-default
 description: |
-  Cleans and normalizes Google Transparency raw data.
-  Ensures consistent schema for downstream mart joins.
+  Staging layer for Google Transparency Report takedown requests.
+  Reads raw Parquet, normalizes schema, filters for 2024–2026.
 
 materialization:
   type: table
@@ -14,63 +14,33 @@ materialization:
 columns:
   - name: country
     type: VARCHAR
-    description: Country where the takedown request originated
-  - name: request_type
+  - name: period
     type: VARCHAR
-    description: Type of request (court order, government request, etc.)
-  - name: content_type
-    type: VARCHAR
-    description: Type of content targeted (video, search result, etc.)
   - name: request_count
     type: INTEGER
-    description: Number of requests in the reporting period
-  - name: items_requested
+  - name: item_count
     type: INTEGER
-    description: Number of items requested for removal
-  - name: period_start
-    type: DATE
-    description: Start date of the reporting period
-  - name: period_end
-    type: DATE
-    description: End date of the reporting period
   - name: extracted_at
     type: TIMESTAMP
-    description: Timestamp when the data was ingested
 @bruin"""
 
-import pandas as pd
-
-# Bruin runtime import, with local fallback for VS Code
-try:
-    from ingest import google_transparency_raw
-except ImportError:
-    import assets.ingest.google_transparency_raw as google_transparency_raw
+import duckdb
 
 
 def materialize():
-    # Load from the raw asset
-    df = google_transparency_raw.materialize()
+    con = duckdb.connect("duckdb-default.db")
+    df = con.execute("""
+        SELECT 
+            country,
+            period,
+            request_count,
+            item_count,
+            extracted_at
+        FROM parquet_scan('./data/google/google_transparency.parquet')
+        WHERE period LIKE '%2024%' OR period LIKE '%2025%' OR period LIKE '%2026%'
+    """).df()
 
-    # Example staging transformations:
-    # - Drop duplicates
-    # - Normalize request_type and content_type values
-    # - Ensure proper dtypes for counts and dates
-    df = df.drop_duplicates()
-    df["request_type"] = df["request_type"].str.lower().str.strip()
-    df["content_type"] = df["content_type"].str.lower().str.strip()
-    df["request_count"] = pd.to_numeric(
-        df["request_count"], errors="coerce").fillna(0).astype(int)
-    df["items_requested"] = pd.to_numeric(
-        df["items_requested"], errors="coerce").fillna(0).astype(int)
-    df["period_start"] = pd.to_datetime(
-        df["period_start"], errors="coerce").dt.date
-    df["period_end"] = pd.to_datetime(
-        df["period_end"], errors="coerce").dt.date
-
-    # Optional: filter by country variable
-    import os
-    country = os.getenv("BRUIN_COUNTRY", "Kenya")
-    df = df[df["country"].str.lower() == country.lower()]
-
-    print(f"Google Transparency staging rows: {len(df)}")
+    # Register staging table
+    con.execute(
+        "CREATE TABLE IF NOT EXISTS stg_google_transparency AS SELECT * FROM df")
     return df

@@ -1,63 +1,57 @@
 """@bruin
-name: staging.ooni
+name: stg.ooni
 type: python
 image: python:3.11
-connection: duckdb-ooni
+connection: duckdb-default
 description: |
-  Cleans and normalizes OONI raw data.
-  Ensures consistent schema for downstream mart joins.
+  Staging layer for OONI censorship measurements.
+  Reads raw Parquet, normalizes schema, filters for 2024–2026.
 
 materialization:
   type: table
   strategy: overwrite
 
 columns:
+  - name: measurement_id
+    type: VARCHAR
   - name: country
     type: VARCHAR
-    description: Country where the test was run
   - name: test_name
     type: VARCHAR
-    description: Name of the OONI test
-  - name: result
+  - name: input
     type: VARCHAR
-    description: Outcome of the test (e.g. blocked, ok)
   - name: start_time
     type: TIMESTAMP
-    description: When the test started
-  - name: end_time
-    type: TIMESTAMP
-    description: When the test ended
+  - name: status
+    type: VARCHAR
+  - name: probe_cc
+    type: VARCHAR
+  - name: probe_asn
+    type: INTEGER
   - name: extracted_at
     type: TIMESTAMP
-    description: Timestamp when the data was ingested
 @bruin"""
 
-import pandas as pd
-
-# Bruin runtime import, with local fallback for VS Code
-try:
-    from raw import ooni_raw
-except ImportError:
-    import assets.raw.ooni_raw as ooni_raw
+import duckdb
 
 
 def materialize():
-    # Load from the raw asset
-    df = ooni_raw.materialize()
+    con = duckdb.connect("duckdb-default.db")
+    df = con.execute("""
+        SELECT 
+            measurement_id,
+            probe_cc AS country,
+            test_name,
+            input,
+            start_time,
+            status,
+            probe_cc,
+            probe_asn,
+            extracted_at
+        FROM parquet_scan('./data/ooni/ooni.parquet')
+        WHERE strftime(start_time, '%Y') BETWEEN '2024' AND '2026'
+    """).df()
 
-    # Example staging transformations:
-    # - Drop duplicates
-    # - Normalize test names
-    # - Ensure timestamps are proper datetime objects
-    df = df.drop_duplicates()
-    df["test_name"] = df["test_name"].str.lower().str.strip()
-    df["start_time"] = pd.to_datetime(df["start_time"], errors="coerce")
-    df["end_time"] = pd.to_datetime(df["end_time"], errors="coerce")
-
-    # Optional: filter by country variable
-    import os
-    country = os.getenv("BRUIN_COUNTRY", "Kenya")
-    df = df[df["country"].str.lower() == country.lower()]
-
-    print(f"OONI staging rows: {len(df)}")
+    # Register staging table
+    con.execute("CREATE TABLE IF NOT EXISTS stg_ooni AS SELECT * FROM df")
     return df
