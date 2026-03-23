@@ -126,7 +126,124 @@ flowchart TD
 ```
 
 **Entity Relationship Diagram(ERD)**
-![erd-civil-liberties-2](https://github.com/user-attachments/assets/f78193ef-8de3-4bfa-8d1d-e46634a263b2)
+```mermaid
+erDiagram
+    %% RAW INGESTION
+    google_transparency_raw {
+        string request_id
+        date date
+        string requester
+        string platform
+        string motive
+        int items_requested
+        string action_taken
+    }
+    lumen_raw {
+        string lumen_id
+        date date
+        string platform
+        string request_type
+    }
+    ooni_raw {
+        string test_id
+        date date
+        string platform
+        string shutdown_type
+    }
+    raw_acled_aggregated {
+        string event_id
+        date date
+        string county
+        string event_type
+        string actors
+        int fatalities
+    }
+
+    %% STAGING
+    stg_google_transparency {
+        string request_id
+        string platform
+        string motive
+    }
+    stg_lumen {
+        string lumen_id
+        string platform
+    }
+    stg_ooni {
+        string test_id
+        string platform
+    }
+    stg_acled {
+        string event_id
+        string county
+        string event_type
+    }
+
+    %% DIMENSIONS
+    dims_country {
+        string country_id
+        string country_name
+    }
+    dims_event_type {
+        string event_type_id
+        string event_type_name
+    }
+    dims_platform {
+        string platform_id
+        string platform_name
+    }
+
+    %% FACTS
+    fact_takedown_requests {
+        string request_id
+        string platform_id
+        string motive
+    }
+    fact_conflict_events {
+        string event_id
+        string event_type_id
+        string fatalities
+    }
+    fact_lumen_platforms {
+        string lumen_id
+        string platform_id
+    }
+    fact_censorship_tests {
+        string test_id
+        string platform_id
+        string shutdown_type
+    }
+
+    %% REPORTING
+    civil_liberties_mart {
+        string mart_id
+        string risk_index
+        string date
+        string county
+    }
+
+    %% RELATIONSHIPS
+    google_transparency_raw ||--o{ stg_google_transparency : feeds
+    lumen_raw ||--o{ stg_lumen : feeds
+    ooni_raw ||--o{ stg_ooni : feeds
+    raw_acled_aggregated ||--o{ stg_acled : feeds
+
+    stg_google_transparency ||--o{ fact_takedown_requests : transforms
+    stg_lumen ||--o{ fact_lumen_platforms : transforms
+    stg_ooni ||--o{ fact_censorship_tests : transforms
+    stg_acled ||--o{ fact_conflict_events : transforms
+
+    dims_country ||--o{ fact_conflict_events : joins
+    dims_event_type ||--o{ fact_conflict_events : joins
+    dims_platform ||--o{ fact_takedown_requests : joins
+    dims_platform ||--o{ fact_lumen_platforms : joins
+    dims_platform ||--o{ fact_censorship_tests : joins
+
+    fact_takedown_requests ||--o{ civil_liberties_mart : aggregates
+    fact_conflict_events ||--o{ civil_liberties_mart : aggregates
+    fact_lumen_platforms ||--o{ civil_liberties_mart : aggregates
+    fact_censorship_tests ||--o{ civil_liberties_mart : aggregates
+```
 
 
 ---
@@ -165,12 +282,13 @@ civil-liberties-censorship-kenya-bruin/
 
 # 📊 Datasets
 
-| Dataset                              | Source                                                                 | Access Method                          | Coverage Focus       | Key Fields                              |
-|--------------------------------------|------------------------------------------------------------------------|----------------------------------------|----------------------|-----------------------------------------|
-| Google Transparency Report           | https://transparencyreport.google.com/government-removals/data        | CSV download (semi-annual files)       | Global, filter Kenya | Date, country, requester, platform, motive, items requested, action taken |
-| ACLED (Armed Conflict Location & Event Data) | https://acleddata.com/data-export-tool/ (myACLED account required) | CSV export tool or API                 | Kenya events         | Event date, location (county), event type, actors, fatalities |
-
-| Additionally                             | OONI (internet measurements), (Optional) WHO infodemic proxies                   | Manual CSV / API                       | Kenya-specific       | Shutdown dates, misinfo events          |
+| Dataset | Source | Access Method | Coverage Focus | Key Fields |
+| --- | --- | --- | --- | --- |
+| Google Transparency Report | [Google Transparency](https://transparencyreport.google.com/government-removals/data) | CSV download (semi‑annual files) | Global, filter Kenya | request_id, date, requester, platform, motive, items_requested, action_taken |
+| ACLED (Armed Conflict Location & Event Data) | [ACLED Export Tool](https://acleddata.com/data-export-tool/) (myACLED account required) | CSV export tool or API | Kenya events | event_id, event_date, county, event_type, actors, fatalities |
+| Lumen Database (Takedown Requests) | [Lumen Database](https://lumendatabase.org) | CSV/JSON export, API | Global, filter Kenya | lumen_id, date, platform, request_type, requester, outcome |
+| OONI (Open Observatory of Network Interference) | [OONI Data](https://ooni.org/data/) | API / CSV download | Kenya‑specific | test_id, date, platform, shutdown_type, measurement |
+| WHO Infodemic Proxies *(Optional)* | WHO datasets / reports | Manual CSV / API | Kenya‑specific | misinfo_event_id, date, topic, severity |
 
 **Notes**:
 - Google: Download full historical CSVs → filter Kenya in staging.
