@@ -1,11 +1,11 @@
 """@bruin
-name: raw.ooni_raw
+name: raw.ooni_raw_s3
 type: python
 image: python:3.11
 connection: duckdb-default
 description: |
-  Ingests OONI censorship measurement data from the OONI Explorer API.
-  Fetches JSON measurement results filtered by country, ASN, date range, and test type.
+  Ingests OONI censorship measurement data from the public OONI S3 bucket.
+  Fetches JSONL measurement results filtered by country and test type.
   Returns a Pandas DataFrame for Bruin to append into DuckDB.
 
 materialization:
@@ -46,45 +46,41 @@ columns:
 @bruin"""
 
 import pandas as pd
-import requests
-import os
+import gzip, json, os
 from datetime import datetime
-
+import boto3
 
 def materialize():
     # Environment variables for filters
-    start_date = os.environ.get("BRUIN_START_DATE")
-    end_date = os.environ.get("BRUIN_END_DATE")
     bruin_vars = os.environ.get("BRUIN_VARS")
-
-    # Example: parse filters from BRUIN_VARS JSON
     filters = {}
     if bruin_vars:
-        import json
-        filters = json.loads(bruin_vars)
+        import json as js
+        filters = js.loads(bruin_vars)
 
     country = filters.get("country", "KE")  # default Kenya
-    test_name = filters.get("test_name", "web_connectivity")
+    test_name = filters.get("test_name", "webconnectivity")
+    date_prefix = filters.get("date_prefix", "20240301")  # YYYYMMDD
 
-    # OONI Explorer API endpoint
-    base_url = "https://api.ooni.org/api/v1/measurements"
+    # Connect to OONI public S3 bucket (no credentials needed)
+    s3 = boto3.client("s3", config=boto3.session.Config(signature_version="unsigned"))
+    bucket = "ooni-data-eu-fra"
 
-    params = {
-        "probe_cc": country,
-        "test_name": test_name,
-        "since": start_date,
-        "until": end_date,
-        "limit": 1000,  # adjust as needed
-    }
+    # Example path: raw/YYYYMMDD/HH/CC/testname/*.jsonl.gz
+    prefix = f"raw/{date_prefix}/"
+    objs = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
 
-    print(
-        f"Fetching OONI data for {country}, test={test_name}, {start_date}–{end_date}")
-    response = requests.get(base_url, params=params, timeout=300)
-    response.raise_for_status()
-    data = response.json()
+    rows = []
+    for obj in objs.get("Contents", []):
+        key = obj["Key"]
+        if country in key and test_name in key:
+            print(f"Fetching {key}")
+            body = s3.get_object(Bucket=bucket, Key=key)["Body"]
+            with gzip.open(body, "rt") as f:
+                for line in f:
+                    rows.append(json.loads(line))
 
-    # Normalize JSON into DataFrame
-    df = pd.json_normalize(data.get("results", []))
+    df = pd.DataFrame(rows)
     df["extracted_at"] = datetime.now()
 
     print(f"Rows ingested: {len(df)}")
