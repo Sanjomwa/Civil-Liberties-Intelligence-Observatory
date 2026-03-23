@@ -5,7 +5,8 @@ run:
   - Quality checks: confirm no NULLs in key columns.
   - Lineage awareness: trace mart dependencies back to raw.
   - Simple aggregation: count events per dims.event_type.
-  - 
+
+
 ## 1.Censorship Regime Analysis (Crown Jewel)
 Question
 ```
@@ -14,7 +15,6 @@ Show me the classification, severity score,
 percentage of blocked domains across OONI tests,
 and a narrative summary.
 ```
-Question
 → Hits fact_censorship_tests + dims.country.
 → Output: single row with regime, score, % blocked, narrative.
 → Screenshot: censorship_regime_analysis.png.
@@ -39,13 +39,15 @@ the current trend direction.
 → Hits fact_conflict_events + dims.event_type.
 → Screenshot: conflict_distribution.png.
 
-## 4. Top Requesting Countries (Universally Understood)  
+## 4. Top/Bottom Requesting Countries in Africa   
 Question:
 ```
 What are the top 5 countries issuing takedown requests
 and the bottom 5 over the past year?
 Include request counts and platforms targeted.
 ```
+→ Hits takedown_requests + platforms_targeted.
+→ Screenshot: top_requesting_countries.png.
 
 ### X Posts
 ## 5. Cross‑Category Comparison
