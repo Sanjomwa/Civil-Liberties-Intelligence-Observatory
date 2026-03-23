@@ -1,11 +1,11 @@
 """@bruin
-name: raw.ooni_raw_s3
+name: raw.ooni_raw
 type: python
 image: python:3.11
 connection: duckdb-default
 description: |
   Ingests OONI censorship measurement data from the public OONI S3 bucket.
-  Fetches JSONL measurement results filtered by country and test type.
+  Syncs Kenya-specific JSONL files (2024–2026) and converts them to Parquet.
   Returns a Pandas DataFrame for Bruin to append into DuckDB.
 
 materialization:
@@ -45,43 +45,39 @@ columns:
     description: Timestamp when ingested
 @bruin"""
 
+import gzip
+import json
+import glob
+import subprocess
 import pandas as pd
-import gzip, json, os
 from datetime import datetime
-import boto3
+
 
 def materialize():
-    # Environment variables for filters
-    bruin_vars = os.environ.get("BRUIN_VARS")
-    filters = {}
-    if bruin_vars:
-        import json as js
-        filters = js.loads(bruin_vars)
+    # Step 1: Sync Kenya data from OONI S3 (2024–2026 only)
+    # This command is incremental: only new files are downloaded
+    sync_cmd = [
+        "aws", "s3", "--no-sign-request", "sync",
+        "s3://ooni-data-eu-fra/raw/", "./data/ooni",
+        "--exclude", "*", "--include", "*/KE/*.jsonl.gz"
+    ]
+    subprocess.run(sync_cmd, check=True)
 
-    country = filters.get("country", "KE")  # default Kenya
-    test_name = filters.get("test_name", "webconnectivity")
-    date_prefix = filters.get("date_prefix", "20240301")  # YYYYMMDD
-
-    # Connect to OONI public S3 bucket (no credentials needed)
-    s3 = boto3.client("s3", config=boto3.session.Config(signature_version="unsigned"))
-    bucket = "ooni-data-eu-fra"
-
-    # Example path: raw/YYYYMMDD/HH/CC/testname/*.jsonl.gz
-    prefix = f"raw/{date_prefix}/"
-    objs = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
-
+    # Step 2: Read all JSONL files
+    files = glob.glob("./data/ooni/**/*.jsonl.gz", recursive=True)
     rows = []
-    for obj in objs.get("Contents", []):
-        key = obj["Key"]
-        if country in key and test_name in key:
-            print(f"Fetching {key}")
-            body = s3.get_object(Bucket=bucket, Key=key)["Body"]
-            with gzip.open(body, "rt") as f:
+    for file in files:
+        # Filter by year range (2024–2026) based on filename
+        if any(year in file for year in ["2024", "2025", "2026"]):
+            with gzip.open(file, "rt") as f:
                 for line in f:
                     rows.append(json.loads(line))
 
     df = pd.DataFrame(rows)
     df["extracted_at"] = datetime.now()
 
-    print(f"Rows ingested: {len(df)}")
+    # Step 3: Save to Parquet (schema preserved)
+    df.to_parquet("./data/ooni/ooni.parquet", index=False)
+
+    print(f"OONI rows ingested: {len(df)}")
     return df
