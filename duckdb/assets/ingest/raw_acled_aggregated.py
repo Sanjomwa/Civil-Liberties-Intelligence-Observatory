@@ -39,6 +39,7 @@ columns:
     description: Timestamp when the data was ingested
 @bruin"""
 
+import duckdb
 import pandas as pd
 import requests
 import io
@@ -58,5 +59,18 @@ def materialize():
     df.columns = df.columns.str.lower().str.replace(" ", "_")
     df["extracted_at"] = datetime.now()
 
+    # Filter for 2024–2026
+    df = df[df["year"].between(2024, 2026)]
+
+    # Save to Parquet
+    df.to_parquet("./data/acled/acled.parquet", index=False)
+
     print(f"Rows ingested: {len(df)}")
     return df
+
+
+con = duckdb.connect("duckdb-default.db")
+con.execute("""
+CREATE TABLE IF NOT EXISTS acled_aggregated AS 
+SELECT * FROM parquet_scan('./data/acled/acled.parquet')
+""")

@@ -45,6 +45,7 @@ columns:
     description: Timestamp when ingested
 @bruin"""
 
+import duckdb
 import gzip
 import json
 import glob
@@ -81,3 +82,10 @@ def materialize():
 
     print(f"OONI rows ingested: {len(df)}")
     return df
+
+
+con = duckdb.connect("duckdb-default.db")
+con.execute("""
+CREATE TABLE IF NOT EXISTS ooni_raw AS 
+SELECT * FROM parquet_scan('./data/ooni/ooni.parquet')
+""")

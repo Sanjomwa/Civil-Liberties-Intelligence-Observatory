@@ -29,6 +29,7 @@ columns:
     description: Timestamp when ingested
 @bruin"""
 
+import duckdb
 import pandas as pd
 import requests
 from datetime import datetime
@@ -57,3 +58,10 @@ def materialize():
 
     print(f"Rows ingested: {len(df)}")
     return df
+
+
+con = duckdb.connect("duckdb-default.db")
+con.execute("""
+CREATE TABLE IF NOT EXISTS google_transparency AS 
+SELECT * FROM parquet_scan('./data/google/google_transparency.parquet')
+""")

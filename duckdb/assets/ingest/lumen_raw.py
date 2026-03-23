@@ -4,9 +4,9 @@ type: python
 image: python:3.11
 connection: duckdb-default
 description: |
-  Ingests Lumen takedown request data via the Lumen API.
-  Requires an API token for authentication (to be provided later).
-  Returns a Pandas DataFrame for Bruin to append into DuckDB.
+  Placeholder ingestion for Lumen takedown requests (2024–2026).
+  Simulates API JSON response until token access is granted.
+  Converts to Parquet for consistency with other sources.
 
 materialization:
   type: table
@@ -16,63 +16,68 @@ columns:
   - name: request_id
     type: VARCHAR
     description: Unique takedown request ID
-  - name: date_submitted
-    type: DATE
-    description: Date the request was submitted
+  - name: country
+    type: VARCHAR
+    description: Country of origin
   - name: sender
     type: VARCHAR
     description: Entity submitting the request
   - name: recipient
     type: VARCHAR
-    description: Platform or service receiving the request
-  - name: country
+    description: Platform or service targeted
+  - name: date_submitted
+    type: TIMESTAMP
+    description: Date the request was submitted
+  - name: reason
     type: VARCHAR
-    description: Country of origin
-  - name: type
-    type: VARCHAR
-    description: Type of request (copyright, defamation, etc.)
-  - name: content_url
-    type: VARCHAR
-    description: URL of content targeted
-  - name: notes
-    type: VARCHAR
-    description: Additional notes or metadata
+    description: Reason for takedown (e.g. copyright, defamation)
   - name: extracted_at
     type: TIMESTAMP
     description: Timestamp when ingested
 @bruin"""
 
+import duckdb
 import pandas as pd
-import requests
-import os
 from datetime import datetime
 
 
 def materialize():
-    # Placeholder for token – set this once you receive it
-    lumen_token = os.environ.get("LUMEN_API_TOKEN")
-    if not lumen_token:
-        raise ValueError(
-            "Missing LUMEN_API_TOKEN. Please set it in environment variables.")
+    # Placeholder JSON simulating API response
+    mock_data = [
+        {
+            "request_id": "LUMEN-001",
+            "country": "KE",
+            "sender": "Gov Agency",
+            "recipient": "Google",
+            "date_submitted": "2024-05-12T00:00:00Z",
+            "reason": "Defamation"
+        },
+        {
+            "request_id": "LUMEN-002",
+            "country": "KE",
+            "sender": "Law Firm",
+            "recipient": "Twitter",
+            "date_submitted": "2025-09-20T00:00:00Z",
+            "reason": "Copyright"
+        }
+    ]
 
-    headers = {
-        "Authorization": f"Bearer {lumen_token}",
-        "Accept": "application/json"
-    }
-
-    # Example endpoint – replace with actual Lumen API URL
-    url = "https://api.lumendatabase.org/takedowns?start_date=2024-01-01&end_date=2026-12-31"
-
-    print(f"Fetching Lumen takedown data from {url}")
-    response = requests.get(url, headers=headers, timeout=300)
-    response.raise_for_status()
-
-    data = response.json()
-
-    # Normalize JSON into DataFrame
-    df = pd.json_normalize(data.get("results", []))
-    df.columns = df.columns.str.lower().str.replace(" ", "_")
+    df = pd.DataFrame(mock_data)
+    df["date_submitted"] = pd.to_datetime(df["date_submitted"])
     df["extracted_at"] = datetime.now()
 
-    print(f"Rows ingested: {len(df)}")
+    # Filter for 2024–2026
+    df = df[df["date_submitted"].dt.year.between(2024, 2026)]
+
+    # Save to Parquet
+    df.to_parquet("./data/lumen/lumen.parquet", index=False)
+
+    print(f"Lumen rows ingested (placeholder): {len(df)}")
     return df
+
+
+con = duckdb.connect("duckdb-default.db")
+con.execute("""
+CREATE TABLE IF NOT EXISTS lumen_requests AS 
+SELECT * FROM parquet_scan('./data/lumen/lumen.parquet')
+""")
