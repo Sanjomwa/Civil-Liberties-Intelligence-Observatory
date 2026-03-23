@@ -18,6 +18,7 @@ dependencies =  [
     "termcolor>=3.3.0",
     "unidecode>=1.4.0",
     "streamlit>=1.55.0",
+    "awscli>=1.44.63",
 ]
 
 [project.optional-dependencies]
