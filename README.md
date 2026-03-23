@@ -2,47 +2,161 @@
 
 - Analyzing Government Takedown Requests & Civil Liberties Risks (2024–2026)
 
+🎯 Project Pitch and Problem Statement
+Across the world, governments are increasingly requesting the removal of online content — from social media posts to blogs, videos, and news articles. While some requests may be justified (e.g., protecting minors, removing illegal content), others risk undermining civil liberties, freedom of expression, and democratic resilience. Without transparent, reproducible analysis, it is difficult for researchers, journalists, and civil society to distinguish legitimate governance from censorship.
+
+Kenya provides a timely case study. Between 2024 and 2026, the country has experienced waves of political protests, contentious legislation, and heightened online activism. During this period, Google Transparency Reports show a surge in takedown requests from Kenyan authorities, with a rejection rate of ~62% in H1 2025. At the same time, ACLED data records spikes in conflict events and fatalities, while OONI and other internet measurement projects detect anomalies in access to social platforms. These signals suggest a complex relationship between political unrest, government actions, and digital freedoms.
+
+This project builds a reproducible, low‑cost data engineering pipeline using Bruin to:
+
+Ingest Google Transparency Report takedown data (filtered to Kenya),
+
+Enrich it with ACLED conflict/protest events and global social media censorship incidents,
+
+Compute temporal and geospatial alignments across datasets,
+
+Generate a composite Civil Liberties Risk Index that quantifies suppression patterns,
+
+Produce interactive dashboards highlighting trends in Kenya (2024–2026) and offering a template for global replication.
+
+Core question: How do government takedown requests correlate with political events, protests, and conflict spikes in Kenya — and what lessons can be drawn for other countries facing similar dynamics?
+
+🔹 Development vs. Production Environments
+A central design principle of this project is reproducibility across environments:
+
+Development (DuckDB):  
+All assets, marts, and dashboards can be run locally using DuckDB. This ensures low‑cost experimentation, fast iteration, and reproducibility for students, researchers, and collaborators without requiring cloud credits.
+
+Production (GCP + Bruin Cloud):  
+The same pipeline can be deployed to Google Cloud Platform (GCP) using Terraform.
+
+GCS serves as the data lake for raw and staged assets.
+
+BigQuery acts as the warehouse for marts and analytical queries.
+
+Bruin Cloud Dashboard provides a hosted environment for pipeline monitoring, lineage visualization, and orchestration in production.
+
+Cloud Run + Streamlit hosts the interactive dashboard for public access, complementing Bruin’s cloud dashboard with custom visualizations tailored to civil liberties analysis.
+
+This dual setup mirrors industry practice: Bruin Cloud ensures scalability, durability, and collaborative state management for the pipeline, while Streamlit remains the flexible, researcher‑friendly interface for storytelling and custom analysis. Together, they provide both operational reliability and narrative clarity.
+By designing the pipeline to run seamlessly in both DuckDB (dev) and GCP (prod), we guarantee that findings are reproducible, infrastructure is transparent, and collaborators can choose the environment that fits their resources.
+
+🔹 Why It Matters Globally
+Although Kenya is the focal case study, the methodology is globally relevant:
+
+Governments worldwide are increasing reliance on takedown requests and censorship measures.
+
+Researchers and journalists need reproducible tools to audit these actions.
+
+Civil society organizations benefit from transparent dashboards that highlight suppression patterns.
+
+Data engineers can showcase how modern pipelines (Bruin, DuckDB, BigQuery, Terraform) can be applied to socially impactful problems.
+
+Audience:
+
+Researchers studying freedom of expression and digital rights
+
+Journalists investigating censorship and government transparency
+
+Civil society and policy analysts monitoring democratic resilience
+
+Data engineers and students seeking reproducible, impactful pipeline projects
+
+Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality checks, orchestration — this project demonstrates how reproducible pipelines can illuminate one of the most pressing issues of our time: the balance between state authority and civil liberties in the digital age.
+
 ## Table of Contents
-- [Project Pitch and Problem Statement](#project-pitch-and-problem-statement)
+- [Tech Stack](#tech-stack)
+- [Project Architecture](#project-architecture)
+- [Project Structure](#project-structure)
 - [Datasets](#datasets)
-- [Architecture and Workflow](#architecture-and-workflow)
-- [Goals & Deliverables](#goals--deliverables)
-- [Repo Structure](#repo-structure)
+- [Data Pipeline](#data-pipeline)
 - [Ethics and Responsible Use](#ethics-and-responsible-use)
-- [Quickstart & Low-Cost Runbook](#quickstart--low-cost-runbook)
+- [Dashboard + Visualizations](#dashboard-&-visualizations)
+- [Setup Instructions](#setup-instructions)
 - [Milestones and Next Steps](#milestones-and-next-steps)
-- [License](#license)
+- [Contact Information](#contact-information)
 
 ---
 
-## Project Pitch and Problem Statement
+⚙️ Tech Stack
+Bruin → ingestion, transformations, orchestration, lineage
 
-Reliable, auditable data on government content removal requests is crucial for understanding impacts on civil liberties, freedom of expression, and human rights.
+DuckDB (Dev) → local, low‑cost, reproducible runs
 
-This project builds a **reproducible, low-cost data engineering pipeline** using **Bruin** to:
-- Ingest Google Transparency Report takedown data (filtered to Kenya),
-- Enrich it with **ACLED** conflict/protest events and global social media censorship incidents,
-- Compute temporal/geospatial alignments and a composite **Civil Liberties Risk Index**,
-- Produce interactive dashboards highlighting patterns in Kenya (2024–2026).
+GCP (Prod) → scalable deployment
 
-**Core question**: How do government takedown requests correlate with political events, protests, and conflict spikes in Kenya?
+GCS (data lake)
 
-The pipeline remains neutral and evidence-based — no advocacy — focusing on verifiable trends (e.g., ~62% rejection rate of Kenyan requests by Google in H1 2025).
+BigQuery (warehouse)
 
-**Audience**: Researchers, journalists, civil society, policy analysts, and data engineers interested in transparency tools.
+Bruin Cloud Dashboard (pipeline monitoring, lineage, orchestration)
 
-Built end-to-end with **[Bruin](https://getbruin.com)** (ingestion, SQL/Python transforms, quality checks, orchestration).
+Cloud Run + Streamlit (public dashboard)
 
----
+Terraform → infrastructure as code (GCS, BigQuery, IAM, Cloud Run)
 
-## Datasets
+Python 3.12 + uv → dependency management
+
+Streamlit → interactive dashboards
+
+GitHub Actions → CI/CD (tests, linting, infra deploy, app deploy)
+
+🏗 Project Architecture
+```mermaid
+flowchart TD
+    subgraph Dev[Development - Local]
+        A[Raw CSVs] --> B[DuckDB Staging]
+        B --> C[DuckDB Marts]
+        C --> D[Streamlit Dashboard]
+    end
+
+    subgraph Prod[Production - GCP]
+        E[GCS Buckets] --> F[BigQuery Staging]
+        F --> G[BigQuery Marts]
+        G --> H[Streamlit on Cloud Run]
+        G --> I[Bruin Cloud Dashboard]
+    end
+
+    Dev --> Prod
+```
+
+📂 Project Structure
+```
+civil-liberties-censorship-kenya-bruin/
+├── bruin/
+│   ├── assets/ingest/       # ingestion YAML/SQL/Python
+│   ├── assets/staging/      # cleaning & normalization
+│   ├── assets/marts/        # enriched tables, risk index
+│   └── pipeline.yml         # DAG definition
+├── src/streamlit_app/       # app.py + visualizations.py
+├── infra/                   # Terraform + GCP infra
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── terraform.tfvars
+│   ├── provider.tf
+│   ├── outputs.tf
+│   └── modules/
+│       ├── gcs/
+│       ├── bigquery/
+│       └── iam/
+├── tests/                   # asset tests, pytest
+├── docs/screenshots/        # Bruin lineage, flows, dashboards
+├── .env.example
+├── Makefile                 # infra-apply, run-pipeline, deploy-app
+├── pyproject.toml
+├── uv.lock
+├── README.md
+└── LICENSE
+```
+
+## 📊 Datasets
 
 | Dataset                              | Source                                                                 | Access Method                          | Coverage Focus       | Key Fields                              |
 |--------------------------------------|------------------------------------------------------------------------|----------------------------------------|----------------------|-----------------------------------------|
 | Google Transparency Report           | https://transparencyreport.google.com/government-removals/data        | CSV download (semi-annual files)       | Global, filter Kenya | Date, country, requester, platform, motive, items requested, action taken |
 | ACLED (Armed Conflict Location & Event Data) | https://acleddata.com/data-export-tool/ (myACLED account required) | CSV export tool or API                 | Kenya events         | Event date, location (county), event type, actors, fatalities |
-| Global Social Media Censorship       | https://data.mendeley.com/datasets/r49ybxt5j4                         | Direct CSV download                    | 2006–2023 (filter Kenya) | Country, year, platform, reason (morality, misinformation, etc.) |
-| Optional                             | OONI (internet measurements), WHO infodemic proxies                   | Manual CSV / API                       | Kenya-specific       | Shutdown dates, misinfo events          |
+
+| Additionally                             | OONI (internet measurements), (Optional) WHO infodemic proxies                   | Manual CSV / API                       | Kenya-specific       | Shutdown dates, misinfo events          |
 
 **Notes**:
 - Google: Download full historical CSVs → filter Kenya in staging.
@@ -74,7 +188,7 @@ Built end-to-end with **[Bruin](https://getbruin.com)** (ingestion, SQL/Python t
    Weekly schedule, failure alerts (configurable)
 
 4. **Analysis & Visualization**  
-   Streamlit dashboard:  
+   Bruin cloud + Streamlit dashboard:  
    - Kenya county heatmap (takedowns + ACLED)  
    - Timeline (spikes vs known protest periods)  
    - Actor breakdown (e.g., CAK vs platforms)  
@@ -82,15 +196,6 @@ Built end-to-end with **[Bruin](https://getbruin.com)** (ingestion, SQL/Python t
 
 ---
 
-## Goals & Deliverables
-
-- Full Bruin pipeline: ingestion → transformation → quality → orchestration
-- Reproducible one-command runs (local DuckDB → BigQuery)
-- Interactive Streamlit dashboards (local + optional Cloud Run)
-- Short findings: 3–5 key insights (e.g., takedown spikes during 2024 Finance Bill protests)
-- Showcase Bruin strengths: unified tool, column lineage, built-in quality/orchestration
-
----
 
 ## Repo Structure
 ```
