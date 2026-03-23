@@ -86,7 +86,7 @@ Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality ch
 
 ---
 
-# ⚙️ Tech Stack
+## ⚙️ Tech Stack
 
 - Bruin → ingestion, transformations, orchestration, lineage
     
@@ -110,7 +110,11 @@ Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality ch
     
 - GitHub Actions → CI/CD (tests, linting, infra deploy, app deploy)
 
-# 🏗 Project Architecture
+---
+  
+
+## 🏗 Project Architecture
+
 ```mermaid
 flowchart TD
     subgraph Dev[Development - Local]
@@ -129,7 +133,9 @@ flowchart TD
     Dev --> Prod
 ```
 
-# Entity Relationship Diagram(ERD)
+---
+
+## 📊 Entity Relationship Diagram (ERD)
 ```mermaid
 erDiagram
     %% RAW INGESTION
@@ -252,9 +258,7 @@ erDiagram
 
 ---
 
-
-
-# 📂 Project Structure
+## 📂 Project Structure
 ```
 civil-liberties-censorship-kenya-bruin/
 ├── bruin/
@@ -284,7 +288,7 @@ civil-liberties-censorship-kenya-bruin/
 ```
 ---
 
-# 📊 Datasets
+## 📊 Datasets
 
 | Dataset | Source | Access Method | Coverage Focus | Key Fields |
 | --- | --- | --- | --- | --- |
@@ -296,7 +300,7 @@ civil-liberties-censorship-kenya-bruin/
 
 ---
 
-# 📊 Dataset Lineage
+## 📊 Dataset Lineage
 | Dataset (Raw) | Staging Table | Fact Table | Reporting Layer |
 | --- | --- | --- | --- |
 | **Google Transparency Report** | ``stg_google_transparency.sql`` | ``fact_takedown_requests.sql`` | ``civil_liberties_mart.sql`` |
@@ -321,7 +325,7 @@ civil-liberties-censorship-kenya-bruin/
 
 ---
 
-# 🔄 Data Pipeline 
+## 🔄 Data Pipeline 
 
 1. **Ingestion**  
    Bruin + ingestr connectors:  
@@ -349,7 +353,7 @@ civil-liberties-censorship-kenya-bruin/
 
 
 
-# Ethics and Responsible Use
+## ⚖️ Ethics and Responsible Use
 
 - Data is public/aggregated — no personal information processed.
 - Analysis is descriptive and neutral; no causal claims without evidence.
@@ -358,7 +362,8 @@ civil-liberties-censorship-kenya-bruin/
 
 ---
 
-# 📊 Dashboard & Visualizations
+## 📊 Dashboard & Visualizations
+
 Kenya county heatmap (takedowns + ACLED)
 
 - Timeline (spikes vs protests)
@@ -370,15 +375,15 @@ Kenya county heatmap (takedowns + ACLED)
     👉 Placeholder: screenshots to be added before submission.
 
 
-# 🚀 Setup Instructions
+## 🚀 Setup Instructions
 
-## Step 1: Clone the repo:
+### Step 1: Clone the repo:
    ```bash
    git clone https://github.com/<your-username>/civil-liberties-and-Censorship-Analysis-with-Bruin.git
    cd civil-liberties-and-Censorship-Analysis-with-Bruin
   ```
 
-## Step 2: Environment Setup
+### Step 2: Environment Setup
 Python 3.12 + uv for dependency management.
 
 - Install Bruin CLI.
@@ -391,7 +396,7 @@ uv pip install -e ".[dev,test]"
   ```
 - Add pyproject.toml + uv.lock for reproducibility.
 
-## Step 3: Ingest Assets
+### Step 3: Ingest Assets
   - ACLED Kenya CSV (via export tool) → place in data/raw/
   - Google Transparency CSV → place in data/raw/
   - Mendeley CSV → place in data/raw/
@@ -399,20 +404,20 @@ uv pip install -e ".[dev,test]"
 
 Each ingestion asset defined in bruin/assets/ingest/.
 
-## Step 4: Stage Assets
-Clean raw tables (dates, country filters).
-Normalize schema (Kenya counties, motives).
-Store in DuckDB (local .db file).
-SQL files in bruin/assets/staging/.
+### Step 4: Stage Assets
+- Clean raw tables (dates, country filters).
+- Normalize schema (Kenya counties, motives).
+- Store in DuckDB (local .db file).
+- SQL files in bruin/assets/staging/.
 
-## Step 5: Analytical Marts
+### Step 5: Analytical Marts
 events_by_type: takedowns grouped by motive.
 events_by_date: temporal alignment with ACLED protests.
 events_by_region: geospatial join (Kenya counties).
 risk_index: composite score (takedowns × conflict × social events).
 SQL in bruin/assets/marts/.
 
-## Step 6: Orchestration
+### Step 6: Orchestration
 - pipeline.yml defines DAG:
   ``pipeline.yml
 ingest_acled → stg_acled
@@ -425,7 +430,7 @@ stg_* → marts (events_by_type, risk_index)
   ```bash
   bruin run bruin/pipeline.yml
   ```
-## Step 7: Dashboard
+### Step 7: Dashboard
 - Streamlit app in src/streamlit_app/.
 Visualizations:
   - Heatmap (counties).
@@ -437,7 +442,7 @@ Local run:
 ```bash
 streamlit run src/streamlit_app/app.py
 ```
-## Step 8: Infrastructure
+### Step 8: Infrastructure
 Terraform scripts in /terraform for GCP resources:
   - GCS (data lake).
   - BigQuery (warehouse).
@@ -446,25 +451,28 @@ Makefile commands:
   - Make infra-apply → deploy infra.
   - Make app-deploy → deploy Streamlit to Cloud Run.
 
-## Step 9: CI/CD
+### Step 9: CI/CD
 GitHub Actions workflow:
   - Run tests on push.
   - Lint + format with pre-commit.
   - Deploy infra + dashboard on tagged release.
 
-## Step 11: Documentation
+### Step 11: Documentation
 Update README.md with:
   - Architecture diagram.
   - Dataset sources.
   - Setup instructions.
   - Screenshots of Bruin lineage + dashboard.
 
-## Step 12: Submission
+### Step 12: Submission
 Publish repo on GitHub.
 Share in Zoomcamp Slack #projects.
 Include screenshots + demo link (Cloud Run if deployed).
 
-# 📅 Milestones and Next Steps
+---
+
+
+## 📅 Milestones and Next Steps
 [x] Ingestion assets defined
 
 [x] Staging + marts built
@@ -477,8 +485,10 @@ Include screenshots + demo link (Cloud Run if deployed).
 
 [ ] Submission package prepared
 
-# 📬 Contact Information
-Project Lead: Samwel Njogu
+---
+
+## 📬 Contact Information
+Project Owner: Samwel Njogu
 
 Focus: Civil liberties, censorship analysis, reproducible pipelines
 
