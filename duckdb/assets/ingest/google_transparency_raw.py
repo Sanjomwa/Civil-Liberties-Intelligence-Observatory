@@ -52,5 +52,8 @@ def materialize():
     mask = df["period"].str.contains("2024|2025|2026")
     df = df.loc[mask]
 
+    # Save to Parquet
+    df.to_parquet("./data/google/google_transparency.parquet", index=False)
+
     print(f"Rows ingested: {len(df)}")
     return df
