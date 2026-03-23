@@ -21,29 +21,6 @@ This project builds a reproducible, low‑cost data engineering pipeline using B
 
 Core question: How do government takedown requests correlate with political events, protests, and conflict spikes in Kenya — and what lessons can be drawn for other countries facing similar dynamics?
 
-## 🔹 Development vs. Production Environments
-
-A central design principle of this project is reproducibility across environments:
-
-## Development (DuckDB):  
-
-All assets, marts, and dashboards can be run locally using DuckDB. This ensures low‑cost experimentation, fast iteration, and reproducibility for students, researchers, and collaborators without requiring cloud credits.
-
-## Production (GCP + Bruin Cloud):  
-
-The same pipeline can be deployed to Google Cloud Platform (GCP) using Terraform.
-
-- GCS serves as the data lake for raw and staged assets.
-    
-- BigQuery acts as the warehouse for marts and analytical queries.
-    
-- Bruin Cloud Dashboard provides a hosted environment for pipeline monitoring, lineage visualization, and orchestration in production.
-    
-- Cloud Run + Streamlit hosts the interactive dashboard for public access, complementing Bruin’s cloud dashboard with custom visualizations tailored to civil liberties analysis.
-
-This dual setup mirrors industry practice: Bruin Cloud ensures scalability, durability, and collaborative state management for the pipeline, while Streamlit remains the flexible, researcher‑friendly interface for storytelling and custom analysis. Together, they provide both operational reliability and narrative clarity.
-By designing the pipeline to run seamlessly in both DuckDB (dev) and GCP (prod), we guarantee that findings are reproducible, infrastructure is transparent, and collaborators can choose the environment that fits their resources.
-
 ## 🔹 Why It Matters Globally
 
 Although Kenya is the focal case study, the methodology is globally relevant:
@@ -134,8 +111,26 @@ flowchart TD
 
     Dev --> Prod
 ```
+### Environments
+This pipeline is designed for reproducibility across environments:
+
+### Development (DuckDB):  
+Runs locally with DuckDB for low‑cost experimentation, fast iteration, and reproducibility. Ideal for students, researchers, and collaborators without cloud credits.
+
+### Production (GCP + Bruin Cloud):
+
+- GCS → raw/staging storage
+
+- BigQuery → facts + marts
+
+- Bruin Cloud Dashboard → monitoring, lineage, orchestration
+
+- Cloud Run + Streamlit → public dashboard
+
+This dual setup mirrors industry practice: DuckDB ensures reproducibility, while GCP provides scalability and durability. Together, they guarantee transparent infrastructure and examiner‑friendly reproducibility.
 
 ---
+
 📊
 ## Entity Relationship Diagram (ERD)
 ```mermaid
