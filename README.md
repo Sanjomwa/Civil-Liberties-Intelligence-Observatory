@@ -73,6 +73,7 @@ Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality ch
 - [Project Architecture](#project-architecture)
 - [Project Structure](#project-structure)
 - [Datasets](#datasets)
+- [Dataset Lineage](dataset-lineage)
 - [Data Pipeline](#data-pipeline)
 - [Ethics and Responsible Use](#ethics-and-responsible-use)
 - [Dashboard + Visualizations](#dashboard-&-visualizations)
@@ -289,6 +290,15 @@ civil-liberties-censorship-kenya-bruin/
 | Lumen Database (Takedown Requests) | [Lumen Database](https://lumendatabase.org) | CSV/JSON export, API | Global, filter Kenya | lumen_id, date, platform, request_type, requester, outcome |
 | OONI (Open Observatory of Network Interference) | [OONI Data](https://ooni.org/data/) | API / CSV download | Kenya‑specific | test_id, date, platform, shutdown_type, measurement |
 | WHO Infodemic Proxies *(Optional)* | WHO datasets / reports | Manual CSV / API | Kenya‑specific | misinfo_event_id, date, topic, severity |
+
+📊 Dataset Lineage
+| Dataset (Raw) | Staging Table | Fact Table | Reporting Layer |
+| --- | --- | --- | --- |
+| **Google Transparency Report** | ``stg_google_transparency.sql`` | ``fact_takedown_requests.sql`` | ``civil_liberties_mart.sql`` |
+| **Lumen Database** | ``stg_lumen.sql`` | ``fact_lumen_platforms.sql`` | ``civil_liberties_mart.sql`` |
+| **OONI (Network Interference)** | ``stg_ooni.sql`` | ``fact_censorship_tests.sql`` | ``civil_liberties_mart.sql`` |
+| **ACLED Conflict Events** | ``stg_acled.sql`` | ``fact_conflict_events.sql`` | ``civil_liberties_mart.sql`` |
+| **Dims (Reference Tables)** | ``dims_country.sql``, ``dims_event_type.sql``, ``dims_platform.sql`` | Join into facts for normalization | Used in reporting joins |
 
 **Notes**:
 - Google: Download full historical CSVs → filter Kenya in staging.
