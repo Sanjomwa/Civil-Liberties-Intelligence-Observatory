@@ -69,18 +69,20 @@ Although Kenya is the focal case study, the methodology is globally relevant:
 Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality checks, orchestration — this project demonstrates how reproducible pipelines can illuminate one of the most pressing issues of our time: the balance between state authority and civil liberties in the digital age.
 
 ## Table of Contents
+## 📑 Table of Contents
 - [Tech Stack](#tech-stack)
 - [Project Architecture](#project-architecture)
-- [Entity Relationship Diagram(ERD)](entity-relationship-diagram)
+- [Entity Relationship Diagram (ERD)](#entity-relationship-diagram-erd)
 - [Project Structure](#project-structure)
 - [Datasets](#datasets)
-- [Dataset Lineage](dataset-lineage)
+- [Dataset Lineage](#dataset-lineage)
 - [Data Pipeline](#data-pipeline)
 - [Ethics and Responsible Use](#ethics-and-responsible-use)
-- [Dashboard + Visualizations](#dashboard-&-visualizations)
+- [Dashboard + Visualizations](#dashboard--visualizations)
 - [Setup Instructions](#setup-instructions)
 - [Milestones and Next Steps](#milestones-and-next-steps)
 - [Contact Information](#contact-information)
+
 
 ---
 
