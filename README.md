@@ -300,6 +300,15 @@ civil-liberties-censorship-kenya-bruin/
 | **ACLED Conflict Events** | ``stg_acled.sql`` | ``fact_conflict_events.sql`` | ``civil_liberties_mart.sql`` |
 | **Dims (Reference Tables)** | ``dims_country.sql``, ``dims_event_type.sql``, ``dims_platform.sql`` | Join into facts for normalization | Used in reporting joins |
 
+📊 Dataset Lineage with Environments
+| Dataset (Raw) | Staging Table | Fact Table | Reporting Layer | DEV (DuckDB) | PROD (GCP) |
+| --- | --- | --- | --- | --- | --- |
+| **Google Transparency Report** | ``stg_google_transparency.sql`` | ``fact_takedown_requests.sql`` | ``civil_liberties_mart.sql`` | DuckDB local tables | BigQuery dataset ``fact_takedown_requests`` |
+| **Lumen Database** | ``stg_lumen.sql`` | ``fact_lumen_platforms.sql`` | ``civil_liberties_mart.sql`` | DuckDB local tables | BigQuery dataset ``fact_lumen_platforms`` |
+| **OONI (Network Interference)** | ``stg_ooni.sql`` | ``fact_censorship_tests.sql`` | ``civil_liberties_mart.sql`` | DuckDB local tables | BigQuery dataset ``fact_censorship_tests`` |
+| **ACLED Conflict Events** | ``stg_acled.sql`` | ``fact_conflict_events.sql`` | ``civil_liberties_mart.sql`` | DuckDB local tables | BigQuery dataset ``fact_conflict_events`` |
+| **Dims (Reference Tables)** | ``dims_country.sql``, ``dims_event_type.sql``, ``dims_platform.sql`` | Join into facts for normalization | Used in reporting joins | DuckDB local tables | BigQuery datasets ``dims_*`` |
+
 **Notes**:
 - Google: Download full historical CSVs → filter Kenya in staging.
 - ACLED: Free registration required for export tool/API.
