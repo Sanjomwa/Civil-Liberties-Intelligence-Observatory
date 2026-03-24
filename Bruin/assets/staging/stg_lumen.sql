@@ -46,19 +46,19 @@ custom_checks:
       description: Ensure requests fall within 2024–2026
       query: "SELECT COUNT(*) FROM stg.lumen WHERE strftime(date_submitted, '%Y') NOT BETWEEN '2024' AND '2026'"
       value: 0
-@bruin */
+*/
 
 WITH raw AS (
-    SELECT * FROM raw.lumen_requests
+    SELECT
+        request_id,
+        UPPER(country) AS country,          -- normalize to KE
+        TRIM(sender) AS sender,             -- clean whitespace
+        LOWER(recipient) AS recipient,      -- normalize platform names
+        CAST(date_submitted AS TIMESTAMP) AS date_submitted,
+        reason,
+        extracted_at
+    FROM raw.lumen_requests
+    WHERE strftime(date_submitted, '%Y') BETWEEN '2024' AND '2026'
 )
-SELECT
-    request_id,
-    country,
-    sender,
-    recipient,
-    date_submitted,
-    reason,
-    extracted_at
-FROM raw
-WHERE CAST(strftime(date_submitted, '%Y') AS INTEGER) BETWEEN 2024 AND 2026
-  AND country IS NOT NULL;
+
+SELECT * FROM raw;
