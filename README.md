@@ -52,14 +52,15 @@ Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality ch
 2. [Project Architecture](#project-architecture)
 3. [Entity Relationship Diagram (ERD)](#entity-relationship-diagram-erd)
 4. [Project Structure](#project-structure)
-5. [Datasets](#datasets)
-6. [Dataset Lineage](#dataset-lineage)
-7. [Data Pipeline](#data-pipeline)
-8. [Ethics and Responsible Use](#ethics-and-responsible-use)
-9. [Dashboard + Visualizations](#dashboard--visualizations)
-10. [Setup Instructions](#setup-instructions)
-11. [Milestones and Next Steps](#milestones-and-next-steps)
-12. [Contact Information](#contact-information)
+5. [Data Access](#data-access)
+6. [Datasets](#datasets)
+7. [Dataset Lineage](#dataset-lineage)
+8. [Data Pipeline](#data-pipeline)
+9. [Ethics and Responsible Use](#ethics-and-responsible-use)
+10. [Dashboard + Visualizations](#dashboard--visualizations)
+11. [Setup Instructions](#setup-instructions)
+12. [Milestones and Next Steps](#milestones-and-next-steps)
+13. [Contact Information](#contact-information)
 
 
 
@@ -284,6 +285,37 @@ civil-liberties-censorship-kenya-bruin/
 ├── README.md
 └── LICENSE
 ```
+---
+📌 
+## Data Access
+
+### Lumen Database Access
+The Lumen Database aggregates takedown requests across multiple platforms. However, access requires approval and is not guaranteed for all researchers. Since direct access was not available during this project, we generated mock Lumen‑style data via a Python script to ensure pipeline completeness and reproducibility.
+
+### Why Mock Data?
+- Keeps the ERD and lineage tables intact (stg_lumen.sql, fact_lumen_platforms.sql).
+
+- Ensures the pipeline runs end‑to‑end without missing assets.
+
+- Dates and fields are aligned to the 2024–2026 timeframe for consistency with other datasets.
+
+- Demonstrates reproducibility, even when real data is gated.
+
+### How to Swap for Real Sources
+- Replace mock_lumen_data.csv with actual Lumen exports once access is granted.
+
+- Adjust ingestion assets (bruin/assets/ingest/lumen_raw.py) to point to the real CSV/API.
+
+- Pipeline will run unchanged — staging, facts, marts and reporting are schema‑compatible.
+
+### Optional Enrichment
+If Lumen access remains unavailable, similar transparency datasets can be substituted although fragmented for the time period of the project scope:
+
+- Meta Transparency Center (Facebook/Instagram government requests).
+
+- X (Twitter) Transparency Archive (government takedown summaries).
+
+- Google Transparency Report (already included).
 ---
 
 📊
