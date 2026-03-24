@@ -38,44 +38,41 @@ columns:
 
 import duckdb
 import pandas as pd
-from datetime import datetime
-
+import random
+from datetime import datetime, timedelta
+from pathlib import Path
 
 def materialize():
-    # Placeholder JSON simulating API response
-    mock_data = [
-        {
-            "request_id": "LUMEN-001",
-            "country": "KE",
-            "sender": "Gov Agency",
-            "recipient": "Google",
-            "date_submitted": "2024-05-12T00:00:00Z",
-            "reason": "Defamation"
-        },
-        {
-            "request_id": "LUMEN-002",
-            "country": "KE",
-            "sender": "Law Firm",
-            "recipient": "Twitter",
-            "date_submitted": "2025-09-20T00:00:00Z",
-            "reason": "Copyright"
-        }
-    ]
+    # Generate synthetic records
+    senders = ["Gov Agency", "Law Firm", "Communications Authority of Kenya"]
+    recipients = ["Google", "Twitter", "Facebook", "TikTok", "YouTube"]
+    reasons = ["Copyright", "Defamation", "National Security", "Other"]
 
-    df = pd.DataFrame(mock_data)
-    df["date_submitted"] = pd.to_datetime(df["date_submitted"])
-    df["extracted_at"] = datetime.now()
+    rows = []
+    start_date = datetime(2024, 1, 1)
+    for i in range(1, 101):  # 100 mock records
+        date = start_date + timedelta(days=random.randint(0, 800))  # 2024–2026
+        rows.append({
+            "request_id": f"LUMEN-{i:03d}",
+            "country": "KE",  # explicitly Kenya
+            "sender": random.choice(senders),
+            "recipient": random.choice(recipients),
+            "date_submitted": date,
+            "reason": random.choice(reasons),
+            "extracted_at": datetime.now()
+        })
 
-    # Filter for 2024–2026
-    df = df[df["date_submitted"].dt.year.between(2024, 2026)]
+    df = pd.DataFrame(rows)
 
     # Save to Parquet
-    df.to_parquet("./data/lumen/lumen.parquet", index=False)
+    output_dir = Path("./data/lumen")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(output_dir / "lumen.parquet", index=False)
 
     print(f"Lumen rows ingested (placeholder): {len(df)}")
     return df
 
-
+# Register in DuckDB
 con = duckdb.connect("duckdb-default.db")
 con.execute("""
 CREATE TABLE IF NOT EXISTS lumen_requests AS 
