@@ -78,7 +78,7 @@ takedowns AS (
 lumen AS (
     SELECT country,
            COUNT(*) AS lumen_requests,
-           ARRAY_TO_STRING(ARRAY_AGG(DISTINCT recipient), ', ') AS platforms_targeted
+           ARRAY_TO_STRING(ARRAY_AGG(DISTINCT platform_id), ', ') AS platforms_targeted
     FROM fact.lumen_platforms
     GROUP BY country
 )
