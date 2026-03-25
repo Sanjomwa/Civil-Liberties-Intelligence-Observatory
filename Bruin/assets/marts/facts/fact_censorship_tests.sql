@@ -3,7 +3,6 @@ name: fact.censorship_tests
 type: duckdb.sql          # ← used only in 'dev' environment
 connection: duckdb-mart
 
-# For staging & prod environments, override the type
 environments:
   staging:
     type: bq.sql
@@ -11,14 +10,19 @@ environments:
   prod:
     type: bq.sql
     connection: bigquery-default
+
 description: Fact table for OONI censorship measurements
 owner: civil-liberties-pipeline
+
 materialization:
     type: table
     strategy: create+replace
+
 depends:
     - stg.ooni
     - dims.country
+    - dims.periods
+
 columns:
     - name: measurement_id
       type: STRING
@@ -43,6 +47,14 @@ columns:
       description: When the test started
       checks:
         - name: not_null
+    - name: period
+      type: STRING
+      description: Reporting period (YYYY-MM)
+      checks:
+        - name: not_null
+    - name: half_year_label
+      type: STRING
+      description: Human-readable half-year (e.g. Jan-Jun 2023)
     - name: status
       type: STRING
       description: Result status (ok, anomaly, blocked)
@@ -52,10 +64,15 @@ columns:
     - name: extracted_at
       type: TIMESTAMP
       description: Pipeline extraction timestamp
+
 custom_checks:
     - name: valid_status_values
       description: Ensure status is one of ok/anomaly/blocked
       query: "SELECT COUNT(*) FROM fact.censorship_tests WHERE status NOT IN ('ok','anomaly','blocked')"
+      value: 0
+    - name: valid_period_range
+      description: Ensure measurements fall within Jun 2023–Jun 2025
+      query: "SELECT COUNT(*) FROM fact.censorship_tests WHERE period < '2023-06' OR period > '2025-06'"
       value: 0
 @bruin */
 
@@ -65,9 +82,13 @@ SELECT
     o.test_name,
     o.input,
     o.start_time,
+    o.period,
+    o.half_year_label,
     o.status,
     o.probe_asn,
     o.extracted_at
 FROM stg.ooni o
 JOIN dims.country c
-  ON LOWER(TRIM(o.country)) = LOWER(TRIM(c.country));
+  ON LOWER(TRIM(o.country)) = LOWER(TRIM(c.country_code))
+JOIN dims.periods p
+  ON o.period = p.period;
