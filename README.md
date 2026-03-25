@@ -311,12 +311,39 @@ erDiagram
 ```
 civil-liberties-censorship-kenya-bruin/
 ├── bruin/
-│   ├── assets/ingest/       # ingestion YAML/SQL/Python
-│   ├── assets/staging/      # cleaning & normalization
-│   ├── assets/marts/        # enriched tables, risk index
-│   └── pipeline.yml         # DAG definition
-├── src/streamlit_app/       # app.py + visualizations.py
-├── infra/                   # Terraform + GCP infra
+│   ├── assets/ingest/          # ingestion YAML/SQL/Python for raw sources
+│   │   ├── google_transparency_ingest.yml
+│   │   ├── lumen_generated_ingest.yml
+│   │   ├── ooni_ingest.yml
+│   │   └── acled_ingest.yml
+│   ├── assets/staging/         # cleaning & normalization
+│   │   ├── stg_google_transparency.sql
+│   │   ├── stg_lumen.sql
+│   │   ├── stg_ooni.sql
+│   │   └── stg_acled.sql
+│   ├── assets/dims/            # reference dimensions
+│   │   ├── dims_country.sql
+│   │   ├── dims_platform.sql
+│   │   ├── dims_event_type.sql
+│   │   ├── dims_reasons.sql
+│   │   └── dims_periods.sql
+│   ├── assets/facts/           # harmonized fact tables
+│   │   ├── fact_takedown_requests.sql
+│   │   ├── fact_lumen_platforms.sql
+│   │   ├── fact_censorship_tests.sql
+│   │   └── fact_conflict_events.sql
+│   ├── assets/marts/           # enriched tables, risk index
+│   │   └── civil_liberties_mart.sql
+│   ├── assets/reporting/       # analytical views
+│   │   ├── view.top_platforms_requests.sql
+│   │   ├── view.conflict_vs_takedowns.sql
+│   │   ├── view.censorship_vs_requests.sql
+│   │   └── view.narrative_summary.sql
+│   └── pipeline.yml            # DAG definition for Bruin
+├── src/streamlit_app/          # app.py + visualizations.py
+│   ├── app.py
+│   └── visualizations.py
+├── infra/                      # Terraform + GCP infra
 │   ├── main.tf
 │   ├── variables.tf
 │   ├── terraform.tfvars
@@ -326,14 +353,20 @@ civil-liberties-censorship-kenya-bruin/
 │       ├── gcs/
 │       ├── bigquery/
 │       └── iam/
-├── tests/                   # asset tests, pytest
-├── docs/screenshots/        # Bruin lineage, flows, dashboards
+├── tests/                      # asset tests, pytest
+├── docs/                       # documentation + diagrams
+│   ├── data-modelling.md        # full rationale, joins, keys, quality checks
+│   ├── erd.md                   # ERD diagram (Mermaid)
+│   ├── lineage.md               # dataset lineage diagram (Mermaid + table)
+│   ├── project-structure.md     # folder tree + rationale
+│   └── screenshots/             # Bruin lineage, flows, dashboards
 ├── .env.example
-├── Makefile                 # infra-apply, run-pipeline, deploy-app
+├── Makefile                     # infra-apply, run-pipeline, deploy-app
 ├── pyproject.toml
 ├── uv.lock
 ├── README.md
 └── LICENSE
+
 ```
 ---
 📌 
@@ -443,10 +476,10 @@ flowchart TD
 | Dataset (Raw) | Staging Table | Fact Table | Reporting Layer | DEV (DuckDB) | PROD (GCP) |
 | --- | --- | --- | --- | --- | --- |
 | **Google Transparency Report** | ``stg_google_transparency.sql`` | ``fact_takedown_requests.sql`` | ``civil_liberties_mart.sql`` | DuckDB local tables | BigQuery dataset ``fact_takedown_requests`` |
-| **Lumen Database** | ``stg_lumen.sql`` | ``fact_lumen_platforms.sql`` | ``civil_liberties_mart.sql`` | DuckDB local tables | BigQuery dataset ``fact_lumen_platforms`` |
+| **Lumen (Generated Data)** | ``stg_lumen.sql`` | ``fact_lumen_platforms.sql`` | ``civil_liberties_mart.sql`` | DuckDB local tables | BigQuery dataset ``fact_lumen_platforms`` |
 | **OONI (Network Interference)** | ``stg_ooni.sql`` | ``fact_censorship_tests.sql`` | ``civil_liberties_mart.sql`` | DuckDB local tables | BigQuery dataset ``fact_censorship_tests`` |
 | **ACLED Conflict Events** | ``stg_acled.sql`` | ``fact_conflict_events.sql`` | ``civil_liberties_mart.sql`` | DuckDB local tables | BigQuery dataset ``fact_conflict_events`` |
-| **Dims (Reference Tables)** | ``dims_country.sql``, ``dims_event_type.sql``, ``dims_platform.sql`` | Join into facts for normalization | Used in reporting joins | DuckDB local tables | BigQuery datasets ``dims_*`` |
+| **Dims (Reference Tables)** | ``dims_country.sql``, ``dims_event_type.sql``, ``dims_platform.sql``, ``dims_reasons.sql``, ``dims_periods.sql`` | Join into facts for normalization | Used in reporting joins | DuckDB local tables | BigQuery datasets ``dims_*`` |
 
 **Notes**:
 - Google: Download full historical CSVs → filter Kenya in staging.
