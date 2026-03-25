@@ -1,6 +1,6 @@
 /* @bruin
 name: stg.lumen
-type: sql
+type: duckdb.sql
 connection: duckdb-lumen
 description: Cleaned Lumen takedown requests
 owner: civil-liberties-pipeline

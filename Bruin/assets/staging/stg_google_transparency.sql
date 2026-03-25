@@ -1,6 +1,6 @@
 /* @bruin
 name: stg.google_transparency
-type: sql
+type: duckdb.sql
 connection: duckdb-google
 description: Cleaned Google Transparency takedown requests
 owner: civil-liberties-pipeline

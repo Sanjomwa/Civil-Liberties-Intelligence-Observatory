@@ -1,6 +1,6 @@
 /* @bruin
 name: stg.acled
-type: table
+type: duckdb.sql
 connection: duckdb-acled
 description: Cleaned ACLED conflict events
 owner: civil-liberties-pipeline

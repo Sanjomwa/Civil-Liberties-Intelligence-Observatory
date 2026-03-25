@@ -1,6 +1,6 @@
 /* @bruin
 name: stg.ooni
-type: sql
+type: duckdb.sql
 connection: duckdb-ooni
 description: Cleaned and filtered OONI censorship measurements
 owner: civil-liberties-pipeline
