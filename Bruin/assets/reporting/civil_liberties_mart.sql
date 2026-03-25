@@ -1,7 +1,16 @@
 /* @bruin
 name: mart.civil_liberties
-type: duckdb.sql
+type: duckdb.sql          # ← used only in 'dev' environment
 connection: duckdb-mart
+
+# For staging & prod environments, override the type
+environments:
+  staging:
+    type: bq.sql
+    connection: bigquery-default
+  prod:
+    type: bq.sql
+    connection: bigquery-default
 description: Unified mart combining censorship tests, conflict events, takedown requests, and Lumen platform requests for civil liberties analysis
 owner: civil-liberties-pipeline
 materialization:

@@ -1,7 +1,16 @@
 /* @bruin
 name: fact.lumen_platforms
-type: sql
-connection: duckdb-lumen
+type: duckdb.sql          # ← used only in 'dev' environment
+connection: duckdb-mart
+
+# For staging & prod environments, override the type
+environments:
+  staging:
+    type: bq.sql
+    connection: bigquery-default
+  prod:
+    type: bq.sql
+    connection: bigquery-default
 description: Fact table for Lumen takedown requests, joined with platform dimension
 owner: civil-liberties-pipeline
 materialization:

@@ -1,7 +1,16 @@
 /* @bruin
 name: fact.takedown_requests
-type: sql
+type: duckdb.sql          # ← used only in 'dev' environment
 connection: duckdb-mart
+
+# For staging & prod environments, override the type
+environments:
+  staging:
+    type: bq.sql
+    connection: bigquery-default
+  prod:
+    type: bq.sql
+    connection: bigquery-default
 description: Fact table for Google Transparency takedown requests
 owner: civil-liberties-pipeline
 materialization:

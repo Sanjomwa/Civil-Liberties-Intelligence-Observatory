@@ -1,7 +1,16 @@
 /* @bruin
 name: stg.lumen
-type: duckdb.sql
+type: duckdb.sql          # ← used only in 'dev' environment
 connection: duckdb-lumen
+
+# For staging & prod environments, override the type
+environments:
+  staging:
+    type: bq.sql
+    connection: bigquery-default
+  prod:
+    type: bq.sql
+    connection: bigquery-default
 description: Cleaned Lumen takedown requests
 owner: civil-liberties-pipeline
 materialization:

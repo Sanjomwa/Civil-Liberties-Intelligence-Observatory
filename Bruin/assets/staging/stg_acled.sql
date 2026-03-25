@@ -1,7 +1,16 @@
 /* @bruin
 name: stg.acled
-type: duckdb.sql
+type: duckdb.sql          # ← used only in 'dev' environment
 connection: duckdb-acled
+
+# For staging & prod environments, override the type
+environments:
+  staging:
+    type: bq.sql
+    connection: bigquery-default
+  prod:
+    type: bq.sql
+    connection: bigquery-default
 description: Cleaned ACLED conflict events
 owner: civil-liberties-pipeline
 materialization:

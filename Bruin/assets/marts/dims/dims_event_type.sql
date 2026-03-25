@@ -1,7 +1,16 @@
 /* @bruin
 name: dims.event_type
-type: sql
+type: duckdb.sql          # ← used only in 'dev' environment
 connection: duckdb-mart
+
+# For staging & prod environments, override the type
+environments:
+  staging:
+    type: bq.sql
+    connection: bigquery-default
+  prod:
+    type: bq.sql
+    connection: bigquery-default
 description: Dimension table for ACLED conflict event types
 owner: civil-liberties-pipeline
 materialization:

@@ -1,7 +1,17 @@
 /* @bruin
 name: stg.ooni
-type: duckdb.sql
+type: duckdb.sql          # ← used only in 'dev' environment
 connection: duckdb-ooni
+
+# For staging & prod environments, override the type
+environments:
+  staging:
+    type: bq.sql
+    connection: bigquery-default
+  prod:
+    type: bq.sql
+    connection: bigquery-default
+
 description: Cleaned and filtered OONI censorship measurements
 owner: civil-liberties-pipeline
 materialization:
@@ -45,7 +55,7 @@ columns:
 custom_checks:
     - name: valid_status_values
       description: Ensure status is one of ok/anomaly/blocked
-      query: "SELECT COUNT(*) FROM stg.ooni WHERE status NOT IN ('ok','anomaly','blocked')"
+      query: "SELECT COUNT(*) FROM {{ this }} WHERE status NOT IN ('ok','anomaly','blocked')"
       value: 0
 @bruin */
 
