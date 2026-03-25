@@ -4,7 +4,7 @@ type: python
 image: python:3.11
 connection: duckdb-default
 description: |
-  Placeholder ingestion for Lumen takedown requests (2024–2026).
+  Placeholder ingestion for Lumen takedown requests (Jun 2023–Jun 2025).
   Simulates API JSON response until token access is granted.
   Converts to Parquet for consistency with other sources.
 
@@ -50,9 +50,12 @@ def materialize():
     reasons = ["Copyright", "Defamation", "National Security", "Other"]
 
     rows = []
-    start_date = datetime(2024, 1, 1)
+    start_date = datetime(2023, 6, 1)   # June 1, 2023
+    end_date = datetime(2025, 6, 30)    # June 30, 2025
+    total_days = (end_date - start_date).days
+
     for i in range(1, 101):  # 100 mock records
-        date = start_date + timedelta(days=random.randint(0, 800))  # 2024–2026
+        date = start_date + timedelta(days=random.randint(0, total_days))
         rows.append({
             "request_id": f"LUMEN-{i:03d}",
             "country": "KE",  # explicitly Kenya
