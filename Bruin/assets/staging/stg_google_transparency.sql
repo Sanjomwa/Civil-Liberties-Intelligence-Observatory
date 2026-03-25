@@ -33,6 +33,9 @@ columns:
       description: Reporting period (YYYY-MM)
       checks:
           - name: not_null
+    - name: half_year_label
+      type: STRING
+      description: Human-readable half-year (e.g. Jan-Jun 2023)
     - name: product
       type: STRING
       description: Platform targeted
@@ -62,27 +65,39 @@ WITH requests AS (
     SELECT
         LOWER(country) AS country,
         -- normalize textual time_period into YYYY-MM
-        REPLACE(time_period, 'Jan-Jun ', '') AS half_year, -- example cleanup
-        time_period AS period,
+        CASE
+            WHEN time_period = 'Jan-Jun 2023' THEN '2023-06'
+            WHEN time_period = 'Jul-Dec 2023' THEN '2023-12'
+            WHEN time_period = 'Jan-Jun 2024' THEN '2024-06'
+            WHEN time_period = 'Jul-Dec 2024' THEN '2024-12'
+            WHEN time_period = 'Jan-Jun 2025' THEN '2025-06'
+        END AS period,
+        time_period AS half_year_label,
         product,
         reason,
         number_of_requests AS request_count,
         items_requested_removal AS item_count,
         extracted_at
     FROM raw.google_transparency_requests
-    WHERE time_period IN ('Jul-Dec 2023','Jan-Jun 2024','Jul-Dec 2024','Jan-Jun 2025')
+    WHERE time_period IN ('Jan-Jun 2023','Jul-Dec 2023','Jan-Jun 2024','Jul-Dec 2024','Jan-Jun 2025')
 ),
 detailed AS (
     SELECT
         LOWER("Country/Region") AS country,
         strftime(CAST("Period Ending" AS DATE), '%Y-%m') AS period, -- convert MM/DD/YYYY → YYYY-MM
+        CASE
+            WHEN strftime(CAST("Period Ending" AS DATE), '%m') = '06'
+                 THEN 'Jan-Jun ' || strftime(CAST("Period Ending" AS DATE), '%Y')
+            WHEN strftime(CAST("Period Ending" AS DATE), '%m') = '12'
+                 THEN 'Jul-Dec ' || strftime(CAST("Period Ending" AS DATE), '%Y')
+        END AS half_year_label,
         Product AS product,
         Reason AS reason,
         Total AS request_count,
         Total AS item_count,   -- only one count available
         extracted_at
     FROM raw.google_transparency_detailed
-    WHERE CAST("Period Ending" AS DATE) BETWEEN DATE '2023-07-01' AND DATE '2025-06-30'
+    WHERE CAST("Period Ending" AS DATE) BETWEEN DATE '2023-06-01' AND DATE '2025-06-30'
 )
 SELECT * FROM requests
 UNION ALL
