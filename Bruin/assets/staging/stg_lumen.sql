@@ -6,7 +6,7 @@ description: Cleaned Lumen takedown requests
 owner: civil-liberties-pipeline
 materialization:
     type: table
-    strategy: overwrite
+    strategy: strategy: create+replace
 depends:
     - raw.lumen_requests
 columns:

@@ -6,7 +6,7 @@ description: Dimension table for standardized country names
 owner: civil-liberties-pipeline
 materialization:
     type: table
-    strategy: overwrite
+    strategy: create+replace
 depends:
     - stg.acled
     - stg.ooni

@@ -6,7 +6,7 @@ description: Dimension table for ACLED conflict event types
 owner: civil-liberties-pipeline
 materialization:
     type: table
-    strategy: overwrite
+    strategy: create+replace
 depends:
     - stg.acled
 columns:

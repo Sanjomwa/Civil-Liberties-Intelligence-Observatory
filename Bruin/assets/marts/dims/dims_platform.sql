@@ -6,7 +6,7 @@ description: Dimension table for platforms/services targeted in takedown request
 owner: civil-liberties-pipeline
 materialization:
     type: table
-    strategy: overwrite
+    strategy: create+replace
 depends:
     - stg.lumen
 columns:

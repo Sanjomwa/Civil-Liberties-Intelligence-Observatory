@@ -6,7 +6,7 @@ description: Cleaned Google Transparency takedown requests
 owner: civil-liberties-pipeline
 materialization:
     type: table
-    strategy: overwrite
+    strategy: strategy: create+replace
 depends:
     - raw.google_transparency
 columns:

@@ -6,7 +6,7 @@ description: Cleaned and filtered OONI censorship measurements
 owner: civil-liberties-pipeline
 materialization:
     type: table
-    strategy: overwrite
+    strategy: create+replace
 depends:
     - raw.ooni_raw
 columns:

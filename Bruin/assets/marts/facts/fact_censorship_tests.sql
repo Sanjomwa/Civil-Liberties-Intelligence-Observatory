@@ -6,7 +6,7 @@ description: Fact table for OONI censorship measurements
 owner: civil-liberties-pipeline
 materialization:
     type: table
-    strategy: overwrite
+    strategy: create+replace
 depends:
     - stg.ooni
     - dims.country

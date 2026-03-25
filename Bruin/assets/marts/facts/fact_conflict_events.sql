@@ -6,7 +6,7 @@ description: Fact table for ACLED conflict events
 owner: civil-liberties-pipeline
 materialization:
     type: table
-    strategy: overwrite
+    strategy: create+replace
 depends:
     - stg.acled
     - dims.country

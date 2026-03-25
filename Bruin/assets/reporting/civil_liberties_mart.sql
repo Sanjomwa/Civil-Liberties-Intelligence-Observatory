@@ -7,7 +7,7 @@ description: Unified mart combining censorship tests, conflict events,
 owner: civil-liberties-pipeline
 materialization:
     type: table
-    strategy: overwrite
+    strategy: create+replace
 depends:
     - fact.censorship_tests
     - fact.conflict_events

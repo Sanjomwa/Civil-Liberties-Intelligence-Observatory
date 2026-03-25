@@ -6,7 +6,7 @@ description: Fact table for Lumen takedown requests, joined with platform dimens
 owner: civil-liberties-pipeline
 materialization:
     type: table
-    strategy: overwrite
+    strategy: create+replace
 depends:
     - stg.lumen
     - dims.platform

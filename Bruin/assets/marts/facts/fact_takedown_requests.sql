@@ -6,7 +6,7 @@ description: Fact table for Google Transparency takedown requests
 owner: civil-liberties-pipeline
 materialization:
     type: table
-    strategy: overwrite
+    strategy: create+replace
 depends:
     - stg.google_transparency
     - dims.country
