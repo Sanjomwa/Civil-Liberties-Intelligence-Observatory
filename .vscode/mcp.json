@@ -3,7 +3,13 @@
     "bruin": {
       "type": "stdio",
       "command": "bruin",
-      "args": ["mcp"]
+      "args": ["mcp"],
+      "env": {
+        "BRUIN_LOG_LEVEL": "debug",
+        "DEBUG": "true",
+        "BRUIN_DEBUG": "true"
+      },
+      "timeout": 120
     }
   }
 }
