@@ -383,13 +383,61 @@ If Lumen access remains unavailable, similar transparency datasets can be substi
 
 📊
 ## Dataset Lineage
-| Dataset (Raw) | Staging Table | Fact Table | Reporting Layer |
-| --- | --- | --- | --- |
-| **Google Transparency Report** | ``stg_google_transparency.sql`` | ``fact_takedown_requests.sql`` | ``civil_liberties_mart.sql`` |
-| **Lumen Database** | ``stg_lumen.sql`` | ``fact_lumen_platforms.sql`` | ``civil_liberties_mart.sql`` |
-| **OONI (Network Interference)** | ``stg_ooni.sql`` | ``fact_censorship_tests.sql`` | ``civil_liberties_mart.sql`` |
-| **ACLED Conflict Events** | ``stg_acled.sql`` | ``fact_conflict_events.sql`` | ``civil_liberties_mart.sql`` |
-| **Dims (Reference Tables)** | ``dims_country.sql``, ``dims_event_type.sql``, ``dims_platform.sql`` | Join into facts for normalization | Used in reporting joins |
+```mermaid
+flowchart TD
+    %% RAW INGESTION
+    A1[Google Transparency Raw] --> B1[stg_google_transparency]
+    A2[Lumen Generated Data] --> B2[stg_lumen]
+    A3[OONI Raw Measurements] --> B3[stg_ooni]
+    A4[ACLED Raw Events] --> B4[stg_acled]
+
+    %% STAGING TO FACTS
+    B1 --> C1[fact_takedown_requests]
+    B2 --> C2[fact_lumen_platforms]
+    B3 --> C3[fact_censorship_tests]
+    B4 --> C4[fact_conflict_events]
+
+    %% DIMENSIONS
+    D1[dims_country]
+    D2[dims_platform]
+    D3[dims_event_type]
+    D4[dims_reasons]
+    D5[dims_periods]
+
+    %% FACTS TO MART
+    C1 --> E[civil_liberties_mart]
+    C2 --> E
+    C3 --> E
+    C4 --> E
+
+    %% DIM JOINS
+    D1 --> C1
+    D1 --> C2
+    D1 --> C3
+    D1 --> C4
+
+    D2 --> C1
+    D2 --> C2
+
+    D3 --> C3
+    D3 --> C4
+
+    D4 --> C1
+    D4 --> C2
+
+    D5 --> C1
+    D5 --> C2
+    D5 --> C3
+    D5 --> C4
+
+    %% REPORTING VIEWS
+    E --> F1[view.top_platforms_requests]
+    E --> F2[view.conflict_vs_takedowns]
+    E --> F3[view.censorship_vs_requests]
+    E --> F4[view.narrative_summary]
+```
+
+
 
 ## 📊 Dataset Lineage with Environments
 | Dataset (Raw) | Staging Table | Fact Table | Reporting Layer | DEV (DuckDB) | PROD (GCP) |
