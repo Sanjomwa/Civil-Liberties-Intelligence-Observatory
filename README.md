@@ -631,7 +631,7 @@ Makefile commands:
   - Make app-deploy → deploy Streamlit to Cloud Run.
 
 ### Step 9: CI/CD
-GitHub Actions workflow:
+workflow:
   - Run tests on push.
   - Lint + format with pre-commit.
   - Deploy infra + dashboard on tagged release.
