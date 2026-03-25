@@ -55,12 +55,13 @@ Built end‑to‑end with Bruin — ingestion, SQL/Python transforms, quality ch
 5. [Data Access](#data-access)
 6. [Datasets](#datasets)
 7. [Dataset Lineage](#dataset-lineage)
-8. [Data Pipeline](#data-pipeline)
-9. [Ethics and Responsible Use](#ethics-and-responsible-use)
-10. [Dashboard + Visualizations](#dashboard--visualizations)
-11. [Setup Instructions](#setup-instructions)
-12. [Milestones and Next Steps](#milestones-and-next-steps)
-13. [Contact Information](#contact-information)
+8. [Data-Modelling](#data-modelling)
+9. [Data Pipeline](#data-pipeline)
+10. [Ethics and Responsible Use](#ethics-and-responsible-use)
+11. [Dashboard + Visualizations](#dashboard--visualizations)
+12. [Setup Instructions](#setup-instructions)
+13. [Milestones and Next Steps](#milestones-and-next-steps)
+14. [Contact Information](#contact-information)
 
 
 
@@ -355,6 +356,19 @@ If Lumen access remains unavailable, similar transparency datasets can be substi
 - ACLED: Free registration required for export tool/API.
 - All datasets ingested via Bruin (API,CSV file/URL, HTTP connectors).
 
+---
+🔢
+## Data Modelling
+
+I integrated **Google Transparency**, **generated Lumen data**, **OONI**, and **ACLED** datasets into a unified civil liberties mart.  
+The pipeline stages raw ingestion, harmonizes facts and dimensions, and produces examiner‑friendly reporting views.
+
+- **Facts:** takedown requests, lumen platforms, censorship tests, conflict events  
+- **Dims:** country, platform, event type, reasons, periods  
+- **Mart:** integrated civil liberties dataset  
+- **Views:** top platforms, conflict vs takedowns, censorship vs requests, narrative summary  
+
+📖 For full details on ingestion rationale, joins, surrogate keys, and quality checks, see [data-modelling.md](./docs/data-modelling.md)
 ---
 
 🔄
