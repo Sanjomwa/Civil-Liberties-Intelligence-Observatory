@@ -1,9 +1,8 @@
 /* @bruin
 name: mart.civil_liberties
-type: sql
+type: duckdb.sql
 connection: duckdb-mart
-description: Unified mart combining censorship tests, conflict events,
-             takedown requests, and Lumen platform requests for civil liberties analysis
+description: Unified mart combining censorship tests, conflict events, takedown requests, and Lumen platform requests for civil liberties analysis
 owner: civil-liberties-pipeline
 materialization:
     type: table
