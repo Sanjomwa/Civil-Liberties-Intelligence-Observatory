@@ -1,9 +1,9 @@
 /* @bruin
 name: mart.civil_liberties
-type: duckdb.sql          # ← used only in 'dev' environment
+type: duckdb.sql
 connection: duckdb-mart
 
-# For staging & prod environments, override the type
+# Environment overrides - BigQuery for staging and prod
 environments:
   staging:
     type: bq.sql
@@ -11,61 +11,73 @@ environments:
   prod:
     type: bq.sql
     connection: bigquery-default
+
 description: Unified mart combining censorship tests, conflict events, takedown requests, and Lumen platform requests for civil liberties analysis
 owner: civil-liberties-pipeline
+
 materialization:
-    type: table
-    strategy: create+replace
+  type: table
+  strategy: create+replace
+
 depends:
-    - fact.censorship_tests
-    - fact.conflict_events
-    - fact.takedown_requests
-    - fact.lumen_platforms
-    - dims.country
-    - dims.platform
-    - dims.event_type
+  - fact.censorship_tests
+  - fact.conflict_events
+  - fact.takedown_requests
+  - fact.lumen_platforms
+  - dims.country
+  - dims.platform
+  - dims.event_type
+
 columns:
-    - name: country
-      type: STRING
-      description: Standardized country name
-      checks:
-        - name: not_null
-    - name: censorship_tests
-      type: INTEGER
-      description: Number of censorship measurements
-    - name: blocked_pct
-      type: FLOAT
-      description: Percentage of blocked/anomaly tests
-      checks:
-        - name: between_0_and_1
-    - name: conflict_events
-      type: INTEGER
-      description: Number of conflict events
-      checks:
-        - name: non_negative
-    - name: fatalities
-      type: INTEGER
-      description: Fatalities reported in conflict events
-      checks:
-        - name: non_negative
-    - name: takedown_requests
-      type: INTEGER
-      description: Number of takedown requests (Google Transparency)
-      checks:
-        - name: non_negative
-    - name: items_requested
-      type: INTEGER
-      description: Number of items requested for removal
-      checks:
-        - name: non_negative
-    - name: lumen_requests
-      type: INTEGER
-      description: Number of Lumen requests (platform + legal)
-      checks:
-        - name: non_negative
-    - name: platforms_targeted
-      type: STRING
-      description: Platforms targeted in Lumen requests
+  - name: country
+    type: STRING
+    description: Standardized country name
+    checks:
+      - name: not_null
+
+  - name: censorship_tests
+    type: INTEGER
+    description: Number of censorship measurements
+
+  - name: blocked_pct
+    type: FLOAT
+    description: Percentage of blocked/anomaly tests
+    checks:
+      - name: between_0_and_1
+
+  - name: conflict_events
+    type: INTEGER
+    description: Number of conflict events
+    checks:
+      - name: non_negative
+
+  - name: fatalities
+    type: INTEGER
+    description: Fatalities reported in conflict events
+    checks:
+      - name: non_negative
+
+  - name: takedown_requests
+    type: INTEGER
+    description: Number of takedown requests (Google Transparency)
+    checks:
+      - name: non_negative
+
+  - name: items_requested
+    type: INTEGER
+    description: Number of items requested for removal
+    checks:
+      - name: non_negative
+
+  - name: lumen_requests
+    type: INTEGER
+    description: Number of Lumen requests (platform + legal)
+    checks:
+      - name: non_negative
+
+  - name: platforms_targeted
+    type: STRING
+    description: Platforms targeted in Lumen requests
 @bruin */
 
 WITH censorship AS (
