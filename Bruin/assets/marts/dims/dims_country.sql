@@ -17,7 +17,9 @@ columns:
       type: STRING
       description: Standardized country name
       primary_key: true
-      checks: [not_null, unique]
+      checks:
+        - name: not_null
+        - name: unique
 @bruin */
 
 WITH countries AS (
