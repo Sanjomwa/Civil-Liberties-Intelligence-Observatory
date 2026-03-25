@@ -3,7 +3,6 @@ name: stg.lumen
 type: duckdb.sql          # ← used only in 'dev' environment
 connection: duckdb-lumen
 
-# For staging & prod environments, override the type
 environments:
   staging:
     type: bq.sql
@@ -11,13 +10,17 @@ environments:
   prod:
     type: bq.sql
     connection: bigquery-default
+
 description: Cleaned Lumen takedown requests
 owner: civil-liberties-pipeline
+
 materialization:
     type: table
     strategy: create+replace
+
 depends:
     - raw.lumen_requests
+
 columns:
     - name: request_id
       type: STRING
@@ -44,16 +47,25 @@ columns:
       description: When request was submitted
       checks:
         - name: not_null
+    - name: period
+      type: STRING
+      description: Reporting period (YYYY-MM)
+      checks:
+        - name: not_null
+    - name: half_year_label
+      type: STRING
+      description: Human-readable half-year (e.g. Jan-Jun 2023)
     - name: reason
       type: STRING
       description: Reason for takedown
     - name: extracted_at
       type: TIMESTAMP
       description: Pipeline extraction timestamp
+
 custom_checks:
     - name: valid_date_range
-      description: Ensure requests fall within 2024–2026
-      query: "SELECT COUNT(*) FROM stg.lumen WHERE strftime(date_submitted, '%Y') NOT BETWEEN '2024' AND '2026'"
+      description: Ensure requests fall within Jun 2023–Jun 2025
+      query: "SELECT COUNT(*) FROM stg.lumen WHERE date_submitted < DATE '2023-06-01' OR date_submitted > DATE '2025-06-30'"
       value: 0
 @bruin */
 
@@ -64,10 +76,19 @@ WITH raw AS (
         TRIM(sender) AS sender,             -- clean whitespace
         LOWER(recipient) AS recipient,      -- normalize platform names
         CAST(date_submitted AS TIMESTAMP) AS date_submitted,
+        -- normalize to YYYY-MM
+        strftime(CAST(date_submitted AS DATE), '%Y-%m') AS period,
+        -- derive half-year label
+        CASE
+            WHEN strftime(CAST(date_submitted AS DATE), '%m') IN ('01','02','03','04','05','06')
+                 THEN 'Jan-Jun ' || strftime(CAST(date_submitted AS DATE), '%Y')
+            WHEN strftime(CAST(date_submitted AS DATE), '%m') IN ('07','08','09','10','11','12')
+                 THEN 'Jul-Dec ' || strftime(CAST(date_submitted AS DATE), '%Y')
+        END AS half_year_label,
         reason,
         extracted_at
     FROM raw.lumen_requests
-    WHERE strftime(date_submitted, '%Y') BETWEEN '2024' AND '2026'
+    WHERE CAST(date_submitted AS DATE) BETWEEN DATE '2023-06-01' AND DATE '2025-06-30'
 )
 
 SELECT * FROM raw;
