@@ -15,11 +15,14 @@ columns:
       type: STRING
       description: Unique OONI measurement identifier
       primary_key: true
-      checks: [not_null, unique]
+      checks:
+        - name: not_null
+        - name: unique
     - name: country
       type: STRING
       description: Standardized country name
-      checks: [not_null]
+      checks:
+        - name: not_null
     - name: test_name
       type: STRING
       description: OONI test type
@@ -29,7 +32,8 @@ columns:
     - name: start_time
       type: TIMESTAMP
       description: When the test started
-      checks: [not_null]
+      checks:
+        - name: not_null
     - name: status
       type: STRING
       description: Result status (ok, anomaly, blocked)

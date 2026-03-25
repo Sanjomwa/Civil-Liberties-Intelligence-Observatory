@@ -14,7 +14,9 @@ columns:
       type: STRING
       description: Platform or service name
       primary_key: true
-      checks: [not_null, unique]
+      checks:
+        - name: not_null
+        - name: unique
 @bruin */
 
 SELECT DISTINCT INITCAP(TRIM(recipient)) AS platform

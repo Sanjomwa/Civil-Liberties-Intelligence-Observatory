@@ -16,13 +16,13 @@ columns:
       description: Unique request identifier
       primary_key: true
       checks:
-          - name: not_null
-          - name: unique
+        - name: not_null
+        - name: unique
     - name: platform_id
       type: STRING
       description: Normalized platform identifier
       checks:
-          - name: not_null
+        - name: not_null
     - name: country
       type: STRING
       description: Country issuing request
@@ -38,7 +38,7 @@ columns:
     - name: extracted_at
       type: TIMESTAMP
       description: Pipeline extraction timestamp
-*/
+@bruin */
 
 WITH joined AS (
     SELECT

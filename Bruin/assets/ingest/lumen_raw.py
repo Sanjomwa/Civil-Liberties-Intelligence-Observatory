@@ -1,5 +1,5 @@
 """@bruin
-name: raw.lumen_raw
+name: raw.lumen_requests
 type: python
 image: python:3.11
 connection: duckdb-default
@@ -42,6 +42,7 @@ import random
 from datetime import datetime, timedelta
 from pathlib import Path
 
+
 def materialize():
     # Generate synthetic records
     senders = ["Gov Agency", "Law Firm", "Communications Authority of Kenya"]
@@ -71,6 +72,7 @@ def materialize():
 
     print(f"Lumen rows ingested (placeholder): {len(df)}")
     return df
+
 
 # Register in DuckDB
 con = duckdb.connect("duckdb-default.db")

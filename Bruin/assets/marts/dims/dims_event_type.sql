@@ -14,7 +14,9 @@ columns:
       type: STRING
       description: Conflict event type
       primary_key: true
-      checks: [not_null, unique]
+      checks: 
+        - name: not_null
+        - name: unique
 @bruin */
 
 SELECT DISTINCT INITCAP(TRIM(event_type)) AS event_type

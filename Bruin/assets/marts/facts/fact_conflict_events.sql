@@ -14,26 +14,31 @@ columns:
     - name: country
       type: STRING
       description: Standardized country name
-      checks: [not_null]
+      checks:
+        - name: not_null
     - name: admin1
       type: STRING
       description: First-level administrative division
     - name: event_type
       type: STRING
       description: Type of conflict event
-      checks: [not_null]
+      checks:
+        - name: not_null
     - name: fatalities
       type: INTEGER
       description: Number of fatalities
-      checks: [non_negative]
+      checks:
+        - name: non_negative
     - name: event_count
       type: INTEGER
       description: Number of events aggregated
-      checks: [non_negative]
+      checks:
+        - name: non_negative
     - name: year
       type: INTEGER
       description: Event year
-      checks: [not_null]
+      checks:
+        - name: not_null
     - name: month
       type: INTEGER
       description: Event month

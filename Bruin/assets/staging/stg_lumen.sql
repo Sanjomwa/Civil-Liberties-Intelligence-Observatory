@@ -15,13 +15,13 @@ columns:
       description: Unique request identifier
       primary_key: true
       checks:
-          - name: not_null
-          - name: unique
+        - name: not_null
+        - name: unique
     - name: country
       type: STRING
       description: Country issuing request
       checks:
-          - name: not_null
+        - name: not_null
     - name: sender
       type: STRING
       description: Entity sending request
@@ -29,12 +29,12 @@ columns:
       type: STRING
       description: Platform or service targeted
       checks:
-          - name: not_null
+        - name: not_null
     - name: date_submitted
       type: TIMESTAMP
       description: When request was submitted
       checks:
-          - name: not_null
+        - name: not_null
     - name: reason
       type: STRING
       description: Reason for takedown
@@ -46,7 +46,7 @@ custom_checks:
       description: Ensure requests fall within 2024–2026
       query: "SELECT COUNT(*) FROM stg.lumen WHERE strftime(date_submitted, '%Y') NOT BETWEEN '2024' AND '2026'"
       value: 0
-*/
+@bruin */
 
 WITH raw AS (
     SELECT

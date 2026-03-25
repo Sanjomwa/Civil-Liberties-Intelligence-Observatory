@@ -20,7 +20,8 @@ columns:
     - name: country
       type: STRING
       description: Standardized country name
-      checks: [not_null]
+      checks:
+        - name: not_null
     - name: censorship_tests
       type: INTEGER
       description: Number of censorship measurements
@@ -32,23 +33,28 @@ columns:
     - name: conflict_events
       type: INTEGER
       description: Number of conflict events
-      checks: [non_negative]
+      checks:
+        - name: non_negative
     - name: fatalities
       type: INTEGER
       description: Fatalities reported in conflict events
-      checks: [non_negative]
+      checks:
+        - name: non_negative
     - name: takedown_requests
       type: INTEGER
       description: Number of takedown requests (Google Transparency)
-      checks: [non_negative]
+      checks:
+        - name: non_negative
     - name: items_requested
       type: INTEGER
       description: Number of items requested for removal
-      checks: [non_negative]
+      checks:
+        - name: non_negative
     - name: lumen_requests
       type: INTEGER
       description: Number of Lumen requests (platform + legal)
-      checks: [non_negative]
+      checks:
+        - name: non_negative
     - name: platforms_targeted
       type: STRING
       description: Platforms targeted in Lumen requests
