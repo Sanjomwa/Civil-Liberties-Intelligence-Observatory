@@ -142,117 +142,166 @@ erDiagram
     google_transparency_raw {
         string request_id
         date date
-        string requester
-        string platform
-        string motive
+        string country
+        string product
+        string reason
         int items_requested
-        string action_taken
     }
-    lumen_raw {
+    lumen_generated {
         string lumen_id
         date date
-        string platform
-        string request_type
+        string country
+        string recipient
+        string reason
     }
     ooni_raw {
-        string test_id
+        string measurement_id
         date date
-        string platform
-        string shutdown_type
+        string country
+        string test_name
+        string input
     }
-    raw_acled_aggregated {
+    acled_raw {
         string event_id
         date date
-        string county
+        string country
+        string admin1
         string event_type
-        string actors
         int fatalities
     }
 
     %% STAGING
     stg_google_transparency {
         string request_id
-        string platform
-        string motive
+        string country
+        string product
+        string reason
+        string period
     }
     stg_lumen {
         string lumen_id
-        string platform
+        string country
+        string recipient
+        string reason
+        string period
     }
     stg_ooni {
-        string test_id
-        string platform
+        string measurement_id
+        string country
+        string test_name
+        string input
+        string period
     }
     stg_acled {
         string event_id
-        string county
+        string country
+        string admin1
         string event_type
+        int fatalities
+        string period
     }
 
     %% DIMENSIONS
     dims_country {
         string country_id
+        string country_code
         string country_name
-    }
-    dims_event_type {
-        string event_type_id
-        string event_type_name
     }
     dims_platform {
         string platform_id
         string platform_name
     }
+    dims_event_type {
+        string event_type_id
+        string event_type
+    }
+    dims_reasons {
+        string reason_id
+        string reason_name
+    }
+    dims_periods {
+        string period_id
+        string period
+        string half_year_label
+    }
 
     %% FACTS
     fact_takedown_requests {
         string request_id
+        string country_id
         string platform_id
-        string motive
-    }
-    fact_conflict_events {
-        string event_id
-        string event_type_id
-        string fatalities
+        string reason_id
+        string period_id
+        int request_count
+        int items_requested
     }
     fact_lumen_platforms {
         string lumen_id
+        string country_id
         string platform_id
+        string reason_id
+        string period_id
     }
     fact_censorship_tests {
-        string test_id
-        string platform_id
-        string shutdown_type
+        string measurement_id
+        string country_id
+        string event_type_id
+        string period_id
+    }
+    fact_conflict_events {
+        string event_id
+        string country_id
+        string event_type_id
+        string period_id
+        int event_count
+        int fatalities
     }
 
-    %% REPORTING
+    %% MART
     civil_liberties_mart {
-        string mart_id
-        string risk_index
-        string date
-        string county
+        string country_id
+        string period_id
+        int takedown_requests
+        int lumen_requests
+        int censorship_tests
+        int conflict_events
+        int fatalities
     }
 
     %% RELATIONSHIPS
     google_transparency_raw ||--o{ stg_google_transparency : feeds
-    lumen_raw ||--o{ stg_lumen : feeds
+    lumen_generated ||--o{ stg_lumen : feeds
     ooni_raw ||--o{ stg_ooni : feeds
-    raw_acled_aggregated ||--o{ stg_acled : feeds
+    acled_raw ||--o{ stg_acled : feeds
 
     stg_google_transparency ||--o{ fact_takedown_requests : transforms
     stg_lumen ||--o{ fact_lumen_platforms : transforms
     stg_ooni ||--o{ fact_censorship_tests : transforms
     stg_acled ||--o{ fact_conflict_events : transforms
 
+    dims_country ||--o{ fact_takedown_requests : joins
+    dims_country ||--o{ fact_lumen_platforms : joins
+    dims_country ||--o{ fact_censorship_tests : joins
     dims_country ||--o{ fact_conflict_events : joins
-    dims_event_type ||--o{ fact_conflict_events : joins
+
     dims_platform ||--o{ fact_takedown_requests : joins
     dims_platform ||--o{ fact_lumen_platforms : joins
-    dims_platform ||--o{ fact_censorship_tests : joins
+
+    dims_event_type ||--o{ fact_conflict_events : joins
+    dims_event_type ||--o{ fact_censorship_tests : joins
+
+    dims_reasons ||--o{ fact_takedown_requests : joins
+    dims_reasons ||--o{ fact_lumen_platforms : joins
+
+    dims_periods ||--o{ fact_takedown_requests : joins
+    dims_periods ||--o{ fact_lumen_platforms : joins
+    dims_periods ||--o{ fact_censorship_tests : joins
+    dims_periods ||--o{ fact_conflict_events : joins
 
     fact_takedown_requests ||--o{ civil_liberties_mart : aggregates
-    fact_conflict_events ||--o{ civil_liberties_mart : aggregates
     fact_lumen_platforms ||--o{ civil_liberties_mart : aggregates
     fact_censorship_tests ||--o{ civil_liberties_mart : aggregates
+    fact_conflict_events ||--o{ civil_liberties_mart : aggregates
 ```
 
 
