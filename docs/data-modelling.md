@@ -303,5 +303,5 @@ Entity Relationship Diagram (ERD) → showing facts, dims, marts, and joins
 
 Dataset Lineage Diagram → showing ingestion → staging → facts → mart → reporting flow
 
-📖 Please see [erd-lineage.md]
+📖 Please see [erd-lineage.md](./docs/data-modelling.md)
 
