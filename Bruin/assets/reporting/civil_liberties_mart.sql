@@ -3,7 +3,6 @@ name: mart.civil_liberties
 type: duckdb.sql
 connection: duckdb-mart
 
-# Environment overrides - BigQuery for staging and prod
 environments:
   staging:
     type: bq.sql
@@ -12,115 +11,106 @@ environments:
     type: bq.sql
     connection: bigquery-default
 
-description: Unified mart combining censorship tests, conflict events, takedown requests, and Lumen platform requests for civil liberties analysis
+description: Mart combining takedown requests, censorship tests, and conflict events for civil liberties analysis
 owner: civil-liberties-pipeline
 
 materialization:
-  type: table
-  strategy: create+replace
+    type: table
+    strategy: create+replace
 
 depends:
-  - fact.censorship_tests
-  - fact.conflict_events
-  - fact.takedown_requests
-  - fact.lumen_platforms
-  - dims.country
-  - dims.platform
-  - dims.event_type
+    - fact.takedown_requests
+    - fact.lumen_platforms
+    - fact.censorship_tests
+    - fact.conflict_events
+    - dims.country
+    - dims.platform
+    - dims.event_type
+    - dims.reasons
+    - dims.periods
 
 columns:
-  - name: country
-    type: STRING
-    description: Standardized country name
-    checks:
-      - name: not_null
-
-  - name: censorship_tests
-    type: INTEGER
-    description: Number of censorship measurements
-
-  - name: blocked_pct
-    type: FLOAT
-    description: Percentage of blocked/anomaly tests
-    checks:
-      - name: between_0_and_1
-
-  - name: conflict_events
-    type: INTEGER
-    description: Number of conflict events
-    checks:
-      - name: non_negative
-
-  - name: fatalities
-    type: INTEGER
-    description: Fatalities reported in conflict events
-    checks:
-      - name: non_negative
-
-  - name: takedown_requests
-    type: INTEGER
-    description: Number of takedown requests (Google Transparency)
-    checks:
-      - name: non_negative
-
-  - name: items_requested
-    type: INTEGER
-    description: Number of items requested for removal
-    checks:
-      - name: non_negative
-
-  - name: lumen_requests
-    type: INTEGER
-    description: Number of Lumen requests (platform + legal)
-    checks:
-      - name: non_negative
-
-  - name: platforms_targeted
-    type: STRING
-    description: Platforms targeted in Lumen requests
+    - name: country
+      type: STRING
+      description: Standardized country name
+    - name: period
+      type: STRING
+      description: Reporting period (YYYY-MM)
+    - name: half_year_label
+      type: STRING
+      description: Human-readable half-year label
+    - name: platform
+      type: STRING
+      description: Platform targeted in requests
+    - name: reason
+      type: STRING
+      description: Reason for takedown request
+    - name: takedown_requests
+      type: INTEGER
+      description: Number of takedown requests (Google Transparency)
+    - name: lumen_requests
+      type: INTEGER
+      description: Number of takedown requests (Lumen)
+    - name: censorship_tests
+      type: INTEGER
+      description: Number of censorship measurements (OONI)
+    - name: conflict_events
+      type: INTEGER
+      description: Number of conflict events (ACLED)
+    - name: fatalities
+      type: INTEGER
+      description: Fatalities from conflict events
+    - name: extracted_at
+      type: TIMESTAMP
+      description: Pipeline extraction timestamp
 @bruin */
 
-WITH censorship AS (
-    SELECT country,
-           COUNT(*) AS censorship_tests,
-           SUM(CASE WHEN status IN ('blocked','anomaly') THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS blocked_pct
-    FROM fact.censorship_tests
-    GROUP BY country
-),
-conflict AS (
-    SELECT country,
-           SUM(event_count) AS conflict_events,
-           SUM(fatalities) AS fatalities
-    FROM fact.conflict_events
-    GROUP BY country
-),
-takedowns AS (
-    SELECT country,
+WITH takedowns AS (
+    SELECT country, period, half_year_label, product AS platform, reason,
            SUM(request_count) AS takedown_requests,
-           SUM(item_count) AS items_requested
+           SUM(item_count) AS items_requested,
+           MAX(extracted_at) AS extracted_at
     FROM fact.takedown_requests
-    GROUP BY country
+    GROUP BY country, period, half_year_label, product, reason
 ),
 lumen AS (
-    SELECT country,
-           COUNT(*) AS lumen_requests,
-           ARRAY_TO_STRING(ARRAY_AGG(DISTINCT platform_id), ', ') AS platforms_targeted
+    SELECT country, period, half_year_label, platform_id AS platform,
+           reason, COUNT(request_id) AS lumen_requests,
+           MAX(extracted_at) AS extracted_at
     FROM fact.lumen_platforms
-    GROUP BY country
+    GROUP BY country, period, half_year_label, platform_id, reason
+),
+ooni AS (
+    SELECT country, period, half_year_label,
+           COUNT(measurement_id) AS censorship_tests,
+           MAX(extracted_at) AS extracted_at
+    FROM fact.censorship_tests
+    GROUP BY country, period, half_year_label
+),
+conflict AS (
+    SELECT country, period, half_year_label,
+           SUM(event_count) AS conflict_events,
+           SUM(fatalities) AS fatalities,
+           MAX(extracted_at) AS extracted_at
+    FROM fact.conflict_events
+    GROUP BY country, period, half_year_label
 )
-
 SELECT
-    c.country,
-    ce.censorship_tests,
-    ce.blocked_pct,
-    cf.conflict_events,
-    cf.fatalities,
-    td.takedown_requests,
-    td.items_requested,
-    lu.lumen_requests,
-    lu.platforms_targeted
-FROM dims.country c
-LEFT JOIN censorship ce ON c.country = ce.country
-LEFT JOIN conflict cf ON c.country = cf.country
-LEFT JOIN takedowns td ON c.country = td.country
-LEFT JOIN lumen lu ON c.country = lu.country;
+    COALESCE(t.country, l.country, o.country, c.country) AS country,
+    COALESCE(t.period, l.period, o.period, c.period) AS period,
+    COALESCE(t.half_year_label, l.half_year_label, o.half_year_label, c.half_year_label) AS half_year_label,
+    COALESCE(t.platform, l.platform) AS platform,
+    COALESCE(t.reason, l.reason) AS reason,
+    t.takedown_requests,
+    l.lumen_requests,
+    o.censorship_tests,
+    c.conflict_events,
+    c.fatalities,
+    GREATEST(t.extracted_at, l.extracted_at, o.extracted_at, c.extracted_at) AS extracted_at
+FROM takedowns t
+FULL OUTER JOIN lumen l
+  ON t.country = l.country AND t.period = l.period
+FULL OUTER JOIN ooni o
+  ON COALESCE(t.country, l.country) = o.country AND COALESCE(t.period, l.period) = o.period
+FULL OUTER JOIN conflict c
+  ON COALESCE(t.country, l.country, o.country) = c.country AND COALESCE(t.period, l.period, o.period) = c.period;
