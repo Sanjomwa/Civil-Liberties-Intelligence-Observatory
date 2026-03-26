@@ -1,23 +1,42 @@
 """@bruin
+name: raw.google_transparency_detailed
+type: python
+image: python:3.11
+connection: duckdb-parquet
+description: Ingest Google Transparency detailed removal requests CSV into raw table and export as Parquet
 
-description: this is a python asset
+materialization:
+  type: table
+  strategy: create+replace   # overwrite instead of append
 
+columns:
+  - name: country_region
+    type: STRING
+    description: Country or region issuing request
+  - name: period_ending
+    type: STRING
+    description: Period ending date
+  - name: product
+    type: STRING
+    description: Google product targeted
+  - name: reason
+    type: STRING
+    description: Reason for takedown
+  - name: total
+    type: INTEGER
+    description: Total requests
+  - name: extracted_at
+    type: TIMESTAMP
+    description: Pipeline extraction timestamp
 @bruin"""
-
-# @bruin
-# name: raw.google_transparency_detailed
-# type: python
-# connection: duckdb-google
-# description: Ingest Google Transparency detailed removal requests CSV into raw table and export as Parquet
-# owner: civil-liberties-pipeline
-# @bruin
 
 import duckdb
 import os
+import pandas as pd
+from datetime import datetime
 
 
-def ingest_google_transparency_detailed():
-    # Explicit file path for DuckDB database (persistent)
+def materialize():
     db_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/civil_liberties_dev.db"
     conn = duckdb.connect(db_path)
 
@@ -27,10 +46,7 @@ def ingest_google_transparency_detailed():
     parquet_out = os.path.join(
         base_path, "google_transparency_detailed.parquet")
 
-    conn.execute("CREATE SCHEMA IF NOT EXISTS dev_raw;")
-
-    conn.execute("""
-        CREATE OR REPLACE TABLE dev_raw.google_transparency_detailed AS
+    df = conn.execute("""
         SELECT 
             "Country/Region" AS country_region,
             "Period Ending" AS period_ending,
@@ -39,15 +55,10 @@ def ingest_google_transparency_detailed():
             Total,
             CURRENT_TIMESTAMP AS extracted_at
         FROM read_csv_auto(?)
-    """, [detailed_csv])
+    """, [detailed_csv]).df()
 
-    # Export to Parquet for durability
-    conn.execute(
-        f"COPY dev_raw.google_transparency_detailed TO '{parquet_out}' (FORMAT PARQUET)")
+    # Save to Parquet
+    df.to_parquet(parquet_out, index=False)
 
-    print("✅ Created dev_raw.google_transparency_detailed and exported to", parquet_out)
-    conn.close()
-
-
-if __name__ == "__main__":
-    ingest_google_transparency_detailed()
+    print(f"✅ Ingested {len(df)} rows into google_transparency_detailed")
+    return df

@@ -1,23 +1,45 @@
 """@bruin
+name: raw.google_transparency_requests
+type: python
+image: python:3.11
+connection: duckdb-parquet
+description: Ingest Google Transparency requests CSV into raw table and export as Parquet
 
-description: this is a python asset
+materialization:
+  type: table
+  strategy: create+replace   # overwrite instead of append
 
+columns:
+  - name: country
+    type: STRING
+    description: Country issuing request
+  - name: product
+    type: STRING
+    description: Google product targeted
+  - name: reason
+    type: STRING
+    description: Reason for takedown
+  - name: time_period
+    type: STRING
+    description: Reporting period
+  - name: number_of_requests
+    type: INTEGER
+    description: Number of requests
+  - name: items_requested_removal
+    type: INTEGER
+    description: Items requested for removal
+  - name: extracted_at
+    type: TIMESTAMP
+    description: Pipeline extraction timestamp
 @bruin"""
-
-# @bruin
-# name: raw.google_transparency_requests
-# type: python
-# connection: duckdb-google
-# description: Ingest Google Transparency requests CSV into raw table and export as Parquet
-# owner: civil-liberties-pipeline
-# @bruin
 
 import duckdb
 import os
+import pandas as pd
+from datetime import datetime
 
 
-def ingest_google_transparency_requests():
-    # Explicit file path for DuckDB database (persistent)
+def materialize():
     db_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/civil_liberties_dev.db"
     conn = duckdb.connect(db_path)
 
@@ -27,10 +49,7 @@ def ingest_google_transparency_requests():
     parquet_out = os.path.join(
         base_path, "google_transparency_requests.parquet")
 
-    conn.execute("CREATE SCHEMA IF NOT EXISTS dev_raw;")
-
-    conn.execute("""
-        CREATE OR REPLACE TABLE dev_raw.google_transparency_requests AS
+    df = conn.execute("""
         SELECT 
             country,
             product,
@@ -40,15 +59,10 @@ def ingest_google_transparency_requests():
             items_requested_removal,
             CURRENT_TIMESTAMP AS extracted_at
         FROM read_csv_auto(?)
-    """, [requests_csv])
+    """, [requests_csv]).df()
 
-    # Export to Parquet for durability
-    conn.execute(
-        f"COPY dev_raw.google_transparency_requests TO '{parquet_out}' (FORMAT PARQUET)")
+    # Save to Parquet
+    df.to_parquet(parquet_out, index=False)
 
-    print("✅ Created dev_raw.google_transparency_requests and exported to", parquet_out)
-    conn.close()
-
-
-if __name__ == "__main__":
-    ingest_google_transparency_requests()
+    print(f"✅ Ingested {len(df)} rows into google_transparency_requests")
+    return df
