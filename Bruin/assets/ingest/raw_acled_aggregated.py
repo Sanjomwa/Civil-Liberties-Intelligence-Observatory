@@ -1,76 +1,56 @@
 """@bruin
-name: raw.acled_aggregated
+name: raw.acled_conflict_events
 type: python
 image: python:3.11
-connection: duckdb-default
-description: |
-  Ingests ACLED aggregated conflict data (Africa).
-  Downloads aggregated CSV file from ACLED portal.
-  Returns a Pandas DataFrame for Bruin to append into DuckDB.
+connection: duckdb-parquet
+description: Ingest ACLED aggregated conflict events CSV into raw table and export as Parquet
+owner: civil-liberties-pipeline
 
 materialization:
   type: table
-  strategy: append
+  strategy: create+replace
 
 columns:
+  - name: event_id
+    type: STRING
+  - name: event_date
+    type: DATE
   - name: country
-    type: VARCHAR
-    description: Country where the events occurred
-  - name: admin1
-    type: VARCHAR
-    description: First-level administrative division
+    type: STRING
   - name: event_type
-    type: VARCHAR
-    description: Type of event (e.g. battles, protests)
+    type: STRING
   - name: fatalities
     type: INTEGER
-    description: Number of reported fatalities
-  - name: event_count
-    type: INTEGER
-    description: Number of events in the aggregation
-  - name: year
-    type: INTEGER
-    description: Year of the aggregated data
-  - name: month
-    type: INTEGER
-    description: Month of the aggregated data
   - name: extracted_at
     type: TIMESTAMP
-    description: Timestamp when the data was ingested
 @bruin"""
 
-import duckdb
+import os
 import pandas as pd
-import requests
-import io
 from datetime import datetime
 
 
 def materialize():
-    # ACLED aggregated Africa dataset URL
-    url = "https://acleddata.com/aggregated/aggregated-data-africa.csv"
-    print(f"Downloading {url}")
+    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/acled/"
+    csv_file = os.path.join(
+        base_path, "Africa_aggregated_data_up_to_week_of-2026-03-14.csv")
+    parquet_out = os.path.join(base_path, "acled_conflict_events.parquet")
 
-    response = requests.get(url, timeout=300)
-    response.raise_for_status()
+    # Read CSV into Pandas
+    df = pd.read_csv(csv_file)
 
-    df = pd.read_csv(io.BytesIO(response.content))
     # Normalize column names
-    df.columns = df.columns.str.lower().str.replace(" ", "_")
+    df = df.rename(columns={
+        "EVENT_ID_CNTY": "event_id",
+        "EVENT_DATE": "event_date",
+        "COUNTRY": "country",
+        "EVENT_TYPE": "event_type",
+        "FATALITIES": "fatalities"
+    })
+
     df["extracted_at"] = datetime.now()
 
-    # Filter for 2024–2026
-    df = df[df["year"].between(2024, 2026)]
+    df.to_parquet(parquet_out, index=False)
 
-    # Save to Parquet
-    df.to_parquet("./data/acled/acled.parquet", index=False)
-
-    print(f"Rows ingested: {len(df)}")
+    print(f"✅ Ingested {len(df)} ACLED conflict events")
     return df
-
-
-con = duckdb.connect("duckdb-default.db")
-con.execute("""
-CREATE TABLE IF NOT EXISTS acled_aggregated AS 
-SELECT * FROM parquet_scan('./data/acled/acled.parquet')
-""")
