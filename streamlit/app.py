@@ -93,3 +93,49 @@ elif choice == "Heatmap":
         st.info("Kenya heatmap will show conflict events with lat/lon inside Kenya’s boundary.")
     else:
         st.info("Global heatmap will show conflict events worldwide.")
+elif choice == "Platform Analysis":
+    st.subheader("Takedown Requests by Platform")
+
+    # Kenya data
+    kenya_df = df[df['country'].str.upper() == 'KENYA']
+    fig_kenya = px.bar(
+        kenya_df,
+        x="platform",
+        y="takedown_requests",
+        color="reason",
+        title="Kenya Takedown Requests by Platform"
+    )
+
+    # Global data
+    global_df = df.groupby("platform").agg({"takedown_requests":"sum"}).reset_index()
+    fig_global = px.bar(
+        global_df,
+        x="platform",
+        y="takedown_requests",
+        title="Global Takedown Requests by Platform"
+    )
+
+    # Side-by-side comparison
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(fig_kenya, use_container_width=True)
+    with col2:
+        st.plotly_chart(fig_global, use_container_width=True)
+
+    # Combined comparison chart
+    st.subheader("Kenya vs Global Comparison")
+    combined = pd.DataFrame({
+        "Platform": global_df["platform"],
+        "Global Requests": global_df["takedown_requests"],
+        "Kenya Requests": kenya_df.groupby("platform")["takedown_requests"].sum().reindex(global_df["platform"]).fillna(0).values
+    })
+
+    fig_compare = px.bar(
+        combined.melt(id_vars="Platform", value_vars=["Global Requests", "Kenya Requests"]),
+        x="Platform",
+        y="value",
+        color="variable",
+        barmode="group",
+        title="Kenya vs Global Takedown Requests"
+    )
+    st.plotly_chart(fig_compare, use_container_width=True)
