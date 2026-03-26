@@ -1,7 +1,7 @@
 /* @bruin
 name: dims.reasons
 type: duckdb.sql          # ← used only in 'dev' environment
-connection: duckdb-mart
+connection: duckdb-parquet
 
 environments:
   staging:
