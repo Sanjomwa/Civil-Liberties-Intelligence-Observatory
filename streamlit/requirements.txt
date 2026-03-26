@@ -1,0 +1,17 @@
+# Core dashboard framework
+streamlit==1.32.0
+
+# Data handling
+pandas==2.2.1
+duckdb==0.10.0
+
+# Visualization
+plotly==5.19.0
+matplotlib==3.8.3
+
+# Geospatial (for Kenya heatmap)
+geopandas==0.14.3
+shapely==2.0.3
+
+# Optional: map rendering
+pydeck==0.9.1
