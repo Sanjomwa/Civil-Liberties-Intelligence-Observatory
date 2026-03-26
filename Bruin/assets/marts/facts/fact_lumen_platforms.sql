@@ -1,7 +1,7 @@
 /* @bruin
 name: fact.lumen_platforms
 type: duckdb.sql          # ← used only in 'dev' environment
-connection: duckdb-mart
+connection: duckdb-parquet
 
 environments:
   staging:
@@ -61,6 +61,12 @@ columns:
     - name: reason
       type: STRING
       description: Reason for takedown
+    - name: request_count
+      type: INTEGER
+      description: Number of requests (mock = 1)
+    - name: item_count
+      type: INTEGER
+      description: Number of items requested (mock = 1)
     - name: extracted_at
       type: TIMESTAMP
       description: Pipeline extraction timestamp
@@ -82,12 +88,14 @@ WITH joined AS (
         s.period,
         s.half_year_label,
         s.reason,
+        s.request_count,
+        s.item_count,
         s.extracted_at
     FROM stg.lumen s
     LEFT JOIN dims.platform d
-      ON LOWER(s.recipient) = LOWER(d.platform_name)
+      ON LOWER(TRIM(s.recipient)) = LOWER(TRIM(d.platform_name))
     LEFT JOIN dims.country c
-      ON LOWER(s.country) = LOWER(c.country_code)
+      ON LOWER(TRIM(s.country)) = LOWER(TRIM(c.country_code))
     LEFT JOIN dims.periods p
       ON s.period = p.period
 )
