@@ -17,7 +17,9 @@ import os
 
 
 def ingest_google_transparency_requests():
-    conn = duckdb.connect(os.getenv("DB_CONN", "civil_liberties_dev.db"))
+    # Explicit file path for DuckDB database (persistent)
+    db_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/civil_liberties_dev.db"
+    conn = duckdb.connect(db_path)
 
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google/"
     requests_csv = os.path.join(
@@ -40,7 +42,7 @@ def ingest_google_transparency_requests():
         FROM read_csv_auto(?)
     """, [requests_csv])
 
-    # Export to Parquet
+    # Export to Parquet for durability
     conn.execute(
         f"COPY dev_raw.google_transparency_requests TO '{parquet_out}' (FORMAT PARQUET)")
 
