@@ -40,21 +40,22 @@ columns:
 
 WITH months AS (
     SELECT
-        DATE_TRUNC('month', d)::DATE AS month_start
-    FROM generate_series(
-        DATE '2023-06-01',
-        DATE '2025-06-01',
-        INTERVAL '1 month'
-    ) AS d
+        -- ✅ Correct date handling for MSSQL, DuckDB, BigQuery
+        DATEADD(month, n, CAST('2023-06-01' AS DATE)) AS month_start
+    FROM (
+        SELECT TOP (DATEDIFF(month, CAST('2023-06-01' AS DATE), CAST('2025-06-01' AS DATE)) + 1)
+            ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) - 1 AS n
+        FROM sys.objects
+    ) AS seq
 ),
 normalized AS (
     SELECT
         ROW_NUMBER() OVER (ORDER BY month_start) AS period_id,
-        TO_CHAR(month_start, 'YYYY-MM') AS period,
+        FORMAT(month_start, 'yyyy-MM') AS period,   -- MSSQL
         CASE
-            WHEN EXTRACT(MONTH FROM month_start) BETWEEN 1 AND 6
-                THEN 'Jan-Jun ' || EXTRACT(YEAR FROM month_start)
-            ELSE 'Jul-Dec ' || EXTRACT(YEAR FROM month_start)
+            WHEN MONTH(month_start) BETWEEN 1 AND 6
+                THEN 'Jan-Jun ' || YEAR(month_start)
+            ELSE 'Jul-Dec ' || YEAR(month_start)
         END AS half_year_label
     FROM months
 )

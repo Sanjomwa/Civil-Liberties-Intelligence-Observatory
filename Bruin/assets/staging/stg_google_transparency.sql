@@ -19,8 +19,8 @@ materialization:
     strategy: create+replace
 
 depends:
-    - raw.google_transparency_requests
-    - raw.google_transparency_detailed
+    - ingest.google_transparency_requests
+    - ingest.google_transparency_detailed
 
 columns:
     - name: country
