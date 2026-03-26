@@ -36,16 +36,31 @@ else:
 
 # Sidebar navigation
 st.sidebar.header("📊 Dashboard Navigation")
-pages = [
-    "Profile",
+
+kenya_pages = [
+    "Kenya Profile",
     "Platform Analysis",
     "Reasons for Takedowns",
     "Conflict vs Censorship",
     "Fatalities & Risks",
-    "Leaders & Losers",
-    "Heatmap"
+    "Kenya Heatmap"
 ]
-choice = st.sidebar.radio("Select a dashboard", pages)
+
+global_pages = [
+    "Global Leaders & Losers",
+    "Global Heatmap",
+    "Kenya vs Global Overview"
+]
+
+st.sidebar.subheader("🇰🇪 Kenya Focus")
+kenya_choice = st.sidebar.radio("Select Kenya dashboard", kenya_pages)
+
+st.sidebar.subheader("🌍 Global Comparison")
+global_choice = st.sidebar.radio("Select Global dashboard", global_pages)
+
+# Decide which page to render
+choice = kenya_choice if kenya_choice else global_choice
+
 
 # Dashboard previews
 if choice == "Profile":
