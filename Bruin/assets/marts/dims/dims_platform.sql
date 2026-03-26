@@ -1,7 +1,7 @@
 /* @bruin
 name: dims.platform
 type: duckdb.sql          # ← used only in 'dev' environment
-connection: duckdb-mart
+connection: duckdb-parquet
 
 environments:
   staging:
@@ -25,7 +25,7 @@ depends:
 columns:
     - name: platform_id
       type: STRING
-      description: Normalized platform identifier
+      description: Surrogate key for platform
       primary_key: true
       checks:
         - name: not_null
