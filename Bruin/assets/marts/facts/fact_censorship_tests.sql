@@ -1,7 +1,7 @@
 /* @bruin
 name: fact.censorship_tests
 type: duckdb.sql          # ← used only in 'dev' environment
-connection: duckdb-mart
+connection: duckdb-parquet
 
 environments:
   staging:
