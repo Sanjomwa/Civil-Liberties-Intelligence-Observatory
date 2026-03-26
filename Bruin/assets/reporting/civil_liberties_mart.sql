@@ -1,7 +1,7 @@
 /* @bruin
 name: mart.civil_liberties
 type: duckdb.sql
-connection: duckdb-mart
+connection: duckdb-parquet
 
 environments:
   staging:
@@ -47,10 +47,10 @@ columns:
       description: Reason for takedown request
     - name: takedown_requests
       type: INTEGER
-      description: Number of takedown requests (Google Transparency)
+      description: Number of takedown requests (Google Transparency + Lumen)
     - name: lumen_requests
       type: INTEGER
-      description: Number of takedown requests (Lumen)
+      description: Number of takedown requests (Lumen only)
     - name: censorship_tests
       type: INTEGER
       description: Number of censorship measurements (OONI)
@@ -66,12 +66,12 @@ columns:
 @bruin */
 
 WITH takedowns AS (
-    SELECT country, period, half_year_label, product AS platform, reason,
+    SELECT country, period, half_year_label, platform, reason,
            SUM(request_count) AS takedown_requests,
            SUM(item_count) AS items_requested,
            MAX(extracted_at) AS extracted_at
     FROM fact.takedown_requests
-    GROUP BY country, period, half_year_label, product, reason
+    GROUP BY country, period, half_year_label, platform, reason
 ),
 lumen AS (
     SELECT country, period, half_year_label, platform_id AS platform,
@@ -89,7 +89,7 @@ ooni AS (
 ),
 conflict AS (
     SELECT country, period, half_year_label,
-           SUM(event_count) AS conflict_events,
+           SUM(events) AS conflict_events,
            SUM(fatalities) AS fatalities,
            MAX(extracted_at) AS extracted_at
     FROM fact.conflict_events
