@@ -1,7 +1,7 @@
 /* @bruin
 name: fact.takedown_requests
 type: duckdb.sql          # ← used only in 'dev' environment
-connection: duckdb-mart
+connection: duckdb-parquet
 
 environments:
   staging:
@@ -11,7 +11,7 @@ environments:
     type: bq.sql
     connection: bigquery-default
 
-description: Fact table for Google Transparency takedown requests
+description: Fact table for Google Transparency + Lumen takedown requests
 owner: civil-liberties-pipeline
 
 materialization:
@@ -20,6 +20,7 @@ materialization:
 
 depends:
     - stg.google_transparency
+    - stg.lumen
     - dims.country
     - dims.platform
     - dims.reasons
@@ -39,7 +40,7 @@ columns:
     - name: half_year_label
       type: STRING
       description: Human-readable half-year (e.g. Jan-Jun 2023)
-    - name: product
+    - name: platform
       type: STRING
       description: Platform targeted
     - name: reason
@@ -66,20 +67,55 @@ custom_checks:
       value: 0
 @bruin */
 
-WITH base AS (
+WITH google AS (
     SELECT
         gt.country,
-        gt.period,
-        gt.half_year_label,
-        gt.product,
+        strftime(CAST(gt.time_period AS DATE), '%Y-%m') AS period,
+        CASE
+            WHEN EXTRACT(MONTH FROM CAST(gt.time_period AS DATE)) BETWEEN 1 AND 6
+                 THEN 'Jan-Jun ' || EXTRACT(YEAR FROM CAST(gt.time_period AS DATE))
+            ELSE 'Jul-Dec ' || EXTRACT(YEAR FROM CAST(gt.time_period AS DATE))
+        END AS half_year_label,
+        gt.product AS platform,
         gt.reason,
-        gt.request_count,
-        gt.item_count,
+        gt.number_of_requests AS request_count,
+        gt.items_requested_removal AS item_count,
         gt.extracted_at
     FROM stg.google_transparency gt
-    INNER JOIN dims.country dc ON LOWER(gt.country) = LOWER(dc.country_code)
-    INNER JOIN dims.platform dp ON LOWER(gt.product) = LOWER(dp.platform_name)
-    INNER JOIN dims.reasons dr ON LOWER(gt.reason) = LOWER(dr.reason_name)
-    INNER JOIN dims.periods dpd ON gt.period = dpd.period
+    WHERE CAST(gt.time_period AS DATE) BETWEEN DATE '2023-06-01' AND DATE '2025-06-30'
+),
+lumen AS (
+    SELECT
+        l.country,
+        l.period,
+        l.half_year_label,
+        l.recipient AS platform,
+        l.reason,
+        l.request_count,
+        l.item_count,
+        l.extracted_at
+    FROM stg.lumen l
 )
-SELECT * FROM base;
+
+SELECT
+    c.country,
+    f.period,
+    f.half_year_label,
+    p.platform_name AS platform,
+    r.reason_name AS reason,
+    f.request_count,
+    f.item_count,
+    f.extracted_at
+FROM (
+    SELECT * FROM google
+    UNION ALL
+    SELECT * FROM lumen
+) f
+JOIN dims.country c
+  ON LOWER(TRIM(f.country)) = LOWER(TRIM(c.country_code))
+JOIN dims.platform p
+  ON LOWER(TRIM(f.platform)) = LOWER(TRIM(p.platform_name))
+JOIN dims.reasons r
+  ON LOWER(TRIM(f.reason)) = LOWER(TRIM(r.reason_name))
+JOIN dims.periods dp
+  ON f.period = dp.period;
