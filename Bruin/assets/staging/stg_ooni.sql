@@ -70,7 +70,7 @@ custom_checks:
       value: 0
     - name: valid_date_range
       description: Ensure measurements fall within Jun 2023–Jun 2025
-      query: "SELECT COUNT(*) FROM stg.ooni WHERE start_time < DATE '2023-06-01' OR start_time > DATE '2025-06-30'"
+      query: "SELECT COUNT(*) FROM stg.ooni WHERE CAST(start_time AS DATE) < CAST('2023-06-01' AS DATE) OR CAST(start_time AS DATE) > CAST('2025-06-30' AS DATE)"
       value: 0
 @bruin */
 
@@ -94,7 +94,7 @@ WITH raw AS (
         probe_asn,
         extracted_at
     FROM raw.ooni_raw
-    WHERE CAST(start_time AS DATE) BETWEEN DATE '2023-06-01' AND DATE '2025-06-30'
+    WHERE CAST(start_time AS DATE) BETWEEN CAST('2023-06-01' AS DATE) AND CAST('2025-06-30' AS DATE)
       AND probe_cc IS NOT NULL
 )
 

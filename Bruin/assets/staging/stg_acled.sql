@@ -68,7 +68,7 @@ columns:
 custom_checks:
     - name: valid_date_range
       description: Ensure events fall within Jun 2023–Jun 2025
-      query: "SELECT COUNT(*) FROM stg.acled WHERE DATE(year || '-' || month || '-01') < DATE '2023-06-01' OR DATE(year || '-' || month || '-01') > DATE '2025-06-30'"
+      query: "SELECT COUNT(*) FROM stg.acled WHERE DATE(year || '-' || LPAD(month,2,'0') || '-01') < DATE '2023-06-01' OR DATE(year || '-' || LPAD(month,2,'0') || '-01') > DATE '2025-06-30'"
       value: 0
 @bruin */
 
@@ -90,7 +90,8 @@ WITH raw AS (
         END AS half_year_label,
         extracted_at
     FROM raw.acled_aggregated
-    WHERE DATE(year || '-' || month || '-01') BETWEEN DATE '2023-06-01' AND DATE '2025-06-30'
+    WHERE DATE(year || '-' || LPAD(month, 2, '0') || '-01') 
+          BETWEEN DATE '2023-06-01' AND DATE '2025-06-30'
 )
 
 SELECT * FROM raw;

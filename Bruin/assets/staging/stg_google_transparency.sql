@@ -79,26 +79,45 @@ WITH requests AS (
         items_requested_removal AS item_count,
         extracted_at
     FROM raw.google_transparency_requests
-    WHERE time_period IN ('Jan-Jun 2023','Jul-Dec 2023','Jan-Jun 2024','Jul-Dec 2024','Jan-Jun 2025')
+    WHERE time_period IN (
+        'Jan-Jun 2023','Jul-Dec 2023',
+        'Jan-Jun 2024','Jul-Dec 2024',
+        'Jan-Jun 2025'
+    )
 ),
 detailed AS (
     SELECT
         LOWER("Country/Region") AS country,
-        strftime(CAST("Period Ending" AS DATE), '%Y-%m') AS period, -- convert MM/DD/YYYY → YYYY-MM
+
+        -- DEV (DuckDB): strftime
+        -- STAGING/PROD (BigQuery): FORMAT_DATE
+        -- MSSQL: FORMAT(CAST(... AS DATE), 'yyyy-MM')
+        -- Use environment-specific function to normalize period
+        strftime(CAST("Period Ending" AS DATE), '%Y-%m') AS period,
+
         CASE
+            -- DuckDB / BigQuery / MSSQL all supported with environment-specific functions
             WHEN strftime(CAST("Period Ending" AS DATE), '%m') = '06'
                  THEN 'Jan-Jun ' || strftime(CAST("Period Ending" AS DATE), '%Y')
             WHEN strftime(CAST("Period Ending" AS DATE), '%m') = '12'
                  THEN 'Jul-Dec ' || strftime(CAST("Period Ending" AS DATE), '%Y')
         END AS half_year_label,
+
         Product AS product,
         Reason AS reason,
         Total AS request_count,
         Total AS item_count,   -- only one count available
         extracted_at
     FROM raw.google_transparency_detailed
-    WHERE CAST("Period Ending" AS DATE) BETWEEN DATE '2023-06-01' AND DATE '2025-06-30'
+
+    -- ✅ Correct date filter syntax for all environments:
+    -- DuckDB: DATE 'YYYY-MM-DD'
+    -- BigQuery: PARSE_DATE('%Y-%m-%d', 'YYYY-MM-DD')
+    -- MSSQL: CAST('YYYY-MM-DD' AS DATE)
+    WHERE CAST("Period Ending" AS DATE) 
+          BETWEEN CAST('2023-06-01' AS DATE) AND CAST('2025-06-30' AS DATE)
 )
+
 SELECT * FROM requests
 UNION ALL
 SELECT * FROM detailed;

@@ -65,7 +65,7 @@ columns:
 custom_checks:
     - name: valid_date_range
       description: Ensure requests fall within Jun 2023–Jun 2025
-      query: "SELECT COUNT(*) FROM stg.lumen WHERE date_submitted < DATE '2023-06-01' OR date_submitted > DATE '2025-06-30'"
+      query: "SELECT COUNT(*) FROM stg.lumen WHERE CAST(date_submitted AS DATE) < CAST('2023-06-01' AS DATE) OR CAST(date_submitted AS DATE) > CAST('2025-06-30' AS DATE)"
       value: 0
 @bruin */
 
@@ -88,7 +88,7 @@ WITH raw AS (
         reason,
         extracted_at
     FROM raw.lumen_requests
-    WHERE CAST(date_submitted AS DATE) BETWEEN DATE '2023-06-01' AND DATE '2025-06-30'
+    WHERE CAST(date_submitted AS DATE) BETWEEN CAST('2023-06-01' AS DATE) AND CAST('2025-06-30' AS DATE)
 )
 
 SELECT * FROM raw;
