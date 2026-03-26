@@ -11,9 +11,9 @@ st.set_page_config(
 )
 
 # Title banner
-st.title("🇰🇪 Civil Liberties & Censorship Analysis in Kenya (June 2023 – June 2026)")
+st.title("🇰🇪 Civil Liberties & Censorship Analysis (June 2023 – June 2026)")
 st.markdown("""
-This dashboard explores government takedown requests, censorship tests, and conflict events in Kenya,
+Explore government takedown requests, censorship tests, and conflict events in Kenya,
 with comparisons to global leaders and laggards.
 """)
 
@@ -25,57 +25,71 @@ con.execute("ATTACH 'data/civil_liberties_mart.parquet' AS mart;")
 # Load mart data
 df = con.execute("SELECT * FROM mart.civil_liberties").df()
 
-# Default filter to Kenya
-kenya_df = df[df['country'].str.upper() == 'KENYA']
+# Sidebar toggle
+st.sidebar.header("⚙️ Settings")
+view_mode = st.sidebar.radio("Select view mode:", ["Kenya", "Global"])
+
+if view_mode == "Kenya":
+    df_display = df[df['country'].str.upper() == 'KENYA']
+else:
+    df_display = df.copy()
 
 # Sidebar navigation
 st.sidebar.header("📊 Dashboard Navigation")
-st.sidebar.markdown("Use the sidebar to explore different dashboards:")
-
 pages = [
-    "Kenya Profile",
+    "Profile",
     "Platform Analysis",
     "Reasons for Takedowns",
     "Conflict vs Censorship",
     "Fatalities & Risks",
-    "Global Leaders & Losers",
-    "Kenya Heatmap"
+    "Leaders & Losers",
+    "Heatmap"
 ]
-
 choice = st.sidebar.radio("Select a dashboard", pages)
 
-# Simple preview on landing page
-if choice == "Kenya Profile":
-    st.subheader("Quick Preview: Conflict Events in Kenya")
-    fig = px.line(kenya_df, x="period", y="conflict_events", title="Conflict Events Over Time")
+# Dashboard previews
+if choice == "Profile":
+    st.subheader(f"{view_mode} Profile")
+    fig = px.line(df_display, x="period", y="conflict_events", color="country",
+                  title=f"Conflict Events ({view_mode})")
     st.plotly_chart(fig, use_container_width=True)
 
 elif choice == "Platform Analysis":
-    st.subheader("Quick Preview: Takedown Requests by Platform (Kenya)")
-    fig = px.bar(kenya_df, x="platform", y="takedown_requests", color="reason",
-                 title="Kenya Takedown Requests by Platform & Reason")
+    st.subheader(f"Takedown Requests by Platform ({view_mode})")
+    fig = px.bar(df_display, x="platform", y="takedown_requests", color="reason",
+                 title=f"Takedown Requests by Platform ({view_mode})")
     st.plotly_chart(fig, use_container_width=True)
 
 elif choice == "Reasons for Takedowns":
-    st.subheader("Quick Preview: Reasons in Kenya")
-    fig = px.pie(kenya_df, names="reason", values="takedown_requests", title="Reasons for Takedowns in Kenya")
+    st.subheader(f"Reasons for Takedowns ({view_mode})")
+    fig = px.pie(df_display, names="reason", values="takedown_requests",
+                 title=f"Reasons for Takedowns ({view_mode})")
     st.plotly_chart(fig, use_container_width=True)
 
 elif choice == "Conflict vs Censorship":
-    st.subheader("Quick Preview: Conflict vs Censorship")
-    fig = px.line(kenya_df, x="period", y="censorship_tests", title="Censorship Tests Over Time")
+    st.subheader(f"Conflict vs Censorship ({view_mode})")
+    fig = px.line(df_display, x="period", y="censorship_tests", color="country",
+                  title=f"Censorship Tests ({view_mode})")
     st.plotly_chart(fig, use_container_width=True)
 
 elif choice == "Fatalities & Risks":
-    st.subheader("Quick Preview: Fatalities in Kenya")
-    fig = px.bar(kenya_df, x="period", y="fatalities", title="Fatalities Over Time")
+    st.subheader(f"Fatalities ({view_mode})")
+    fig = px.bar(df_display, x="period", y="fatalities", color="country",
+                 title=f"Fatalities Over Time ({view_mode})")
     st.plotly_chart(fig, use_container_width=True)
 
-elif choice == "Global Leaders & Losers":
-    st.subheader("Quick Preview: Global Rankings")
+elif choice == "Leaders & Losers":
+    st.subheader("Global Leaders & Losers")
     leaders = df.groupby("country").agg({"takedown_requests":"sum"}).reset_index().sort_values("takedown_requests", ascending=False).head(5)
+    losers = df.groupby("country").agg({"takedown_requests":"sum"}).reset_index().sort_values("takedown_requests", ascending=True).head(5)
+    st.write("Top 5 Countries (Leaders)")
     st.dataframe(leaders)
+    st.write("Bottom 5 Countries (Losers)")
+    st.dataframe(losers)
 
-elif choice == "Kenya Heatmap":
-    st.subheader("Quick Preview: Heatmap Placeholder")
-    st.info("Heatmap of conflict events in Kenya will be shown here (requires lat/lon data).")
+elif choice == "Heatmap":
+    st.subheader(f"Heatmap ({view_mode})")
+    if view_mode == "Kenya":
+        st.info("Kenya heatmap will show conflict events with lat/lon inside Kenya’s boundary.")
+    else:
+        st.info("Global heatmap will show conflict events worldwide.")
