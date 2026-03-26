@@ -1,7 +1,7 @@
 /* @bruin
 name: fact.conflict_events
 type: duckdb.sql          # ← used only in 'dev' environment
-connection: duckdb-mart
+connection: duckdb-parquet
 
 environments:
   staging:
@@ -11,7 +11,7 @@ environments:
     type: bq.sql
     connection: bigquery-default
 
-description: Fact table for ACLED conflict events
+description: Fact table for ACLED conflict events with coordinates
 owner: civil-liberties-pipeline
 
 materialization:
@@ -25,6 +25,10 @@ depends:
     - dims.periods
 
 columns:
+    - name: surrogate_id
+      type: INTEGER
+      description: Unique surrogate identifier from staging
+      primary_key: true
     - name: country
       type: STRING
       description: Standardized country name
@@ -43,7 +47,7 @@ columns:
       description: Number of fatalities
       checks:
         - name: non_negative
-    - name: event_count
+    - name: events
       type: INTEGER
       description: Number of events aggregated
       checks:
@@ -64,6 +68,12 @@ columns:
     - name: half_year_label
       type: STRING
       description: Human-readable half-year (e.g. Jan-Jun 2023)
+    - name: centroid_latitude
+      type: FLOAT
+      description: Latitude of event centroid
+    - name: centroid_longitude
+      type: FLOAT
+      description: Longitude of event centroid
     - name: extracted_at
       type: TIMESTAMP
       description: Pipeline extraction timestamp
@@ -75,21 +85,48 @@ custom_checks:
       value: 0
 @bruin */
 
+WITH base AS (
+    SELECT
+        surrogate_id,
+        country,
+        admin1,
+        event_type,
+        fatalities,
+        events,
+        CAST(week AS DATE) AS week,
+        EXTRACT(YEAR FROM week) AS year,
+        EXTRACT(MONTH FROM week) AS month,
+        strftime(week, '%Y-%m') AS period,
+        CASE
+            WHEN EXTRACT(MONTH FROM week) BETWEEN 1 AND 6
+                 THEN 'Jan-Jun ' || EXTRACT(YEAR FROM week)
+            ELSE 'Jul-Dec ' || EXTRACT(YEAR FROM week)
+        END AS half_year_label,
+        centroid_latitude,
+        centroid_longitude,
+        extracted_at
+    FROM stg.acled
+    WHERE week BETWEEN DATE '2023-06-01' AND DATE '2025-06-30'
+)
+
 SELECT
     c.country,
-    a.admin1,
+    b.admin1,
     e.event_type,
-    a.fatalities,
-    a.event_count,
-    a.year,
-    a.month,
-    a.period,
-    a.half_year_label,
-    a.extracted_at
-FROM stg.acled a
+    b.fatalities,
+    b.events,
+    b.year,
+    b.month,
+    b.period,
+    b.half_year_label,
+    b.centroid_latitude,
+    b.centroid_longitude,
+    b.extracted_at,
+    b.surrogate_id
+FROM base b
 JOIN dims.country c
-  ON LOWER(TRIM(a.country)) = LOWER(TRIM(c.country_code))
+  ON LOWER(TRIM(b.country)) = LOWER(TRIM(c.country_code))
 JOIN dims.event_type e
-  ON LOWER(TRIM(a.event_type)) = LOWER(TRIM(e.event_type))
+  ON LOWER(TRIM(b.event_type)) = LOWER(TRIM(e.event_type))
 JOIN dims.periods p
-  ON a.period = p.period;
+  ON b.period = p.period;
