@@ -2,6 +2,7 @@ import streamlit as st
 import duckdb
 import geopandas as gpd
 import plotly.express as px
+import plotly.graph_objects as go
 
 st.title("Kenya Heatmap of Conflict Events")
 
@@ -10,10 +11,10 @@ con = duckdb.connect(database=':memory:')
 con.execute("ATTACH 'data/conflict_events.parquet' AS mart;")
 df = con.execute("SELECT * FROM mart.conflict_events WHERE UPPER(country)='KENYA'").df()
 
-# Load Kenya boundary
+# Load Kenya boundary (GeoJSON or shapefile converted to GeoJSON)
 kenya_boundary = gpd.read_file("data/kenya_boundary.geojson")
 
-# Plot heatmap
+# Create density heatmap
 fig = px.density_mapbox(
     df,
     lat="latitude",
@@ -26,8 +27,16 @@ fig = px.density_mapbox(
     title="Conflict Event Heatmap in Kenya"
 )
 
-st.plotly_chart(fig, use_container_width=True)
+# Overlay Kenya boundary outline
+boundary_coords = kenya_boundary.geometry.iloc[0].exterior.coords
+lats, lons = zip(*boundary_coords)
 
-# Show Kenya boundary outline
-st.subheader("Kenya Boundary")
-st.map(kenya_boundary)
+fig.add_trace(go.Scattermapbox(
+    lat=lats,
+    lon=lons,
+    mode="lines",
+    line=dict(width=2, color="black"),
+    name="Kenya Boundary"
+))
+
+st.plotly_chart(fig, use_container_width=True)
