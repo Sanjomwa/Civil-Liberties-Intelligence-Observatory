@@ -1,7 +1,7 @@
 /* @bruin
 name: dims.periods
 type: duckdb.sql          # ← used only in 'dev' environment
-connection: duckdb-mart
+connection: duckdb-parquet
 
 environments:
   staging:
@@ -40,22 +40,18 @@ columns:
 
 WITH months AS (
     SELECT
-        -- ✅ Correct date handling for MSSQL, DuckDB, BigQuery
-        DATEADD(month, n, CAST('2023-06-01' AS DATE)) AS month_start
-    FROM (
-        SELECT TOP (DATEDIFF(month, CAST('2023-06-01' AS DATE), CAST('2025-06-01' AS DATE)) + 1)
-            ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) - 1 AS n
-        FROM sys.objects
-    ) AS seq
+        -- Generate sequence of months between June 2023 and June 2025
+        (DATE '2023-06-01' + INTERVAL n MONTH) AS month_start
+    FROM range(0, (DATE_DIFF('month', DATE '2023-06-01', DATE '2025-06-01') + 1)) AS t(n)
 ),
 normalized AS (
     SELECT
         ROW_NUMBER() OVER (ORDER BY month_start) AS period_id,
-        FORMAT(month_start, 'yyyy-MM') AS period,   -- MSSQL
+        strftime(month_start, '%Y-%m') AS period,   -- DuckDB/BigQuery compatible
         CASE
-            WHEN MONTH(month_start) BETWEEN 1 AND 6
-                THEN 'Jan-Jun ' || YEAR(month_start)
-            ELSE 'Jul-Dec ' || YEAR(month_start)
+            WHEN EXTRACT(MONTH FROM month_start) BETWEEN 1 AND 6
+                THEN 'Jan-Jun ' || EXTRACT(YEAR FROM month_start)
+            ELSE 'Jul-Dec ' || EXTRACT(YEAR FROM month_start)
         END AS half_year_label
     FROM months
 )
