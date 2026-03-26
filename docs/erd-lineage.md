@@ -41,6 +41,7 @@ erDiagram
 
 🔄 Dataset Lineage Diagram
 
+```mermaid
 flowchart TD
     A1[Google Transparency Raw] --> B1[stg_google_transparency]
     A2[Lumen Generated Data] --> B2[stg_lumen]
