@@ -1,5 +1,5 @@
 # Civil Liberties & Censorship Analysis in Kenya with Bruin
-## Analyzing Government Takedown Requests & Civil Liberties Risks (June 2023–June 2026)
+## Analyzing Government Takedown Requests & Civil Liberties Risks (June 2023–June 2025)
 
 ## 🎯 Project Pitch and Problem Statement
 
