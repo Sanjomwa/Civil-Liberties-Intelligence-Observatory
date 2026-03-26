@@ -1,7 +1,7 @@
 /* @bruin
 name: dims.country
 type: duckdb.sql          # ← used only in 'dev' environment
-connection: duckdb-mart
+connection: duckdb-parquet
 
 environments:
   staging:
@@ -11,7 +11,7 @@ environments:
     type: bq.sql
     connection: bigquery-default
 
-description: Dimension table for standardized country names
+description: Dimension table for standardized country codes and names
 owner: civil-liberties-pipeline
 
 materialization:
@@ -34,7 +34,7 @@ columns:
         - name: unique
     - name: country_code
       type: STRING
-      description: ISO-style country code
+      description: ISO-style country code (uppercased)
       checks:
         - name: not_null
     - name: country_name
@@ -77,6 +77,7 @@ normalized AS (
     SELECT
         ROW_NUMBER() OVER (ORDER BY country_code) AS country_id,
         country_code,
+        -- For now, use INITCAP for readability; later we can map to ISO names if needed
         INITCAP(country_code) AS country_name
     FROM unioned
 )
