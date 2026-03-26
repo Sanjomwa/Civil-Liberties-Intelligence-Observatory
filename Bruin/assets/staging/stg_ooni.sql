@@ -19,7 +19,7 @@ materialization:
     strategy: create+replace
 
 depends:
-    - raw.ooni_raw
+    - raw.ooni_conflict_measurements
 
 columns:
     - name: measurement_id
@@ -93,7 +93,7 @@ WITH raw AS (
         status,
         probe_asn,
         extracted_at
-    FROM raw.ooni_raw
+    FROM dev_raw.ooni_raw
     WHERE CAST(start_time AS DATE) BETWEEN CAST('2023-06-01' AS DATE) AND CAST('2025-06-30' AS DATE)
       AND probe_cc IS NOT NULL
 )

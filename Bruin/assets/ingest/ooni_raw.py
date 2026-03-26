@@ -1,41 +1,44 @@
 """@bruin
-name: raw.ooni_raw
+name: raw.ooni_conflict_measurements
 type: python
 image: python:3.11
-connection: duckdb-default
+connection: duckdb-parquet
 description: |
   Ingests OONI censorship measurement data from the public OONI S3 bucket.
-  Syncs Kenya-specific JSONL files (2024–2026) and converts them to Parquet.
-  Returns a Pandas DataFrame for Bruin to append into DuckDB.
+  Syncs Kenya-specific JSONL files (June 2023–June 2025) and converts them to Parquet.
+  Returns a Pandas DataFrame for Bruin to create/replace into DuckDB.
 
 materialization:
   type: table
-  strategy: append
+  strategy: create+replace
+
+packages:
+  - pandas
 
 columns:
   - name: measurement_id
-    type: VARCHAR
+    type: STRING
     description: Unique OONI measurement ID
   - name: country
-    type: VARCHAR
+    type: STRING
     description: Country code (ISO two-letter)
   - name: asn
     type: INTEGER
     description: Autonomous System Number (network identifier)
   - name: test_name
-    type: VARCHAR
+    type: STRING
     description: OONI Probe test type (e.g. web_connectivity, whatsapp)
   - name: input
-    type: VARCHAR
+    type: STRING
     description: Domain or URL tested
   - name: start_time
     type: TIMESTAMP
     description: Measurement start time (UTC)
   - name: status
-    type: VARCHAR
+    type: STRING
     description: Result status (ok, anomaly, confirmed, failure)
   - name: probe_cc
-    type: VARCHAR
+    type: STRING
     description: Country code of probe
   - name: probe_asn
     type: INTEGER
@@ -45,7 +48,6 @@ columns:
     description: Timestamp when ingested
 @bruin"""
 
-import duckdb
 import gzip
 import json
 import glob
@@ -55,37 +57,37 @@ from datetime import datetime
 
 
 def materialize():
-    # Step 1: Sync Kenya data from OONI S3 (2024–2026 only)
-    # This command is incremental: only new files are downloaded
+    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/ooni"
+    parquet_out = f"{base_path}/ooni_measurements.parquet"
+
+    # Step 1: Sync Kenya data from OONI S3
     sync_cmd = [
         "aws", "s3", "--no-sign-request", "sync",
-        "s3://ooni-data-eu-fra/raw/", "./data/ooni",
+        "s3://ooni-data-eu-fra/raw/", base_path,
         "--exclude", "*", "--include", "*/KE/*.jsonl.gz"
     ]
     subprocess.run(sync_cmd, check=True)
 
-    # Step 2: Read all JSONL files
-    files = glob.glob("./data/ooni/**/*.jsonl.gz", recursive=True)
+    # Step 2: Read JSONL files
+    files = glob.glob(f"{base_path}/**/*.jsonl.gz", recursive=True)
     rows = []
     for file in files:
-        # Filter by year range (2024–2026) based on filename
-        if any(year in file for year in ["2024", "2025", "2026"]):
-            with gzip.open(file, "rt") as f:
-                for line in f:
-                    rows.append(json.loads(line))
+        with gzip.open(file, "rt") as f:
+            for line in f:
+                record = json.loads(line)
+                # Parse start_time and filter by June 2023 – June 2025
+                try:
+                    ts = pd.to_datetime(record.get("start_time"))
+                    if ts >= pd.Timestamp("2023-06-01") and ts <= pd.Timestamp("2025-06-30"):
+                        rows.append(record)
+                except Exception:
+                    continue
 
     df = pd.DataFrame(rows)
     df["extracted_at"] = datetime.now()
 
-    # Step 3: Save to Parquet (schema preserved)
-    df.to_parquet("./data/ooni/ooni.parquet", index=False)
+    # Step 3: Save to Parquet
+    df.to_parquet(parquet_out, index=False)
 
-    print(f"OONI rows ingested: {len(df)}")
+    print(f"✅ OONI rows ingested: {len(df)}")
     return df
-
-
-con = duckdb.connect("duckdb-default.db")
-con.execute("""
-CREATE TABLE IF NOT EXISTS ooni_raw AS 
-SELECT * FROM parquet_scan('./data/ooni/ooni.parquet')
-""")
