@@ -1,7 +1,7 @@
 /* @bruin
 name: dims.event_type
 type: duckdb.sql          # ← used only in 'dev' environment
-connection: duckdb-mart
+connection: duckdb-parquet
 
 environments:
   staging:
@@ -41,6 +41,10 @@ WITH acled_event_types AS (
     SELECT DISTINCT LOWER(TRIM(event_type)) AS event_type
     FROM stg.acled
     WHERE event_type IS NOT NULL
+    UNION
+    SELECT DISTINCT LOWER(TRIM(sub_event_type)) AS event_type
+    FROM stg.acled
+    WHERE sub_event_type IS NOT NULL
 ),
 ooni_event_types AS (
     SELECT DISTINCT LOWER(TRIM(test_name)) AS event_type
