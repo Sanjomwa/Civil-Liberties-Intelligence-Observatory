@@ -1,7 +1,7 @@
 /* @bruin
 name: stg.google_transparency
-type: duckdb.sql          # ← used only in 'dev' environment
-connection: duckdb-google
+type: duckdb.sql
+connection: duckdb-parquet
 
 environments:
   staging:
@@ -25,52 +25,38 @@ depends:
 columns:
     - name: country
       type: STRING
-      description: Country issuing request
-      checks:
-          - name: not_null
+      checks: [{ name: not_null }]
     - name: period
       type: STRING
-      description: Reporting period (YYYY-MM)
-      checks:
-          - name: not_null
+      checks: [{ name: not_null }]
     - name: half_year_label
       type: STRING
-      description: Human-readable half-year (e.g. Jan-Jun 2023)
     - name: product
       type: STRING
-      description: Platform targeted
     - name: reason
       type: STRING
-      description: Legal or policy grounds
     - name: request_count
       type: INTEGER
-      description: Number of requests
-      checks:
-          - name: not_null
+      checks: [{ name: not_null }]
     - name: item_count
       type: INTEGER
-      description: Number of items requested
     - name: extracted_at
       type: TIMESTAMP
-      description: Pipeline extraction timestamp
 
 custom_checks:
     - name: non_negative_counts
-      description: Ensure request_count and item_count are non-negative
-      query: "SELECT COUNT(*) FROM stg.google_transparency WHERE request_count < 0 OR item_count < 0"
+      query: "SELECT COUNT(*) FROM {{ this }} WHERE request_count < 0 OR item_count < 0"
       value: 0
 @bruin */
 
 WITH requests AS (
     SELECT
         LOWER(country) AS country,
-        -- normalize textual time_period into YYYY-MM
+        -- Extract year and assign half-year dynamically
+        regexp_extract(time_period, '([0-9]{4})', 1) ||
         CASE
-            WHEN time_period = 'Jan-Jun 2023' THEN '2023-06'
-            WHEN time_period = 'Jul-Dec 2023' THEN '2023-12'
-            WHEN time_period = 'Jan-Jun 2024' THEN '2024-06'
-            WHEN time_period = 'Jul-Dec 2024' THEN '2024-12'
-            WHEN time_period = 'Jan-Jun 2025' THEN '2025-06'
+            WHEN LOWER(time_period) LIKE 'january%' THEN '-06'
+            WHEN LOWER(time_period) LIKE 'july%'    THEN '-12'
         END AS period,
         time_period AS half_year_label,
         product,
@@ -78,44 +64,26 @@ WITH requests AS (
         number_of_requests AS request_count,
         items_requested_removal AS item_count,
         extracted_at
-    FROM raw.google_transparency_requests
-    WHERE time_period IN (
-        'Jan-Jun 2023','Jul-Dec 2023',
-        'Jan-Jun 2024','Jul-Dec 2024',
-        'Jan-Jun 2025'
-    )
+    FROM parquet_scan('/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google/google_transparency_requests.parquet')
 ),
 detailed AS (
     SELECT
-        LOWER("Country/Region") AS country,
-
-        -- DEV (DuckDB): strftime
-        -- STAGING/PROD (BigQuery): FORMAT_DATE
-        -- MSSQL: FORMAT(CAST(... AS DATE), 'yyyy-MM')
-        -- Use environment-specific function to normalize period
-        strftime(CAST("Period Ending" AS DATE), '%Y-%m') AS period,
-
+        LOWER(country_region) AS country,
+        -- Parse slash-delimited dates like "6/30/2011"
+        strftime(try_cast(period_ending AS TIMESTAMP), '%Y-%m') AS period,
         CASE
-            -- DuckDB / BigQuery / MSSQL all supported with environment-specific functions
-            WHEN strftime(CAST("Period Ending" AS DATE), '%m') = '06'
-                 THEN 'Jan-Jun ' || strftime(CAST("Period Ending" AS DATE), '%Y')
-            WHEN strftime(CAST("Period Ending" AS DATE), '%m') = '12'
-                 THEN 'Jul-Dec ' || strftime(CAST("Period Ending" AS DATE), '%Y')
+            WHEN strftime(try_cast(period_ending AS TIMESTAMP), '%m') = '06'
+                 THEN 'Jan-Jun ' || strftime(try_cast(period_ending AS TIMESTAMP), '%Y')
+            WHEN strftime(try_cast(period_ending AS TIMESTAMP), '%m') = '12'
+                 THEN 'Jul-Dec ' || strftime(try_cast(period_ending AS TIMESTAMP), '%Y')
         END AS half_year_label,
-
-        Product AS product,
-        Reason AS reason,
-        Total AS request_count,
-        Total AS item_count,   -- only one count available
+        product,
+        reason,
+        total AS request_count,
+        total AS item_count,
         extracted_at
-    FROM raw.google_transparency_detailed
-
-    -- ✅ Correct date filter syntax for all environments:
-    -- DuckDB: DATE 'YYYY-MM-DD'
-    -- BigQuery: PARSE_DATE('%Y-%m-%d', 'YYYY-MM-DD')
-    -- MSSQL: CAST('YYYY-MM-DD' AS DATE)
-    WHERE CAST("Period Ending" AS DATE) 
-          BETWEEN CAST('2023-06-01' AS DATE) AND CAST('2025-06-30' AS DATE)
+    FROM parquet_scan('/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google/google_transparency_detailed.parquet')
+    WHERE try_cast(period_ending AS DATE) BETWEEN DATE '2011-06-30' AND DATE '2025-06-30'
 )
 
 SELECT * FROM requests
