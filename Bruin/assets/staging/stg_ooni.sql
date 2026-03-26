@@ -77,7 +77,7 @@ custom_checks:
 WITH raw AS (
     SELECT
         measurement_id,
-        probe_cc AS country,
+        country,
         test_name,
         input,
         CAST(start_time AS TIMESTAMP) AS start_time,
@@ -87,15 +87,14 @@ WITH raw AS (
         CASE
             WHEN strftime(CAST(start_time AS DATE), '%m') IN ('01','02','03','04','05','06')
                  THEN 'Jan-Jun ' || strftime(CAST(start_time AS DATE), '%Y')
-            WHEN strftime(CAST(start_time AS DATE), '%m') IN ('07','08','09','10','11','12')
-                 THEN 'Jul-Dec ' || strftime(CAST(start_time AS DATE), '%Y')
+            ELSE 'Jul-Dec ' || strftime(CAST(start_time AS DATE), '%Y')
         END AS half_year_label,
         status,
         probe_asn,
         extracted_at
-    FROM dev_raw.ooni_raw
+    FROM dev_raw.ooni_conflict_measurements
     WHERE CAST(start_time AS DATE) BETWEEN CAST('2023-06-01' AS DATE) AND CAST('2025-06-30' AS DATE)
-      AND probe_cc IS NOT NULL
+      AND country IS NOT NULL
 )
 
 SELECT * FROM raw;
