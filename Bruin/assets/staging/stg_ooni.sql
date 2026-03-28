@@ -1,7 +1,7 @@
 /* @bruin
 name: stg.ooni
 type: duckdb.sql          # ← used only in 'dev' environment
-connection: duckdb-ooni
+connection: duckdb-parquet
 
 environments:
   staging:
