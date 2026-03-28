@@ -5,7 +5,7 @@ __pycache__/
 
 # data files
 /workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data
-/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data
+/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev
 
 # C extensions
 *.so
