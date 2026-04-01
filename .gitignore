@@ -9,6 +9,7 @@ __pycache__/
 
 # Ignore database files
 *.db
+*.parquet
 
 # C extensions
 *.so
