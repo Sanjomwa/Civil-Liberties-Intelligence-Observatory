@@ -5,7 +5,7 @@ __pycache__/
 
 # data files
 /data
-
+/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data
 
 # Ignore database files
 *.db
