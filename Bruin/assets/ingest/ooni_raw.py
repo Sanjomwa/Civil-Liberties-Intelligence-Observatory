@@ -56,63 +56,122 @@ from datetime import datetime
 from pathlib import Path
 
 
-# Bruin injects a context object with start_date and end_date
-
-
-def materialize(context=None):
+def materialize():
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/ooni"
     parquet_out = f"{base_path}/ooni_measurements.parquet"
 
     Path(base_path).mkdir(parents=True, exist_ok=True)
 
-    # Use Bruin context dates if provided, else default to project range
-    since = context.start_date.strftime(
-        "%Y-%m-%d") if context and context.start_date else "2023-06-01"
-    until = context.end_date.strftime(
-        "%Y-%m-%d") if context and context.end_date else "2025-06-30"
+    # ==================== STEP 1: Precise S3 Sync (only June 2023 – June 2025) ====================
+    files_already_present = glob.glob(
+        f"{base_path}/**/*.jsonl.gz", recursive=True)
 
-    # Guardrail: restrict to valid project window
-    if since < "2023-06-01":
-        since = "2023-06-01"
-    if until > "2025-06-30":
-        until = "2025-06-30"
+    # Skip sync if we already have a good number of files (makes re-runs fast)
+    if len(files_already_present) > 200:
+        print(
+            f"✅ Skipping S3 sync — {len(files_already_present)} files already present.")
+    else:
+        print("🚀 Starting precise S3 sync for Kenya data (June 2023 – June 2025 only)...")
+        print("   This should be much faster as it avoids scanning 2020–2022 data.")
 
-    url = "https://api.ooni.io/api/v1/measurements"
-    params = {
-        "probe_cc": "KE",
-        "since": since,
-        "until": until,
-        "limit": 500
-    }
+        sync_cmd = [
+            "aws", "s3", "--no-sign-request", "sync",
+            "s3://ooni-data-eu-fra/raw/", base_path,
+            "--exclude", "*",
+            # Precise monthly includes — only what we need
+            "--include", "202306*/KE/*.jsonl.gz",
+            "--include", "202307*/KE/*.jsonl.gz",
+            "--include", "202308*/KE/*.jsonl.gz",
+            "--include", "202309*/KE/*.jsonl.gz",
+            "--include", "202310*/KE/*.jsonl.gz",
+            "--include", "202311*/KE/*.jsonl.gz",
+            "--include", "202312*/KE/*.jsonl.gz",
+            "--include", "2024*/KE/*.jsonl.gz",     # all of 2024
+            "--include", "202501*/KE/*.jsonl.gz",   # Jan 2025
+            "--include", "202502*/KE/*.jsonl.gz",
+            "--include", "202503*/KE/*.jsonl.gz",
+            "--include", "202504*/KE/*.jsonl.gz",
+            "--include", "202505*/KE/*.jsonl.gz",
+            "--include", "202506*/KE/*.jsonl.gz"
+        ]
 
-    all_rows = []
-    next_url = url
-    while next_url:
-        resp = requests.get(
-            next_url, params=params if next_url == url else None)
-        resp.raise_for_status()
-        data = resp.json()
+        try:
+            result = subprocess.run(
+                sync_cmd, check=True, capture_output=True, text=True)
+            print(result.stdout)
+            if result.stderr:
+                print("Sync warnings:", result.stderr)
+            print("✅ S3 sync completed successfully.")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ S3 sync failed: {e}")
+            if e.stderr:
+                print(e.stderr)
+            raise
 
-        # Extract measurements
-        results = data.get("results", [])
-        for r in results:
-            all_rows.append({
-                "measurement_id": r.get("measurement_id"),
-                "country": r.get("probe_cc"),
-                "asn": r.get("probe_asn"),
-                "test_name": r.get("test_name"),
-                "input": r.get("input"),
-                "start_time": r.get("start_time"),
-                "status": "anomaly" if r.get("anomaly") else "ok",
-                "probe_cc": r.get("probe_cc"),
-                "probe_asn": r.get("probe_asn"),
-                "extracted_at": datetime.now()
-            })
+    # ==================== STEP 2: Process files with chunked reading ====================
+    print("📂 Discovering downloaded .jsonl.gz files...")
+    files = sorted(glob.glob(f"{base_path}/**/*.jsonl.gz", recursive=True))
+    print(f"Found {len(files)} JSONL files.")
 
-        # Pagination
-        next_url = data.get("metadata", {}).get("next_url")
+    if not files:
+        raise FileNotFoundError(f"No .jsonl.gz files found in {base_path}")
 
-    df = pd.DataFrame(all_rows)
+    start_date = pd.Timestamp("2023-06-01")
+    end_date = pd.Timestamp("2025-06-30")
+
+    dfs = []
+    total_rows = 0
+
+    for i, file_path in enumerate(files, 1):
+        if i % 20 == 0 or i == 1 or i == len(files):
+            print(
+                f"Processing {i}/{len(files)}: {os.path.basename(file_path)}")
+
+        try:
+            for chunk in pd.read_json(file_path, lines=True, chunksize=100_000, compression="gzip"):
+                if "start_time" not in chunk.columns:
+                    continue
+
+                chunk["start_time"] = pd.to_datetime(
+                    chunk["start_time"], errors="coerce")
+                mask = (chunk["start_time"] >= start_date) & (
+                    chunk["start_time"] <= end_date)
+                filtered = chunk[mask].copy()
+
+                if not filtered.empty:
+                    dfs.append(filtered)
+                    total_rows += len(filtered)
+
+                # Keep memory under control
+                if len(dfs) >= 15:
+                    df_temp = pd.concat(dfs, ignore_index=True)
+                    dfs = [df_temp]
+
+        except Exception as e:
+            print(f"⚠️ Error processing {os.path.basename(file_path)}: {e}")
+            continue
+
+    if dfs:
+        df = pd.concat(dfs, ignore_index=True)
+    else:
+        df = pd.DataFrame()
+
+    print(f"✅ Filtered {len(df):,} measurements in the requested date range.")
+
+    # ==================== STEP 3: Finalize ====================
+    df["extracted_at"] = datetime.now()
+
+    # Align with your declared columns
+    keep_cols = ["measurement_id", "country", "asn", "test_name", "input",
+                 "start_time", "probe_cc", "probe_asn"]
+
+    for col in ["status"]:
+        if col not in df.columns:
+            df[col] = pd.NA
+
+    df = df.reindex(columns=keep_cols +
+                    ["status", "extracted_at"], fill_value=None)
+
     df.to_parquet(parquet_out, index=False, compression="snappy")
 
     print(f"✅ Parquet saved: {len(df):,} rows → {parquet_out}")
