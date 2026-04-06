@@ -1,10 +1,10 @@
 """@bruin
-name: load.google_transparency_detailed
+name: load.lumen_requests
 type: python
 image: python:3.11
 connection: bigquery
 description: |
-  Uploads Google Transparency Detailed Parquet to GCS.
+  Uploads Lumen Requests Parquet to GCS.
 
 materialization:
   type: table
@@ -17,15 +17,15 @@ import os
 
 
 def materialize():
-    local_parquet = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google/google_transparency_detailed.parquet"
+    local_parquet = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/lumen/lumen_requests.parquet"
     gcs_bucket = "civil-liberties-data"
-    gcs_path = f"gs://{gcs_bucket}/google/google_transparency_detailed.parquet"
+    gcs_path = f"gs://{gcs_bucket}/lumen/lumen_requests.parquet"
 
     if not os.path.exists(local_parquet):
         raise FileNotFoundError(f"Parquet not found: {local_parquet}")
 
     df = pd.read_parquet(local_parquet)
-    print(f"✅ Loaded {len(df):,} Google Transparency Detailed rows.")
+    print(f"✅ Loaded {len(df):,} Lumen requests (placeholder data).")
 
     if "extracted_at" not in df.columns:
         df["extracted_at"] = datetime.now()
