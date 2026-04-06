@@ -4,34 +4,24 @@ type: python
 image: python:3.11
 connection: duckdb-parquet
 description: |
-  Converts filtered Kenya OONI raw JSONL files into a clean Parquet file.
-  Runs best in dev environment.
+  Processes Kenya OONI raw JSONL files located inside ooni-kenya-censorship/00 to 23 folders.
+  Filename contains the date (e.g. 2023060100_KE_whatsapp.n1.0.jsonl.gz).
 
 materialization:
   type: table
   strategy: create+replace
 
 columns:
-  - name: measurement_id
-    type: STRING
-  - name: country
-    type: STRING
-  - name: asn
-    type: INTEGER
-  - name: test_name
-    type: STRING
-  - name: input
-    type: STRING
-  - name: start_time
-    type: TIMESTAMP
-  - name: status
-    type: STRING
-  - name: probe_cc
-    type: STRING
-  - name: probe_asn
-    type: INTEGER
-  - name: extracted_at
-    type: TIMESTAMP
+  - name: measurement_id    type: STRING
+  - name: country           type: STRING
+  - name: asn               type: INTEGER
+  - name: test_name         type: STRING
+  - name: input             type: STRING
+  - name: start_time        type: TIMESTAMP
+  - name: status            type: STRING
+  - name: probe_cc          type: STRING
+  - name: probe_asn         type: INTEGER
+  - name: extracted_at      type: TIMESTAMP
 @bruin"""
 
 import glob
@@ -43,15 +33,23 @@ from pathlib import Path
 
 def materialize():
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/ooni"
-    parquet_out = f"{base_path}/ooni_measurements.parquet"
+    data_root = os.path.join(base_path, "ooni-kenya-censorship")
 
-    print("📂 Scanning raw OONI files...")
-    files = sorted(glob.glob(f"{base_path}/**/*.jsonl.gz", recursive=True))
-    print(f"Found {len(files):,} raw .jsonl.gz files (~4 GB)")
+    print(f"📂 Searching for files in: {data_root}")
+
+    if not os.path.exists(data_root):
+        raise FileNotFoundError(f"Folder not found: {data_root}")
+
+    # Find all .jsonl.gz files recursively (inside 00-23 folders)
+    files = sorted(glob.glob(f"{data_root}/**/*.jsonl.gz", recursive=True))
+
+    print(f"Found {len(files):,} .jsonl.gz files")
 
     if not files:
         raise FileNotFoundError(
-            "No raw files found in data/dev/ooni. Please copy the downloaded data first.")
+            "No .jsonl.gz files found. Please ensure the 00 to 23 folders "
+            "with KE/.../*.jsonl.gz are inside ooni-kenya-censorship/"
+        )
 
     start_ts = pd.Timestamp("2023-06-01")
     end_ts = pd.Timestamp("2025-06-30")
@@ -59,12 +57,12 @@ def materialize():
     dfs = []
 
     for i, fpath in enumerate(files, 1):
-        if i % 50 == 0 or i == 1 or i == len(files):
+        if i % 40 == 0 or i == 1 or i == len(files):
             print(
                 f"Processing {i:,}/{len(files):,} → {os.path.basename(fpath)}")
 
         try:
-            for chunk in pd.read_json(fpath, lines=True, chunksize=120_000, compression="gzip"):
+            for chunk in pd.read_json(fpath, lines=True, chunksize=100_000, compression="gzip"):
                 if chunk.empty or "start_time" not in chunk.columns:
                     continue
 
@@ -77,9 +75,10 @@ def materialize():
                 if filtered.empty:
                     continue
 
-                # Robust OONI column handling
+                # Column handling for OONI raw format
                 filtered["measurement_id"] = filtered.get(
                     "measurement_uid") or filtered.get("id")
+
                 if "probe_asn" not in filtered.columns and "asn" in filtered.columns:
                     filtered["probe_asn"] = filtered["asn"]
 
@@ -103,7 +102,7 @@ def materialize():
 
                 dfs.append(filtered[keep_cols].copy())
 
-                if len(dfs) >= 15:
+                if len(dfs) >= 12:
                     df_temp = pd.concat(dfs, ignore_index=True)
                     dfs = [df_temp]
 
@@ -113,18 +112,21 @@ def materialize():
 
     df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
 
-    print(f"\n✅ Loaded {len(df):,} measurements.")
+    print(
+        f"\n✅ Successfully loaded {len(df):,} measurements (June 2023 – June 2025).")
 
     df["extracted_at"] = datetime.now()
     df = df.reindex(columns=["measurement_id", "country", "asn", "test_name", "input",
                              "start_time", "status", "probe_cc", "probe_asn", "extracted_at"])
 
+    parquet_out = f"{base_path}/ooni_measurements.parquet"
     df.to_parquet(parquet_out, index=False, compression="snappy")
-    print(f"✅ Parquet file created successfully: {parquet_out}")
 
-    # ==================== CLEANUP RAW FILES ====================
+    print(f"✅ Parquet file created: {parquet_out}")
+
+    # Cleanup
     cleanup = input(
-        "\nDelete all raw .jsonl.gz files to free ~4GB? (yes/no): ").strip().lower()
+        "\nDelete all raw .jsonl.gz files to free space? (yes/no): ").strip().lower()
     if cleanup in ["yes", "y"]:
         print("🗑️ Deleting raw files...")
         for f in files:
@@ -132,7 +134,7 @@ def materialize():
                 os.remove(f)
             except:
                 pass
-        print("✅ Raw files deleted. Space freed.")
+        print("✅ Raw files deleted.")
     else:
         print("Raw files kept.")
 
