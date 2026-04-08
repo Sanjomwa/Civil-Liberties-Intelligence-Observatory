@@ -56,7 +56,7 @@ def materialize():
 
     Path(base_path).mkdir(parents=True, exist_ok=True)
     Path(data_root).mkdir(parents=True, exist_ok=True)
-    Path("data/dev").mkdir(parents=True, exist_ok=True)
+    Path("/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev").mkdir(parents=True, exist_ok=True)
 
     print(f"📂 Searching in: {data_root}")
 
