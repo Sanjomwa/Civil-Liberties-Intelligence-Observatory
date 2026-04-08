@@ -12,16 +12,36 @@ materialization:
   strategy: create+replace
 
 columns:
-  - name: measurement_id    type: STRING
-  - name: country           type: STRING
-  - name: asn               type: INTEGER
-  - name: test_name         type: STRING
-  - name: input             type: STRING
-  - name: start_time        type: TIMESTAMP
-  - name: status            type: STRING
-  - name: probe_cc          type: STRING
-  - name: probe_asn         type: INTEGER
-  - name: extracted_at      type: TIMESTAMP
+  - name: measurement_id
+    type: STRING
+    description: Unique OONI measurement ID
+  - name: country
+    type: STRING
+    description: Country code
+  - name: asn
+    type: INTEGER
+    description: Autonomous System Number
+  - name: test_name
+    type: STRING
+    description: OONI test type
+  - name: input
+    type: STRING
+    description: Domain or URL tested
+  - name: start_time
+    type: TIMESTAMP
+    description: Measurement start time (UTC)
+  - name: status
+    type: STRING
+    description: Result status (ok, anomaly, confirmed, failure)
+  - name: probe_cc
+    type: STRING
+    description: Probe country code
+  - name: probe_asn
+    type: INTEGER
+    description: Probe ASN
+  - name: extracted_at
+    type: TIMESTAMP
+    description: Timestamp when ingested
 @bruin"""
 
 import glob
@@ -40,10 +60,9 @@ def materialize():
     if not os.path.exists(data_root):
         raise FileNotFoundError(f"Folder not found: {data_root}")
 
-    # Find all .jsonl.gz files recursively (inside 00-23 folders)
     files = sorted(glob.glob(f"{data_root}/**/*.jsonl.gz", recursive=True))
 
-    print(f"Found {len(files):,} .jsonl.gz files")
+    print(f"Found {len(files):,} raw .jsonl.gz files")
 
     if not files:
         raise FileNotFoundError(
@@ -75,7 +94,7 @@ def materialize():
                 if filtered.empty:
                     continue
 
-                # Column handling for OONI raw format
+                # Column handling
                 filtered["measurement_id"] = filtered.get(
                     "measurement_uid") or filtered.get("id")
 
