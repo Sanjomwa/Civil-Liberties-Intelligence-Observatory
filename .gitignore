@@ -6,7 +6,7 @@ __pycache__/
 # data files
 /data
 /workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data
-
+/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/Bruin/data
 # Ignore database files
 *.db
 *.parquet
