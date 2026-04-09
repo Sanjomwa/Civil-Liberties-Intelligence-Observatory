@@ -3,11 +3,11 @@ name: raw.google_transparency_detailed
 type: python
 image: python:3.11
 connection: duckdb-parquet
-description: Ingest Google Transparency detailed removal requests CSV into raw table and export as Parquet
+description: Ingests Google Transparency detailed removal requests CSV and exports as Parquet.
 
 materialization:
   type: table
-  strategy: create+replace   # overwrite instead of append
+  strategy: create+replace
 
 columns:
   - name: country_region
@@ -30,35 +30,32 @@ columns:
     description: Pipeline extraction timestamp
 @bruin"""
 
-import duckdb
-import os
 import pandas as pd
 from datetime import datetime
+from pathlib import Path
 
 
 def materialize():
-    db_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/civil_liberties_dev.db"
-    conn = duckdb.connect(db_path)
+    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google"
+    csv_file = Path(base_path) / "google-government-detailed-removal-requests.csv"
+    parquet_out = Path(base_path) / "google_transparency_detailed.parquet"
 
-    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google/"
-    detailed_csv = os.path.join(
-        base_path, "google-government-detailed-removal-requests.csv")
-    parquet_out = os.path.join(
-        base_path, "google_transparency_detailed.parquet")
+    print(f"📂 Reading Google detailed CSV: {csv_file.name}")
 
-    df = conn.execute("""
-        SELECT 
-            "Country/Region" AS country_region,
-            "Period Ending" AS period_ending,
-            Product,
-            Reason,
-            Total,
-            CURRENT_TIMESTAMP AS extracted_at
-        FROM read_csv_auto(?)
-    """, [detailed_csv]).df()
+    df = pd.read_csv(csv_file)
 
-    # Save to Parquet
-    df.to_parquet(parquet_out, index=False)
+    # Standardise column names
+    df = df.rename(columns={
+        "Country/Region": "country_region",
+        "Period Ending": "period_ending",
+        "Product": "product",
+        "Reason": "reason",
+        "Total": "total"
+    })
 
-    print(f"✅ Ingested {len(df)} rows into google_transparency_detailed")
+    df["extracted_at"] = datetime.now()
+
+    df.to_parquet(parquet_out, index=False, compression="snappy")
+
+    print(f"✅ Ingested {len(df):,} rows → google_transparency_detailed")
     return df
