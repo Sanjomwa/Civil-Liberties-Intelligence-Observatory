@@ -1,5 +1,5 @@
-# Civil Liberties & Censorship Analysis in Kenya with Bruin
-## Analyzing Government Takedown Requests & Civil Liberties Risks (June 2023–June 2025)
+# Kenya Civil Liberties and Censorship Observatory
+## Tracking Digital Repression and Its Real-World Impact in Kenya (June 2023–June 2025) | Powered by Bruin 
 
 ## 🎯 Project Pitch and Problem Statement
 
