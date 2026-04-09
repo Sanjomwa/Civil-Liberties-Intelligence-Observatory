@@ -3,11 +3,11 @@ name: raw.google_transparency_requests
 type: python
 image: python:3.11
 connection: duckdb-parquet
-description: Ingest Google Transparency requests CSV into raw table and export as Parquet
+description: Ingests Google Transparency removal requests CSV and exports as Parquet.
 
 materialization:
   type: table
-  strategy: create+replace   # overwrite instead of append
+  strategy: create+replace
 
 columns:
   - name: country
@@ -33,36 +33,23 @@ columns:
     description: Pipeline extraction timestamp
 @bruin"""
 
-import duckdb
-import os
 import pandas as pd
 from datetime import datetime
+from pathlib import Path
 
 
 def materialize():
-    db_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/civil_liberties_dev.db"
-    conn = duckdb.connect(db_path)
+    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google"
+    csv_file = Path(base_path) / "google-government-removal-requests.csv"
+    parquet_out = Path(base_path) / "google_transparency_requests.parquet"
 
-    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google/"
-    requests_csv = os.path.join(
-        base_path, "google-government-removal-requests.csv")
-    parquet_out = os.path.join(
-        base_path, "google_transparency_requests.parquet")
+    print(f"📂 Reading Google requests CSV: {csv_file.name}")
 
-    df = conn.execute("""
-        SELECT 
-            country,
-            product,
-            reason,
-            time_period,
-            number_of_requests,
-            items_requested_removal,
-            CURRENT_TIMESTAMP AS extracted_at
-        FROM read_csv_auto(?)
-    """, [requests_csv]).df()
+    df = pd.read_csv(csv_file)
 
-    # Save to Parquet
-    df.to_parquet(parquet_out, index=False)
+    df["extracted_at"] = datetime.now()
 
-    print(f"✅ Ingested {len(df)} rows into google_transparency_requests")
+    df.to_parquet(parquet_out, index=False, compression="snappy")
+
+    print(f"✅ Ingested {len(df):,} rows → google_transparency_requests")
     return df
