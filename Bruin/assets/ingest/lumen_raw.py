@@ -4,48 +4,35 @@ type: python
 image: python:3.11
 connection: duckdb-parquet
 description: |
-  Placeholder ingestion for Lumen takedown requests (Jun 2023–Jun 2025).
-  Generates mock JSON-like records until API token access is granted.
-  Converts to Parquet for consistency with Google ingests.
+  Generates mock Lumen takedown requests (Jun 2023–Jun 2025) until real API access is available.
 
 materialization:
   type: table
-  strategy: create+replace   # overwrite instead of append
+  strategy: create+replace
 
 columns:
   - name: request_id
     type: VARCHAR
-    description: Unique takedown request ID
   - name: country
     type: VARCHAR
-    description: Country of origin
   - name: sender
     type: VARCHAR
-    description: Entity submitting the request
   - name: recipient
     type: VARCHAR
-    description: Platform or service targeted
   - name: date_submitted
     type: TIMESTAMP
-    description: Date the request was submitted
   - name: period
     type: VARCHAR
-    description: Reporting period (YYYY-MM)
   - name: half_year_label
     type: VARCHAR
-    description: Human-readable half-year (e.g. Jan-Jun 2024)
   - name: reason
     type: VARCHAR
-    description: Reason for takedown
   - name: request_count
     type: INTEGER
-    description: Always 1 for mock records
   - name: item_count
     type: INTEGER
-    description: Always 1 for mock records
   - name: extracted_at
     type: TIMESTAMP
-    description: Timestamp when ingested
 @bruin"""
 
 import pandas as pd
@@ -55,6 +42,13 @@ from pathlib import Path
 
 
 def materialize():
+    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/lumen"
+    Path(base_path).mkdir(parents=True, exist_ok=True)
+    parquet_out = Path(base_path) / "lumen_requests.parquet"
+
+    print("Generating mock Lumen takedown data...")
+
+    # Mock data parameters
     senders = ["Gov Agency", "Law Firm", "Communications Authority of Kenya"]
     recipients = ["Google", "Twitter", "Facebook", "TikTok", "YouTube"]
     reasons = ["Copyright", "Defamation", "National Security", "Other"]
@@ -64,19 +58,15 @@ def materialize():
     end_date = datetime(2025, 6, 30)
     total_days = (end_date - start_date).days
 
-    for i in range(1, 101):
+    for i in range(1, 501):  # increased to 500 for better coverage
         date = start_date + timedelta(days=random.randint(0, total_days))
         year = date.year
         month = date.month
-        if month <= 6:
-            period = f"{year}-06"
-            half_year_label = f"Jan-Jun {year}"
-        else:
-            period = f"{year}-12"
-            half_year_label = f"Jul-Dec {year}"
+        period = f"{year}-06" if month <= 6 else f"{year}-12"
+        half_year_label = f"Jan-Jun {year}" if month <= 6 else f"Jul-Dec {year}"
 
         rows.append({
-            "request_id": f"LUMEN-{i:03d}",
+            "request_id": f"LUMEN-{i:04d}",
             "country": "KE",
             "sender": random.choice(senders),
             "recipient": random.choice(recipients),
@@ -90,12 +80,7 @@ def materialize():
         })
 
     df = pd.DataFrame(rows)
+    df.to_parquet(parquet_out, index=False, compression="snappy")
 
-    # Save to Parquet so staging can pick it up
-    output_dir = Path(
-        "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/lumen")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(output_dir / "lumen_requests.parquet", index=False)
-
-    print(f"Lumen rows ingested (placeholder): {len(df)}")
+    print(f"✅ Generated {len(df):,} mock Lumen rows")
     return df
