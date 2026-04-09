@@ -3,7 +3,7 @@ name: raw.acled_conflict_events
 type: python
 image: python:3.11
 connection: duckdb-parquet
-description: Ingest ACLED aggregated conflict events CSV into raw table and export as Parquet
+description: Ingests ACLED aggregated conflict events CSV into raw table and exports as Parquet.
 owner: civil-liberties-pipeline
 
 materialization:
@@ -25,21 +25,20 @@ columns:
     type: TIMESTAMP
 @bruin"""
 
-import os
 import pandas as pd
 from datetime import datetime
+from pathlib import Path
 
 
 def materialize():
-    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/acled/"
-    csv_file = os.path.join(
-        base_path, "Africa_aggregated_data_up_to_week_of-2026-03-14.csv")
-    parquet_out = os.path.join(base_path, "acled_conflict_events.parquet")
+    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/acled"
+    csv_file = Path(base_path) / "Africa_aggregated_data_up_to_week_of-2026-03-14.csv"
+    parquet_out = Path(base_path) / "acled_conflict_events.parquet"
 
-    # Read CSV into Pandas
+    print(f"📂 Reading ACLED CSV: {csv_file.name}")
+
     df = pd.read_csv(csv_file)
 
-    # Normalize column names
     df = df.rename(columns={
         "EVENT_ID_CNTY": "event_id",
         "EVENT_DATE": "event_date",
@@ -50,7 +49,7 @@ def materialize():
 
     df["extracted_at"] = datetime.now()
 
-    df.to_parquet(parquet_out, index=False)
+    df.to_parquet(parquet_out, index=False, compression="snappy")
 
-    print(f"✅ Ingested {len(df)} ACLED conflict events")
+    print(f"✅ Ingested {len(df):,} ACLED conflict events")
     return df
