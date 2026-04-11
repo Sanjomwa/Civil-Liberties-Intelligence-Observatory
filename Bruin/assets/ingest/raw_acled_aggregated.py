@@ -11,18 +11,48 @@ materialization:
   strategy: create+replace
 
 columns:
-  - name: event_id
+  - name: week
     type: STRING
-  - name: event_date
-    type: DATE
+    description: Week of the event
+  - name: region
+    type: STRING
+    description: Region of the event
   - name: country
     type: STRING
+    description: Country of the event
+  - name: admin1
+    type: STRING
+    description: First administrative division
   - name: event_type
     type: STRING
+    description: Type of conflict event
+  - name: sub_event_type
+    type: STRING
+    description: Sub-type of conflict event
+  - name: events
+    type: INTEGER
+    description: Number of events
   - name: fatalities
     type: INTEGER
+    description: Number of fatalities
+  - name: population_exposure
+    type: INTEGER
+    description: Population exposure
+  - name: disorder_type
+    type: STRING
+    description: Disorder type classification
+  - name: id
+    type: STRING
+    description: ACLED record identifier
+  - name: centroid_latitude
+    type: FLOAT
+    description: Latitude of centroid
+  - name: centroid_longitude
+    type: FLOAT
+    description: Longitude of centroid
   - name: extracted_at
     type: TIMESTAMP
+    description: Pipeline extraction timestamp
 @bruin"""
 
 import pandas as pd
@@ -32,19 +62,29 @@ from pathlib import Path
 
 def materialize():
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/acled"
-    csv_file = Path(base_path) / "Africa_aggregated_data_up_to_week_of-2026-03-14.csv"
+    csv_file = Path(base_path) / \
+        "Africa_aggregated_data_up_to_week_of-2026-03-14.csv"
     parquet_out = Path(base_path) / "acled_conflict_events.parquet"
 
     print(f"📂 Reading ACLED CSV: {csv_file.name}")
 
     df = pd.read_csv(csv_file)
 
+    # Rename columns to match the actual CSV headers
     df = df.rename(columns={
-        "EVENT_ID_CNTY": "event_id",
-        "EVENT_DATE": "event_date",
+        "WEEK": "week",
+        "REGION": "region",
         "COUNTRY": "country",
+        "ADMIN1": "admin1",
         "EVENT_TYPE": "event_type",
-        "FATALITIES": "fatalities"
+        "SUB_EVENT_TYPE": "sub_event_type",
+        "EVENTS": "events",
+        "FATALITIES": "fatalities",
+        "POPULATION_EXPOSURE": "population_exposure",
+        "DISORDER_TYPE": "disorder_type",
+        "ID": "id",
+        "CENTROID_LATITUDE": "centroid_latitude",
+        "CENTROID_LONGITUDE": "centroid_longitude"
     })
 
     df["extracted_at"] = datetime.now()
