@@ -1,5 +1,5 @@
 /* @bruin
-name: mart.civil_liberties
+name: civil_liberties_mart
 type: duckdb.sql
 connection: duckdb-parquet
 
@@ -11,106 +11,50 @@ environments:
     type: bq.sql
     connection: bigquery-default
 
-description: Mart combining takedown requests, censorship tests, and conflict events for civil liberties analysis
+description: Final reporting mart for Kenya Civil Liberties & Censorship Observatory
 owner: civil-liberties-pipeline
 
 materialization:
-    type: table
-    strategy: create+replace
-
-depends:
-    - fact.takedown_requests
-    - fact.lumen_platforms
-    - fact.censorship_tests
-    - fact.conflict_events
-    - dims.country
-    - dims.platform
-    - dims.event_type
-    - dims.reasons
-    - dims.periods
-
-columns:
-    - name: country
-      type: STRING
-      description: Standardized country name
-    - name: period
-      type: STRING
-      description: Reporting period (YYYY-MM)
-    - name: half_year_label
-      type: STRING
-      description: Human-readable half-year label
-    - name: platform
-      type: STRING
-      description: Platform targeted in requests
-    - name: reason
-      type: STRING
-      description: Reason for takedown request
-    - name: takedown_requests
-      type: INTEGER
-      description: Number of takedown requests (Google Transparency + Lumen)
-    - name: lumen_requests
-      type: INTEGER
-      description: Number of takedown requests (Lumen only)
-    - name: censorship_tests
-      type: INTEGER
-      description: Number of censorship measurements (OONI)
-    - name: conflict_events
-      type: INTEGER
-      description: Number of conflict events (ACLED)
-    - name: fatalities
-      type: INTEGER
-      description: Fatalities from conflict events
-    - name: extracted_at
-      type: TIMESTAMP
-      description: Pipeline extraction timestamp
+  type: table
+  strategy: create+replace
 @bruin */
 
-WITH takedowns AS (
-    SELECT country, period, half_year_label, platform, reason,
-           SUM(request_count) AS takedown_requests,
-           SUM(item_count) AS items_requested,
-           MAX(extracted_at) AS extracted_at
-    FROM fact.takedown_requests
-    GROUP BY country, period, half_year_label, platform, reason
-),
-lumen AS (
-    SELECT country, period, half_year_label, platform_id AS platform,
-           reason, COUNT(request_id) AS lumen_requests,
-           MAX(extracted_at) AS extracted_at
-    FROM fact.lumen_platforms
-    GROUP BY country, period, half_year_label, platform_id, reason
-),
-ooni AS (
-    SELECT country, period, half_year_label,
-           COUNT(measurement_id) AS censorship_tests,
-           MAX(extracted_at) AS extracted_at
-    FROM fact.censorship_tests
-    GROUP BY country, period, half_year_label
-),
-conflict AS (
-    SELECT country, period, half_year_label,
-           SUM(events) AS conflict_events,
-           SUM(fatalities) AS fatalities,
-           MAX(extracted_at) AS extracted_at
-    FROM fact.conflict_events
-    GROUP BY country, period, half_year_label
-)
-SELECT
-    COALESCE(t.country, l.country, o.country, c.country) AS country,
-    COALESCE(t.period, l.period, o.period, c.period) AS period,
-    COALESCE(t.half_year_label, l.half_year_label, o.half_year_label, c.half_year_label) AS half_year_label,
-    COALESCE(t.platform, l.platform) AS platform,
-    COALESCE(t.reason, l.reason) AS reason,
-    t.takedown_requests,
-    l.lumen_requests,
-    o.censorship_tests,
-    c.conflict_events,
-    c.fatalities,
-    GREATEST(t.extracted_at, l.extracted_at, o.extracted_at, c.extracted_at) AS extracted_at
-FROM takedowns t
-FULL OUTER JOIN lumen l
-  ON t.country = l.country AND t.period = l.period
-FULL OUTER JOIN ooni o
-  ON COALESCE(t.country, l.country) = o.country AND COALESCE(t.period, l.period) = o.period
-FULL OUTER JOIN conflict c
-  ON COALESCE(t.country, l.country, o.country) = c.country AND COALESCE(t.period, l.period, o.period) = c.period;
+SELECT 
+    d.full_date,
+    d.year,
+    d.half_year,
+    d.protest_season_flag,
+    
+    -- Censorship metrics
+    c.test_category,
+    c.test_name,
+    COUNT(DISTINCT c.measurement_id) AS censorship_events,
+    COUNT(DISTINCT CASE WHEN c.censorship_status IN ('anomaly','confirmed') THEN c.measurement_id END) AS confirmed_blocks,
+    
+    -- Conflict metrics
+    SUM(e.events) AS total_conflict_events,
+    SUM(e.fatalities) AS total_fatalities,
+    COUNT(DISTINCT e.event_id) AS distinct_conflict_events,
+    
+    -- Takedown metrics
+    SUM(t.number_of_requests) AS total_takedown_requests,
+    COUNT(DISTINCT t.reason) AS distinct_takedown_reasons,
+    
+    -- Combined insight
+    COUNT(DISTINCT CASE WHEN c.measurement_date = e.measurement_date THEN c.measurement_id END) AS days_with_both_censorship_and_conflict,
+    
+    e.region,
+    e.admin1,
+    e.disorder_type,
+    t.reason AS takedown_reason
+
+FROM {{ ref('fact_censorship_impact') }} c
+LEFT JOIN {{ ref('dim_dates') }} d 
+    ON c.measurement_date = d.full_date
+LEFT JOIN {{ ref('fact_conflict_events') }} e 
+    ON c.measurement_date = e.measurement_date
+LEFT JOIN {{ ref('fact_takedown_requests') }} t 
+    ON c.measurement_date = t.measurement_date
+WHERE d.full_date BETWEEN DATE '2023-06-01' AND DATE '2025-06-30'
+GROUP BY ALL
+ORDER BY d.full_date DESC;
