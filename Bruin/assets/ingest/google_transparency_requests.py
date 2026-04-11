@@ -10,24 +10,36 @@ materialization:
   strategy: create+replace
 
 columns:
+  - name: time_period
+    type: STRING
+    description: Reporting period
   - name: country
     type: STRING
     description: Country issuing request
+  - name: cldr_territory
+    type: STRING
+    description: CLDR territory code
+  - name: requestor
+    type: STRING
+    description: Entity making the request
   - name: product
     type: STRING
     description: Google product targeted
   - name: reason
     type: STRING
     description: Reason for takedown
-  - name: time_period
-    type: STRING
-    description: Reporting period
   - name: number_of_requests
     type: INTEGER
     description: Number of requests
   - name: items_requested_removal
     type: INTEGER
     description: Items requested for removal
+  - name: items_removed_legal
+    type: INTEGER
+    description: Items removed due to legal reasons
+  - name: items_removed_policy
+    type: INTEGER
+    description: Items removed due to platform policy
   - name: extracted_at
     type: TIMESTAMP
     description: Pipeline extraction timestamp
@@ -46,6 +58,13 @@ def materialize():
     print(f"📂 Reading Google requests CSV: {csv_file.name}")
 
     df = pd.read_csv(csv_file)
+
+    # Keep only the columns we care about for the project
+    df = df[[
+        "time_period", "country", "cldr_territory", "requestor", "product", "reason",
+        "number_of_requests", "items_requested_removal",
+        "items_removed_legal", "items_removed_policy"
+    ]].copy()
 
     df["extracted_at"] = datetime.now()
 

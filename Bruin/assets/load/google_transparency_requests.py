@@ -4,7 +4,7 @@ type: python
 image: python:3.11
 connection: duckdb-parquet
 description: |
-  Uploads Google Transparency requests Parquet to GCS.
+  Uploads Google Transparency removal requests Parquet to GCS.
 
 materialization:
   type: table

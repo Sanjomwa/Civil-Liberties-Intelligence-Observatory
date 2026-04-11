@@ -24,14 +24,18 @@ depends:
 
 WITH raw AS (
     SELECT
+        time_period,
         country,
+        cldr_territory,
+        requestor,
         product,
         reason,
-        time_period,
         number_of_requests,
         items_requested_removal,
+        items_removed_legal,
+        items_removed_policy,
         extracted_at,
-        -- Derived fields
+        -- Derived fields for easier analysis
         PARSE_DATE('%Y-%m', time_period) AS period_date,
         EXTRACT(YEAR FROM PARSE_DATE('%Y-%m', time_period)) AS year
     FROM {{ ref('load.google_transparency_requests_to_gcs') }}

@@ -10,12 +10,15 @@ materialization:
   strategy: create+replace
 
 columns:
-  - name: country_region
-    type: STRING
-    description: Country or region issuing request
   - name: period_ending
     type: STRING
     description: Period ending date
+  - name: country_region
+    type: STRING
+    description: Country or region issuing request
+  - name: cldr_territory_code
+    type: STRING
+    description: CLDR territory code
   - name: product
     type: STRING
     description: Google product targeted
@@ -37,17 +40,19 @@ from pathlib import Path
 
 def materialize():
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google"
-    csv_file = Path(base_path) / "google-government-detailed-removal-requests.csv"
+    csv_file = Path(base_path) / \
+        "google-government-detailed-removal-requests.csv"
     parquet_out = Path(base_path) / "google_transparency_detailed.parquet"
 
     print(f"📂 Reading Google detailed CSV: {csv_file.name}")
 
     df = pd.read_csv(csv_file)
 
-    # Standardise column names
+    # Standardise column names to match schema
     df = df.rename(columns={
-        "Country/Region": "country_region",
         "Period Ending": "period_ending",
+        "Country/Region": "country_region",
+        "CLDR Territory Code": "cldr_territory_code",
         "Product": "product",
         "Reason": "reason",
         "Total": "total"

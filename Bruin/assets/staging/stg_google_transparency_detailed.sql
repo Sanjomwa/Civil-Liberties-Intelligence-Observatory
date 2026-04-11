@@ -24,8 +24,9 @@ depends:
 
 WITH raw AS (
     SELECT
-        country_region,
         period_ending,
+        country_region,
+        cldr_territory_code,
         product,
         reason,
         total,
