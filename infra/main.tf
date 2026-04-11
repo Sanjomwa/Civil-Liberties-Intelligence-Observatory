@@ -1,3 +1,7 @@
+terraform {
+  required_version = ">= 1.5.0"
+}
+
 module "gcs" {
   source      = "./modules/gcs"
   bucket_name = var.bucket_name
@@ -5,10 +9,11 @@ module "gcs" {
 }
 
 module "bigquery" {
-  source      = "./modules/bigquery"
-  dataset_id  = var.dataset_id
-  project_id  = var.project_id
-  region      = var.region
+  source              = "./modules/bigquery"
+  project_id          = var.project_id
+  region              = var.region
+  prod_dataset_id     = var.prod_dataset_id
+  staging_dataset_id  = var.staging_dataset_id
 }
 
 module "iam" {
@@ -16,28 +21,15 @@ module "iam" {
   project_id  = var.project_id
   admin_email = var.admin_email
 }
-variable "project_id" {
-  description = "GCP project ID"
-  type        = string
+
+output "bucket_name" {
+  value = module.gcs.bucket_name
 }
 
-variable "region" {
-  description = "Default region"
-  type        = string
-  default     = "us-central1"
+output "prod_dataset" {
+  value = module.bigquery.prod_dataset_id
 }
 
-variable "bucket_name" {
-  description = "Name of GCS bucket"
-  type        = string
-}
-
-variable "dataset_id" {
-  description = "BigQuery dataset ID"
-  type        = string
-}
-
-variable "admin_email" {
-  description = "Admin email for IAM"
-  type        = string
+output "staging_dataset" {
+  value = module.bigquery.staging_dataset_id
 }

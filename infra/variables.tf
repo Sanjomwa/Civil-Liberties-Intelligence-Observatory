@@ -10,11 +10,21 @@ variable "region" {
 }
 
 variable "bucket_name" {
-  description = "Name of GCS bucket for raw/staging data"
+  description = "GCS bucket name"
   type        = string
 }
 
-variable "dataset_id" {
-  description = "BigQuery dataset ID"
+variable "prod_dataset_id" {
+  description = "BigQuery PROD dataset ID"
+  type        = string
+}
+
+variable "staging_dataset_id" {
+  description = "BigQuery STAGING dataset ID"
+  type        = string
+}
+
+variable "admin_email" {
+  description = "Admin email for IAM"
   type        = string
 }

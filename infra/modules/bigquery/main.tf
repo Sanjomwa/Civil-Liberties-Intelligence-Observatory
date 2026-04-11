@@ -1,20 +1,21 @@
-resource "google_bigquery_dataset" "civil_liberties_dataset" {
-  dataset_id                  = var.dataset_id
-  project                     = var.project_id
-  location                    = var.region
-  delete_contents_on_destroy  = true
-}
-variable "dataset_id" {
-  description = "BigQuery dataset ID"
-  type        = string
+resource "google_bigquery_dataset" "prod" {
+  dataset_id                 = var.prod_dataset_id
+  project                    = var.project_id
+  location                   = var.region
+  delete_contents_on_destroy = false
 }
 
-variable "project_id" {
-  description = "GCP project ID"
-  type        = string
+resource "google_bigquery_dataset" "staging" {
+  dataset_id                 = var.staging_dataset_id
+  project                    = var.project_id
+  location                   = var.region
+  delete_contents_on_destroy = true
 }
 
-variable "region" {
-  description = "Region for the dataset"
-  type        = string
+output "prod_dataset_id" {
+  value = google_bigquery_dataset.prod.dataset_id
+}
+
+output "staging_dataset_id" {
+  value = google_bigquery_dataset.staging.dataset_id
 }

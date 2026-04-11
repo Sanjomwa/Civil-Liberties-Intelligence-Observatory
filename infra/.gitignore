@@ -1,10 +1,13 @@
-# Terraform local state
+# Terraform
 *.tfstate
 *.tfstate.backup
-*.plan
-
-# Terraform working directory
+*.tfplan
 .terraform/
+.terraform.lock.hcl
 
-# Service account keys
+# Credentials
 terraform-key.json
+*.pem
+
+# Logs
+*.log
