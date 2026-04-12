@@ -28,7 +28,7 @@ WITH raw AS (
         extracted_at,
         DATE(date_submitted)                    AS measurement_date,
         EXTRACT(YEAR FROM date_submitted)       AS year
-    FROM `encoded-joy-485413-k5.civil_liberties_staging.lumen_requests`
+    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.lumen_requests`
     WHERE country = 'Kenya'
        OR country = 'KE'
 )

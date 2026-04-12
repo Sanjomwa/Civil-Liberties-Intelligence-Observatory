@@ -28,7 +28,7 @@ WITH raw AS (
         extracted_at,
         PARSE_DATE('%Y-%m', time_period)                    AS period_date,
         EXTRACT(YEAR FROM PARSE_DATE('%Y-%m', time_period)) AS year
-    FROM `encoded-joy-485413-k5.civil_liberties_staging.google_transparency_requests`
+    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.google_transparency_requests`
     WHERE country = 'Kenya'
        OR cldr_territory = 'KE'
 )

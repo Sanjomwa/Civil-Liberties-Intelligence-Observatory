@@ -5,8 +5,8 @@ image: python:3.11
 connection: duckdb-parquet
 description: |
   Uploads OONI Parquet to GCS and creates/refreshes a BigQuery external table
-  pointing at gs://civil-liberties-data/ooni/. No data is duplicated — BQ
-  reads directly from the Parquet file on GCS (cost-effective).
+  in the appropriate dataset (staging or prod). BQ reads directly from GCS —
+  no data duplication, no native BQ storage cost.
 
 depends:
   - raw.ooni_conflict_measurements
@@ -19,26 +19,31 @@ materialization:
 import os
 import pandas as pd
 from datetime import datetime
-from google.cloud import bigquery, storage
+from google.cloud import bigquery
 
 
 PROJECT_ID = "encoded-joy-485413-k5"
-DATASET = "civil_liberties_staging"
-TABLE = "ooni_measurements"
 GCS_BUCKET = "civil-liberties-data"
 GCS_OBJECT = "ooni/ooni_measurements.parquet"
 LOCAL_FILE = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/ooni/ooni_measurements.parquet"
+TABLE = "ooni_measurements"
+
+ENV = os.getenv("BRUIN_ENVIRONMENT", "staging")
+DATASET = "civil_liberties_prod" if ENV == "prod" else "civil_liberties_staging"
 
 
 def materialize():
+    print(f"🌍 Environment : {ENV}")
+    print(f"📦 BQ Dataset  : {DATASET}")
+
     # ── 1. Read local Parquet ────────────────────────────────────────────────
-    print(f"📖 Reading: {LOCAL_FILE}")
+    print(f"\n📖 Reading: {LOCAL_FILE}")
     df = pd.read_parquet(LOCAL_FILE)
     print(f"   Rows: {len(df):,}")
 
     # ── 2. Upload to GCS ─────────────────────────────────────────────────────
     gcs_uri = f"gs://{GCS_BUCKET}/{GCS_OBJECT}"
-    print(f"☁️  Uploading to {gcs_uri}")
+    print(f"\n☁️  Uploading to {gcs_uri}")
     df.to_parquet(gcs_uri, index=False, compression="snappy")
     print(f"✅ GCS upload complete")
 
@@ -54,20 +59,20 @@ def materialize():
     table_obj = bigquery.Table(table_ref)
     table_obj.external_data_configuration = external_config
     table_obj.description = (
-        "External table — OONI Kenya censorship measurements (Jun 2023–Jun 2025). "
+        f"External table [{ENV}] — OONI Kenya censorship measurements (Jun 2023–Jun 2025). "
         "Data lives in GCS; BigQuery reads it on query."
     )
 
-    # delete if exists so we can recreate with fresh schema
     try:
         bq.delete_table(table_ref)
-        print(f"🗑️  Dropped existing BQ table: {table_ref}")
+        print(f"\n🗑️  Dropped existing BQ table: {table_ref}")
     except Exception:
-        pass  # table didn't exist yet
+        pass
 
     bq.create_table(table_obj)
     print(f"✅ BigQuery external table created: {table_ref}")
     print(f"   Source URI : {gcs_uri}")
+    print(f"   Dataset    : {DATASET}")
     print(f"   Rows       : {len(df):,}")
 
     df["extracted_at"] = datetime.now()

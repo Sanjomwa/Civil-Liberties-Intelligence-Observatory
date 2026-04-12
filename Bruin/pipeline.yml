@@ -5,3 +5,8 @@ start_date: "2023-06-01"
 default_connections:
   duckdb: duckdb-parquet
   google_cloud_platform: bigquery-default
+
+variables:
+  bq_dataset:
+    type: string
+    default: "civil_liberties_staging"

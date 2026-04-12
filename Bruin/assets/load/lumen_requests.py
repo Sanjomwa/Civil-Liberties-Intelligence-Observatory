@@ -5,7 +5,8 @@ image: python:3.11
 connection: duckdb-parquet
 description: |
   Uploads Lumen mock takedown requests Parquet to GCS and creates/refreshes
-  a BigQuery external table.
+  a BigQuery external table in the appropriate dataset (staging or prod).
+  BQ reads directly from GCS — no data duplication.
 
 depends:
   - raw.lumen_requests
@@ -15,29 +16,38 @@ materialization:
   strategy: create+replace
 @bruin"""
 
+import os
 import pandas as pd
 from datetime import datetime
 from google.cloud import bigquery
 
 
 PROJECT_ID = "encoded-joy-485413-k5"
-DATASET = "civil_liberties_staging"
-TABLE = "lumen_requests"
 GCS_BUCKET = "civil-liberties-data"
 GCS_OBJECT = "lumen/lumen_requests.parquet"
 LOCAL_FILE = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/lumen/lumen_requests.parquet"
+TABLE = "lumen_requests"
+
+ENV = os.getenv("BRUIN_ENVIRONMENT", "staging")
+DATASET = "civil_liberties_prod" if ENV == "prod" else "civil_liberties_staging"
 
 
 def materialize():
-    print(f"📖 Reading: {LOCAL_FILE}")
+    print(f"🌍 Environment : {ENV}")
+    print(f"📦 BQ Dataset  : {DATASET}")
+
+    # ── 1. Read local Parquet ────────────────────────────────────────────────
+    print(f"\n📖 Reading: {LOCAL_FILE}")
     df = pd.read_parquet(LOCAL_FILE)
     print(f"   Rows: {len(df):,}")
 
+    # ── 2. Upload to GCS ─────────────────────────────────────────────────────
     gcs_uri = f"gs://{GCS_BUCKET}/{GCS_OBJECT}"
-    print(f"☁️  Uploading to {gcs_uri}")
+    print(f"\n☁️  Uploading to {gcs_uri}")
     df.to_parquet(gcs_uri, index=False, compression="snappy")
     print(f"✅ GCS upload complete")
 
+    # ── 3. Create / replace BigQuery external table ──────────────────────────
     bq = bigquery.Client(project=PROJECT_ID)
 
     external_config = bigquery.ExternalConfig(
@@ -49,19 +59,20 @@ def materialize():
     table_obj = bigquery.Table(table_ref)
     table_obj.external_data_configuration = external_config
     table_obj.description = (
-        "External table — Lumen mock takedown requests for Kenya "
-        "(Jun 2023–Jun 2025). Data lives in GCS."
+        f"External table [{ENV}] — Lumen mock takedown requests "
+        "for Kenya (Jun 2023–Jun 2025). Data lives in GCS; BigQuery reads it on query."
     )
 
     try:
         bq.delete_table(table_ref)
-        print(f"🗑️  Dropped existing BQ table: {table_ref}")
+        print(f"\n🗑️  Dropped existing BQ table: {table_ref}")
     except Exception:
         pass
 
     bq.create_table(table_obj)
     print(f"✅ BigQuery external table created: {table_ref}")
     print(f"   Source URI : {gcs_uri}")
+    print(f"   Dataset    : {DATASET}")
     print(f"   Rows       : {len(df):,}")
 
     df["extracted_at"] = datetime.now()

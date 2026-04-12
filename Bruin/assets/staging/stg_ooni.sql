@@ -37,7 +37,7 @@ WITH raw AS (
                 THEN 'Circumvention Tool Blocking'
             ELSE 'Other'
         END                                             AS test_category
-    FROM `encoded-joy-485413-k5.civil_liberties_staging.ooni_measurements`
+    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.ooni_measurements`
     WHERE probe_cc = 'KE'
 )
 

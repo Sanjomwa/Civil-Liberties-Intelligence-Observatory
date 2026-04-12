@@ -32,7 +32,7 @@ WITH raw AS (
         -- ACLED week format is 'DD-MonthName-YYYY', e.g. '01-June-2023'
         PARSE_DATE('%d-%B-%Y', week)                        AS measurement_date,
         EXTRACT(YEAR FROM PARSE_DATE('%d-%B-%Y', week))     AS year
-    FROM `encoded-joy-485413-k5.civil_liberties_staging.acled_conflict_events`
+    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.acled_conflict_events`
     WHERE country = 'Kenya'
 )
 
