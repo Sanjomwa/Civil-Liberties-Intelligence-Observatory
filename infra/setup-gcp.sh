@@ -4,7 +4,7 @@
 set -e
 
 # === CONFIG ===
-PROJECT_ID="civil-liberties-observatory"
+PROJECT_ID="encoded-joy-485413-k5"
 SERVICE_ACCOUNT_NAME="terraform-sa"
 SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 KEY_FILE="terraform-key.json"
@@ -14,7 +14,10 @@ echo "🚀 Setting up GCP for Kenya Civil Liberties & Censorship Observatory"
 echo "Project ID : $PROJECT_ID"
 echo "Region     : $REGION"
 
-# 1. Enable required APIs
+# Set the project
+gcloud config set project $PROJECT_ID
+
+# Enable required APIs
 echo "Enabling GCP APIs..."
 gcloud services enable \
     storage.googleapis.com \
@@ -22,13 +25,13 @@ gcloud services enable \
     iam.googleapis.com \
     cloudresourcemanager.googleapis.com
 
-# 2. Create service account
+# Create service account
 echo "Creating Terraform service account..."
 gcloud iam service-accounts create $SERVICE_ACCOUNT_NAME \
     --project=$PROJECT_ID \
-    --display-name="Terraform Service Account"
+    --display-name="Terraform Service Account" || echo "Service account already exists"
 
-# 3. Assign roles
+# Assign roles
 echo "Assigning roles..."
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" \
@@ -42,14 +45,16 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" \
     --role="roles/iam.serviceAccountUser"
 
-# 4. Generate key
-echo "Generating service account key..."
+# Generate key file
+echo "Generating new service account key..."
 gcloud iam service-accounts keys create $KEY_FILE \
     --iam-account=$SERVICE_ACCOUNT_EMAIL \
     --project=$PROJECT_ID
 
 echo ""
 echo "✅ Setup complete!"
+echo "Key file created: $KEY_FILE"
+echo ""
 echo "Next steps:"
 echo "1. export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/$KEY_FILE"
 echo "2. cd infra"

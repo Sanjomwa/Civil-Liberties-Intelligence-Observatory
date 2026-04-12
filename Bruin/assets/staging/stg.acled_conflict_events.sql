@@ -1,30 +1,21 @@
 /* @bruin
 name: stg.acled_conflict_events
-type: duckdb.sql
-connection: duckdb-parquet
-
-environments:
-  staging:
-    type: bq.sql
-    connection: bigquery-default
-  prod:
-    type: bq.sql
-    connection: bigquery-default
-
-description: Cleaned ACLED conflict events with derived fields
+type: bq.sql
+connection: bigquery-default
+description: Cleaned ACLED conflict events with derived fields for Kenya (Jun 2023 – Jun 2025)
 owner: civil-liberties-pipeline
+
+depends:
+  - load.acled_conflict_events_to_gcs
 
 materialization:
   type: table
   strategy: create+replace
-
-depends:
-  - load.acled_conflict_events_to_gcs
 @bruin */
 
 WITH raw AS (
     SELECT
-        id AS event_id,
+        id                                                  AS event_id,
         week,
         region,
         country,
@@ -38,10 +29,11 @@ WITH raw AS (
         centroid_latitude,
         centroid_longitude,
         extracted_at,
-        -- Derived fields for easier analysis
-        PARSE_DATE('%d-%B-%Y', week) AS measurement_date,
-        EXTRACT(YEAR FROM PARSE_DATE('%d-%B-%Y', week)) AS year
-    FROM {{ ref('load.acled_conflict_events_to_gcs') }}
+        -- ACLED week format is 'DD-MonthName-YYYY', e.g. '01-June-2023'
+        PARSE_DATE('%d-%B-%Y', week)                        AS measurement_date,
+        EXTRACT(YEAR FROM PARSE_DATE('%d-%B-%Y', week))     AS year
+    FROM `encoded-joy-485413-k5.civil_liberties_staging.acled_conflict_events`
+    WHERE country = 'Kenya'
 )
 
-SELECT * FROM raw;
+SELECT * FROM raw

@@ -1,25 +1,16 @@
 /* @bruin
 name: stg.lumen_requests
-type: duckdb.sql
-connection: duckdb-parquet
-
-environments:
-  staging:
-    type: bq.sql
-    connection: bigquery-default
-  prod:
-    type: bq.sql
-    connection: bigquery-default
-
-description: Cleaned Lumen takedown requests
+type: bq.sql
+connection: bigquery-default
+description: Cleaned Lumen takedown requests for Kenya (Jun 2023 – Jun 2025)
 owner: civil-liberties-pipeline
+
+depends:
+  - load.lumen_requests_to_gcs
 
 materialization:
   type: table
   strategy: create+replace
-
-depends:
-  - load.lumen_requests_to_gcs
 @bruin */
 
 WITH raw AS (
@@ -35,9 +26,11 @@ WITH raw AS (
         request_count,
         item_count,
         extracted_at,
-        DATE(date_submitted) AS measurement_date,
-        EXTRACT(YEAR FROM date_submitted) AS year
-    FROM {{ ref('load.lumen_requests_to_gcs') }}
+        DATE(date_submitted)                    AS measurement_date,
+        EXTRACT(YEAR FROM date_submitted)       AS year
+    FROM `encoded-joy-485413-k5.civil_liberties_staging.lumen_requests`
+    WHERE country = 'Kenya'
+       OR country = 'KE'
 )
 
-SELECT * FROM raw;
+SELECT * FROM raw

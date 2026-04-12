@@ -1,25 +1,16 @@
 /* @bruin
 name: stg.google_transparency_detailed
-type: duckdb.sql
-connection: duckdb-parquet
-
-environments:
-  staging:
-    type: bq.sql
-    connection: bigquery-default
-  prod:
-    type: bq.sql
-    connection: bigquery-default
-
-description: Cleaned Google Transparency detailed removal requests
+type: bq.sql
+connection: bigquery-default
+description: Cleaned Google Transparency detailed removal requests for Kenya (Jun 2023 – Jun 2025)
 owner: civil-liberties-pipeline
+
+depends:
+  - load.google_transparency_detailed_to_gcs
 
 materialization:
   type: table
   strategy: create+replace
-
-depends:
-  - load.google_transparency_detailed_to_gcs
 @bruin */
 
 WITH raw AS (
@@ -31,10 +22,10 @@ WITH raw AS (
         reason,
         total,
         extracted_at,
-        -- Derived fields
-        PARSE_DATE('%Y-%m-%d', period_ending) AS period_date,
+        PARSE_DATE('%Y-%m-%d', period_ending)               AS period_date,
         EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', period_ending)) AS year
-    FROM {{ ref('load.google_transparency_detailed_to_gcs') }}
+    FROM `encoded-joy-485413-k5.civil_liberties_staging.google_transparency_detailed`
+    WHERE cldr_territory_code = 'KE'
 )
 
-SELECT * FROM raw;
+SELECT * FROM raw
