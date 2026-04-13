@@ -1,4 +1,7 @@
 /* @bruin
+tags:
+  - stg_bq
+  - dataset_acled_conflict_events
 name: stg.acled_conflict_events
 type: bq.sql
 connection: bigquery-default
@@ -29,7 +32,6 @@ WITH raw AS (
         centroid_latitude,
         centroid_longitude,
         extracted_at,
-        -- ACLED week format is 'DD-MonthName-YYYY', e.g. '01-June-2023'
         PARSE_DATE('%d-%B-%Y', week)                        AS measurement_date,
         EXTRACT(YEAR FROM PARSE_DATE('%d-%B-%Y', week))     AS year
     FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.acled_conflict_events`
