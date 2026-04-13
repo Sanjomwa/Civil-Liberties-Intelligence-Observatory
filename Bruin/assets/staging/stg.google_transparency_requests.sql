@@ -16,7 +16,7 @@ materialization:
   strategy: create+replace
 @bruin */
 
-WITH raw AS (
+WITH base AS (
     SELECT
         time_period,
         country,
@@ -29,11 +29,35 @@ WITH raw AS (
         items_removed_legal,
         items_removed_policy,
         extracted_at,
-        PARSE_DATE('%Y-%m', time_period)                    AS period_date,
-        EXTRACT(YEAR FROM PARSE_DATE('%Y-%m', time_period)) AS year
+        CASE
+            WHEN REGEXP_CONTAINS(time_period, r'January\s*-\s*June\s+\d{4}')
+                THEN DATE(CAST(REGEXP_EXTRACT(time_period, r'(\d{4})') AS INT64), 6, 1)
+            WHEN REGEXP_CONTAINS(time_period, r'July\s*-\s*December\s+\d{4}')
+                THEN DATE(CAST(REGEXP_EXTRACT(time_period, r'(\d{4})') AS INT64), 12, 1)
+            ELSE SAFE.PARSE_DATE('%Y-%m', time_period)
+        END AS period_date
     FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.google_transparency_requests`
     WHERE country = 'Kenya'
        OR cldr_territory = 'KE'
+),
+
+raw AS (
+    SELECT
+        time_period,
+        country,
+        cldr_territory,
+        requestor,
+        product,
+        reason,
+        number_of_requests,
+        items_requested_removal,
+        items_removed_legal,
+        items_removed_policy,
+        extracted_at,
+        period_date,
+        EXTRACT(YEAR FROM period_date) AS year
+    FROM base
+    WHERE period_date IS NOT NULL
 )
 
 SELECT * FROM raw

@@ -16,7 +16,7 @@ materialization:
   strategy: create+replace
 @bruin */
 
-WITH raw AS (
+WITH base AS (
     SELECT
         request_id,
         country,
@@ -29,11 +29,43 @@ WITH raw AS (
         request_count,
         item_count,
         extracted_at,
-        DATE(date_submitted)                    AS measurement_date,
-        EXTRACT(YEAR FROM date_submitted)       AS year
+        CASE
+            -- plausible UNIX seconds range
+            WHEN date_submitted BETWEEN 946684800 AND 4102444800
+                THEN TIMESTAMP_SECONDS(date_submitted)
+
+            -- plausible UNIX milliseconds range
+            WHEN date_submitted BETWEEN 946684800000 AND 4102444800000
+                THEN TIMESTAMP_MILLIS(date_submitted)
+
+            -- plausible UNIX microseconds range
+            WHEN date_submitted BETWEEN 946684800000000 AND 4102444800000000
+                THEN TIMESTAMP_MICROS(date_submitted)
+
+            ELSE NULL
+        END AS submitted_ts
     FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.lumen_requests`
     WHERE country = 'Kenya'
        OR country = 'KE'
+),
+
+raw AS (
+    SELECT
+        request_id,
+        country,
+        sender,
+        recipient,
+        date_submitted,
+        period,
+        half_year_label,
+        reason,
+        request_count,
+        item_count,
+        extracted_at,
+        DATE(submitted_ts)              AS measurement_date,
+        EXTRACT(YEAR FROM submitted_ts) AS year
+    FROM base
+    WHERE submitted_ts IS NOT NULL
 )
 
 SELECT * FROM raw
