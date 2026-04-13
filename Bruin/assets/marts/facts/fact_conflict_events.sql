@@ -1,4 +1,6 @@
 /* @bruin
+tags:
+  - marts_bq 
 name: fact_conflict_events
 type: bq.sql
 connection: bigquery-default
