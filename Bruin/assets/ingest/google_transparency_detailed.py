@@ -1,7 +1,7 @@
 """@bruin
 name: raw.google_transparency_detailed
 type: python
-image: python:3.11
+image: python:3.12+
 connection: duckdb-parquet
 description: Ingests Google Transparency detailed removal requests CSV and exports as Parquet.
 
