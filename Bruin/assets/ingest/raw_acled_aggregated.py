@@ -1,7 +1,10 @@
 """@bruin
+tags:
+  - raw_dev
+  - dataset_acled_conflict_events
 name: raw.acled_conflict_events
 type: python
-image: python:3.11
+image: python:3.12
 connection: duckdb-parquet
 description: Ingests ACLED aggregated conflict events CSV into raw table and exports as Parquet.
 owner: civil-liberties-pipeline
@@ -59,18 +62,18 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
+from _env import resolve_env, require_dev
+ENV = resolve_env(fallback="dev")
+require_dev(ENV)
 
 def materialize():
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/acled"
-    csv_file = Path(base_path) / \
-        "Africa_aggregated_data_up_to_week_of-2026-03-14.csv"
+    csv_file = Path(base_path) / "Africa_aggregated_data_up_to_week_of-2026-03-14.csv"
     parquet_out = Path(base_path) / "acled_conflict_events.parquet"
 
     print(f"📂 Reading ACLED CSV: {csv_file.name}")
 
     df = pd.read_csv(csv_file)
-
-    # Rename columns to match the actual CSV headers
     df = df.rename(columns={
         "WEEK": "week",
         "REGION": "region",
@@ -88,7 +91,6 @@ def materialize():
     })
 
     df["extracted_at"] = datetime.now()
-
     df.to_parquet(parquet_out, index=False, compression="snappy")
 
     print(f"✅ Ingested {len(df):,} ACLED conflict events")
