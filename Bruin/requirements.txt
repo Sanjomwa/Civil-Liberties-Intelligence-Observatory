@@ -42,3 +42,6 @@ urllib3==2.6.3
     # via
     #   -r requirements.txt
     #   requests
+google-cloud-bigquery>=3.13.0,<4.0
+google-cloud-storage>=2.10.0,<3.0
+gcsfs>=2024.0.0

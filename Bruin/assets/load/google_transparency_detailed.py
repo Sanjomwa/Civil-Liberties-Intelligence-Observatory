@@ -1,7 +1,7 @@
 """@bruin
 name: load.google_transparency_detailed_to_gcs
 type: python
-image: python:3.11
+image: python:3.12+
 connection: duckdb-parquet
 description: |
   Uploads Google Transparency detailed removal data Parquet to GCS and

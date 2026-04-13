@@ -1,7 +1,7 @@
 """@bruin
 name: load.acled_conflict_events_to_gcs
 type: python
-image: python:3.11
+image: python:3.12
 connection: duckdb-parquet
 description: |
   Uploads ACLED conflict events Parquet to GCS and creates/refreshes a
