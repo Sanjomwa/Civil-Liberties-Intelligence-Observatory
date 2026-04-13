@@ -1,4 +1,7 @@
 """@bruin
+tags:
+  - raw_dev
+  - dataset_google_transparency_detailed
 name: raw.google_transparency_detailed
 type: python
 image: python:3.12+
@@ -37,6 +40,9 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
+from _env import resolve_env, require_dev
+ENV = resolve_env(fallback="dev")
+require_dev(ENV)
 
 def materialize():
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google"
