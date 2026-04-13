@@ -303,6 +303,7 @@ streamlit = [
     { name = "pandas" },
     { name = "plotly" },
     { name = "pyarrow" },
+    { name = "requests" },
     { name = "streamlit" },
 ]
 test = [
@@ -336,6 +337,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.0,<2.0" },
     { name = "pyyaml", marker = "extra == 'test'", specifier = ">=6.0.0,<7.0" },
     { name = "requests", specifier = ">=2.31.0,<3.0" },
+    { name = "requests", marker = "extra == 'streamlit'", specifier = ">=2.31.0,<3.0" },
     { name = "streamlit", specifier = ">=1.55.0" },
     { name = "streamlit", marker = "extra == 'streamlit'", specifier = ">=1.44.0,<2.0" },
     { name = "termcolor", specifier = ">=3.3.0" },
