@@ -1,4 +1,7 @@
 /* @bruin
+tags:
+  - stg_bq
+  - dataset_google_transparency_detailed
 name: stg.google_transparency_detailed
 type: bq.sql
 connection: bigquery-default
@@ -22,9 +25,9 @@ WITH raw AS (
         reason,
         total,
         extracted_at,
-        PARSE_DATE('%Y-%m-%d', period_ending)               AS period_date,
+        PARSE_DATE('%Y-%m-%d', period_ending)                    AS period_date,
         EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', period_ending)) AS year
-    FROM `encoded-joy-485413-k5.civil_liberties_staging.google_transparency_detailed`
+    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.google_transparency_detailed`
     WHERE cldr_territory_code = 'KE'
 )
 
