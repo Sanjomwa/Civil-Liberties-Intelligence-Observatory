@@ -1,4 +1,7 @@
 """@bruin
+tags:
+  - raw_dev
+  - dataset_ooni_conflict_measurements
 name: raw.ooni_conflict_measurements
 type: python
 image: python:3.12
@@ -12,28 +15,15 @@ materialization:
 
 import glob
 import os
-import gzip
-import json
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
-
-def resolve_env(default="dev") -> str:
-    for k in ("BRUIN_ENV", "BRUIN_ENVIRONMENT", "BRUIN_PIPELINE_ENVIRONMENT"):
-        v = os.getenv(k)
-        if v and v.strip():
-            return v.strip().lower()
-    return default
-
+from _env import resolve_env, require_dev
+ENV = resolve_env(fallback="dev")
+require_dev(ENV)
 
 def materialize():
-    env = resolve_env("dev")
-    if env != "dev":
-        raise ValueError(
-            f"raw.ooni_conflict_measurements is dev-only. Got ENV={env}."
-        )
-
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/ooni"
     data_root = os.path.join(base_path, "ooni-kenya-censorship")
     Path(base_path).mkdir(parents=True, exist_ok=True)
@@ -58,13 +48,11 @@ def materialize():
                 chunk["start_time"].astype(str), errors="coerce", utc=True, format="mixed"
             ).dt.tz_localize(None)
 
-            filtered = chunk[(chunk["start_time"] >= start_ts) & (
-                chunk["start_time"] <= end_ts)].copy()
+            filtered = chunk[(chunk["start_time"] >= start_ts) & (chunk["start_time"] <= end_ts)].copy()
             if filtered.empty:
                 continue
 
-            filtered["measurement_id"] = filtered.get(
-                "measurement_uid", filtered.get("id"))
+            filtered["measurement_id"] = filtered.get("measurement_uid", filtered.get("id"))
             if "probe_asn" not in filtered.columns and "asn" in filtered.columns:
                 filtered["probe_asn"] = filtered["asn"]
 
@@ -72,8 +60,7 @@ def materialize():
             if "anomaly" in filtered.columns:
                 filtered.loc[filtered["anomaly"] == True, "status"] = "anomaly"
             if "confirmed" in filtered.columns:
-                filtered.loc[filtered["confirmed"]
-                             == True, "status"] = "confirmed"
+                filtered.loc[filtered["confirmed"] == True, "status"] = "confirmed"
             if "failure" in filtered.columns:
                 filtered.loc[filtered["failure"] == True, "status"] = "failure"
 
