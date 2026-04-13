@@ -1,4 +1,6 @@
 /* @bruin
+tags:
+  - marts_bq 
 name: dim_reasons
 type: bq.sql
 connection: bigquery-default
