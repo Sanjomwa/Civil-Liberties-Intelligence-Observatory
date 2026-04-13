@@ -18,10 +18,25 @@ materialization:
   strategy: create+replace
 @bruin"""
 
+import os
 import pandas as pd
 from datetime import datetime
 from google.cloud import bigquery
-from _env import resolve_env, require_cloud_env
+
+
+def resolve_env(fallback: str = "staging") -> str:
+    for k in ("BRUIN_ENV", "BRUIN_ENVIRONMENT", "BRUIN_PIPELINE_ENVIRONMENT"):
+        v = os.getenv(k)
+        if v and v.strip():
+            return v.strip().lower()
+    return fallback
+
+
+def require_cloud_env(env: str) -> None:
+    if env not in ("staging", "prod"):
+        raise ValueError(
+            f"This load asset supports only staging/prod. Got ENV={env!r}.")
+
 
 PROJECT_ID = "encoded-joy-485413-k5"
 GCS_BUCKET = "civil-liberties-data"
@@ -48,7 +63,8 @@ def materialize():
     print("✅ GCS upload complete")
 
     bq = bigquery.Client(project=PROJECT_ID)
-    external_config = bigquery.ExternalConfig(bigquery.ExternalSourceFormat.PARQUET)
+    external_config = bigquery.ExternalConfig(
+        bigquery.ExternalSourceFormat.PARQUET)
     external_config.source_uris = [gcs_uri]
     external_config.autodetect = True
 

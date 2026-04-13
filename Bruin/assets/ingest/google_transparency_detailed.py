@@ -36,17 +36,34 @@ columns:
     description: Pipeline extraction timestamp
 @bruin"""
 
+import os
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
-from _env import resolve_env, require_dev
+
+def resolve_env(fallback: str = "dev") -> str:
+    for k in ("BRUIN_ENV", "BRUIN_ENVIRONMENT", "BRUIN_PIPELINE_ENVIRONMENT"):
+        v = os.getenv(k)
+        if v and v.strip():
+            return v.strip().lower()
+    return fallback
+
+
+def require_dev(env: str) -> None:
+    if env != "dev":
+        raise ValueError(
+            f"raw.google_transparency_detailed is dev-only. Got ENV={env}.")
+
+
 ENV = resolve_env(fallback="dev")
 require_dev(ENV)
 
+
 def materialize():
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google"
-    csv_file = Path(base_path) / "google-government-detailed-removal-requests.csv"
+    csv_file = Path(base_path) / \
+        "google-government-detailed-removal-requests.csv"
     parquet_out = Path(base_path) / "google_transparency_detailed.parquet"
 
     print(f"📂 Reading Google detailed CSV: {csv_file.name}")
@@ -58,7 +75,7 @@ def materialize():
         "CLDR Territory Code": "cldr_territory_code",
         "Product": "product",
         "Reason": "reason",
-        "Total": "total"
+        "Total": "total",
     })
 
     df["extracted_at"] = datetime.now()

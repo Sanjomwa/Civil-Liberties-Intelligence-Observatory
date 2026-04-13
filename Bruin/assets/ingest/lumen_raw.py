@@ -38,14 +38,31 @@ columns:
     type: TIMESTAMP
 @bruin"""
 
+import os
 import pandas as pd
 import random
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from _env import resolve_env, require_dev
+import os
+
+
+def resolve_env(fallback: str = "dev") -> str:
+    for k in ("BRUIN_ENV", "BRUIN_ENVIRONMENT", "BRUIN_PIPELINE_ENVIRONMENT"):
+        v = os.getenv(k)
+        if v and v.strip():
+            return v.strip().lower()
+    return fallback
+
+
+def require_dev(env: str) -> None:
+    if env != "dev":
+        raise ValueError(f"This raw asset is dev-only. Got ENV={env!r}.")
+
+
 ENV = resolve_env(fallback="dev")
 require_dev(ENV)
+
 
 def materialize():
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/lumen"

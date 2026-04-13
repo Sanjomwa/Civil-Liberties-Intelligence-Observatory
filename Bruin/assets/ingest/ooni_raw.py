@@ -13,15 +13,31 @@ materialization:
   strategy: create+replace
 @bruin"""
 
-import glob
 import os
+import glob
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
-from _env import resolve_env, require_dev
+import os
+
+
+def resolve_env(fallback: str = "dev") -> str:
+    for k in ("BRUIN_ENV", "BRUIN_ENVIRONMENT", "BRUIN_PIPELINE_ENVIRONMENT"):
+        v = os.getenv(k)
+        if v and v.strip():
+            return v.strip().lower()
+    return fallback
+
+
+def require_dev(env: str) -> None:
+    if env != "dev":
+        raise ValueError(f"This raw asset is dev-only. Got ENV={env!r}.")
+
+
 ENV = resolve_env(fallback="dev")
 require_dev(ENV)
+
 
 def materialize():
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/ooni"
@@ -48,11 +64,13 @@ def materialize():
                 chunk["start_time"].astype(str), errors="coerce", utc=True, format="mixed"
             ).dt.tz_localize(None)
 
-            filtered = chunk[(chunk["start_time"] >= start_ts) & (chunk["start_time"] <= end_ts)].copy()
+            filtered = chunk[(chunk["start_time"] >= start_ts) & (
+                chunk["start_time"] <= end_ts)].copy()
             if filtered.empty:
                 continue
 
-            filtered["measurement_id"] = filtered.get("measurement_uid", filtered.get("id"))
+            filtered["measurement_id"] = filtered.get(
+                "measurement_uid", filtered.get("id"))
             if "probe_asn" not in filtered.columns and "asn" in filtered.columns:
                 filtered["probe_asn"] = filtered["asn"]
 
@@ -60,7 +78,8 @@ def materialize():
             if "anomaly" in filtered.columns:
                 filtered.loc[filtered["anomaly"] == True, "status"] = "anomaly"
             if "confirmed" in filtered.columns:
-                filtered.loc[filtered["confirmed"] == True, "status"] = "confirmed"
+                filtered.loc[filtered["confirmed"]
+                             == True, "status"] = "confirmed"
             if "failure" in filtered.columns:
                 filtered.loc[filtered["failure"] == True, "status"] = "failure"
 
