@@ -1,4 +1,7 @@
 /* @bruin
+tags:
+  - stg_bq
+  - dataset_google_transparency_requests
 name: stg.google_transparency_requests
 type: bq.sql
 connection: bigquery-default
