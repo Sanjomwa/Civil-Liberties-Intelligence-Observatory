@@ -4,7 +4,7 @@ tags:
   - dataset_google_transparency_detailed
 name: raw.google_transparency_detailed
 type: python
-image: python:3.12+
+image: python:3.12
 connection: duckdb-parquet
 description: Ingests Google Transparency detailed removal requests CSV and exports as Parquet.
 
@@ -46,15 +46,12 @@ require_dev(ENV)
 
 def materialize():
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google"
-    csv_file = Path(base_path) / \
-        "google-government-detailed-removal-requests.csv"
+    csv_file = Path(base_path) / "google-government-detailed-removal-requests.csv"
     parquet_out = Path(base_path) / "google_transparency_detailed.parquet"
 
     print(f"📂 Reading Google detailed CSV: {csv_file.name}")
 
     df = pd.read_csv(csv_file)
-
-    # Standardise column names to match schema
     df = df.rename(columns={
         "Period Ending": "period_ending",
         "Country/Region": "country_region",
@@ -65,7 +62,6 @@ def materialize():
     })
 
     df["extracted_at"] = datetime.now()
-
     df.to_parquet(parquet_out, index=False, compression="snappy")
 
     print(f"✅ Ingested {len(df):,} rows → google_transparency_detailed")
