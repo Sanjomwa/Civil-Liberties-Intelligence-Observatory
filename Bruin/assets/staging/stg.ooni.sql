@@ -1,4 +1,7 @@
 /* @bruin
+tags:
+  - stg_bq
+  - dataset_ooni_conflict_measurements
 name: stg.ooni
 type: bq.sql
 connection: bigquery-default
