@@ -1,4 +1,6 @@
 /* @bruin
+tags:
+  - marts_bq 
 name: fact_takedown_trends
 type: bq.sql
 connection: bigquery-default
