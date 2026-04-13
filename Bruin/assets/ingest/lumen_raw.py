@@ -1,7 +1,10 @@
 """@bruin
+tags:
+  - raw_dev
+  - dataset_lumen_requests
 name: raw.lumen_requests
 type: python
-image: python:3.11
+image: python:3.12
 connection: duckdb-parquet
 description: |
   Generates mock Lumen takedown requests (Jun 2023–Jun 2025) until real API access is available.
@@ -40,6 +43,9 @@ import random
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from _env import resolve_env, require_dev
+ENV = resolve_env(fallback="dev")
+require_dev(ENV)
 
 def materialize():
     base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/lumen"
@@ -48,7 +54,6 @@ def materialize():
 
     print("Generating mock Lumen takedown data...")
 
-    # Mock data parameters
     senders = ["Gov Agency", "Law Firm", "Communications Authority of Kenya"]
     recipients = ["Google", "Twitter", "Facebook", "TikTok", "YouTube"]
     reasons = ["Copyright", "Defamation", "National Security", "Other"]
@@ -58,7 +63,7 @@ def materialize():
     end_date = datetime(2025, 6, 30)
     total_days = (end_date - start_date).days
 
-    for i in range(1, 501):  # increased to 500 for better coverage
+    for i in range(1, 501):
         date = start_date + timedelta(days=random.randint(0, total_days))
         year = date.year
         month = date.month
@@ -81,6 +86,5 @@ def materialize():
 
     df = pd.DataFrame(rows)
     df.to_parquet(parquet_out, index=False, compression="snappy")
-
     print(f"✅ Generated {len(df):,} mock Lumen rows")
     return df
