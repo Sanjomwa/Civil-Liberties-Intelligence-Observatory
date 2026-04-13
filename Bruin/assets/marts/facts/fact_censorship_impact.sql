@@ -1,4 +1,6 @@
 /* @bruin
+tags:
+  - marts_bq 
 name: fact_censorship_impact
 type: bq.sql
 connection: bigquery-default
