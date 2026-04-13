@@ -1,4 +1,6 @@
 /* @bruin
+tags:
+  - reporting_bq 
 name: civil_liberties_mart
 type: bq.sql
 connection: bigquery-default
