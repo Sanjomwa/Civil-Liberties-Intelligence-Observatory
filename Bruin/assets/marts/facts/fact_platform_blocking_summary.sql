@@ -1,4 +1,6 @@
 /* @bruin
+tags:
+  - marts_bq 
 name: fact_platform_blocking_summary
 type: bq.sql
 connection: bigquery-default
