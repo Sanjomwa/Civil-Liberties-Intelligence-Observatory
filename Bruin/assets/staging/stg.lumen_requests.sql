@@ -1,4 +1,7 @@
 /* @bruin
+tags:
+  - stg_bq
+  - dataset_lumen_requests
 name: stg.lumen_requests
 type: bq.sql
 connection: bigquery-default
