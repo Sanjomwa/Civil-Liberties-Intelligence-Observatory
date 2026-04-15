@@ -1,7 +1,7 @@
 /* @bruin
 tags:
   - marts_bq
-name: fact_censorship_measurements
+name: marts.fact_censorship_measurements
 type: bq.sql
 connection: bigquery-default
 description: One row per OONI measurement in Kenya.

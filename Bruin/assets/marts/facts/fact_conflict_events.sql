@@ -1,7 +1,7 @@
 /* @bruin
 tags:
   - marts_bq
-name: fact_conflict_events
+name: marts.fact_conflict_events
 type: bq.sql
 connection: bigquery-default
 description: One row per ACLED conflict/protest event in Kenya.

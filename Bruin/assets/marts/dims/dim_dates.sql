@@ -1,7 +1,7 @@
 /* @bruin
 tags:
   - marts_bq
-name: dim_dates
+name: marts.dim_dates
 type: bq.sql
 connection: bigquery-default
 description: Master date dimension covering Jun 2023 – Jun 2025.

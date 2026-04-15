@@ -1,7 +1,7 @@
 /* @bruin
 tags:
   - reporting_bq
-name: civil_liberties_mart
+name: reporting.civil_liberties_mart
 type: bq.sql
 connection: bigquery-default
 description: |
@@ -13,17 +13,17 @@ description: |
 owner: civil-liberties-pipeline
 
 depends:
-  - fact_censorship_impact
-  - fact_takedown_requests
-  - fact_platform_blocking_summary
-  - fact_takedown_trends
-  - dim_dates
-  - dim_regions
-  - dim_platforms
-  - dim_test_categories
-  - dim_reasons
-  - dim_event_types
-  - dim_requestors
+  - marts.fact_censorship_impact
+  - marts.fact_takedown_requests
+  - marts.fact_platform_blocking_summary
+  - marts.fact_takedown_trends
+  - marts.dim_dates
+  - marts.dim_regions
+  - marts.dim_platforms
+  - marts.dim_test_categories
+  - marts.dim_reasons
+  - marts.dim_event_types
+  - marts.dim_requestors
 
 materialization:
   type: table
@@ -73,7 +73,7 @@ monthly_blocking AS (
     SELECT
         year,
         month,
-        platform,                   -- changed from test_name
+        platform,
         blocking_rate,
         confirmed_blocking_rate,
         total_measurements,
@@ -172,7 +172,7 @@ SELECT
          AND COALESCE(total_takedown_requests, 0) > 0 THEN 'Blocking + Removal Activity'
         WHEN is_blocked                               THEN 'Blocking Only'
         ELSE 'No Suppression Signal'
-    END                                             AS suppression_window_type
+    END                                              AS suppression_window_type
 
 FROM mart_base
 ORDER BY measurement_date DESC, blocking_severity_rank ASC

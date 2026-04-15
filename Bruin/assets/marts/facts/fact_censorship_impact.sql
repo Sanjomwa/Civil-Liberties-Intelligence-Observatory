@@ -1,17 +1,14 @@
-/* =========================
-13) fact_censorship_impact.sql
-========================= */
 /* @bruin
 tags:
   - marts_bq
-name: fact_censorship_impact
+name: marts.fact_censorship_impact
 type: bq.sql
 connection: bigquery-default
 description: OONI measurements enriched with same-day ACLED context.
 owner: civil-liberties-pipeline
 depends:
-  - fact_censorship_measurements
-  - fact_conflict_events
+  - marts.fact_censorship_measurements
+  - marts.fact_conflict_events
 materialization:
   type: table
   strategy: create+replace

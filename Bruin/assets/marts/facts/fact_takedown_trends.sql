@@ -1,13 +1,13 @@
 /* @bruin
 tags:
   - marts_bq
-name: fact_takedown_trends
+name: marts.fact_takedown_trends
 type: bq.sql
 connection: bigquery-default
 description: Monthly aggregated takedown trends.
 owner: civil-liberties-pipeline
 depends:
-  - fact_takedown_requests
+  - marts.fact_takedown_requests
 materialization:
   type: table
   strategy: create+replace

@@ -1,13 +1,13 @@
 /* @bruin
 tags:
   - marts_bq
-name: fact_platform_blocking_summary
+name: marts.fact_platform_blocking_summary
 type: bq.sql
 connection: bigquery-default
 description: Monthly blocking summary by platform.
 owner: civil-liberties-pipeline
 depends:
-  - fact_censorship_measurements
+  - marts.fact_censorship_measurements
 materialization:
   type: table
   strategy: create+replace

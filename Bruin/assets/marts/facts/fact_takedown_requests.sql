@@ -1,7 +1,7 @@
 /* @bruin
 tags:
   - marts_bq
-name: fact_takedown_requests
+name: marts.fact_takedown_requests
 type: bq.sql
 connection: bigquery-default
 description: Row-level takedown requests (Google + Lumen).

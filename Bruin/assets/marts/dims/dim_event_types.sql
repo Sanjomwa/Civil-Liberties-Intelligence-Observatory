@@ -1,7 +1,7 @@
 /* @bruin
 tags:
   - marts_bq
-name: dim_event_types
+name: marts.dim_event_types
 type: bq.sql
 connection: bigquery-default
 description: ACLED event taxonomy.
@@ -28,7 +28,7 @@ SELECT DISTINCT
     WHEN sub_event_type LIKE '%march%' THEN TRUE
     ELSE FALSE
   END AS censorship_trigger_likely
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.stg_acled_conflict_events`
+FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.acled_conflict_events`
 WHERE country = 'Kenya'
   AND event_type IS NOT NULL
 ORDER BY event_type, sub_event_type;

@@ -1,7 +1,7 @@
 /* @bruin
 tags:
   - marts_bq
-name: dim_regions
+name: marts.dim_regions
 type: bq.sql
 connection: bigquery-default
 description: Kenya regions/counties dimension.
@@ -32,7 +32,7 @@ SELECT DISTINCT
     WHEN region = 'North Eastern' THEN 'North Eastern'
     ELSE 'Other'
   END AS region_group
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.stg_acled_conflict_events`
+FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.acled_conflict_events`
 WHERE country = 'Kenya'
   AND admin1 IS NOT NULL
 ORDER BY region, admin1;

@@ -1,7 +1,7 @@
 /* @bruin
 tags:
   - marts_bq
-name: dim_test_categories
+name: marts.dim_test_categories
 type: bq.sql
 connection: bigquery-default
 description: OONI test category dimension.
@@ -27,7 +27,7 @@ SELECT DISTINCT
     WHEN test_category = 'Website/DNS Blocking' THEN 3
     ELSE 4
   END AS severity_rank
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.stg_ooni`
+FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.ooni_measurements`
 WHERE probe_cc = 'KE'
   AND test_category IS NOT NULL
 ORDER BY severity_rank;
