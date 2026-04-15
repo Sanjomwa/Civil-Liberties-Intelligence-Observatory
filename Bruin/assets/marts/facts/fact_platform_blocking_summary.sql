@@ -27,6 +27,6 @@ SELECT
   SAFE_DIVIDE(COUNTIF(is_confirmed_block), COUNT(*)) AS confirmed_blocking_rate,
   COUNT(DISTINCT tested_url_or_app) AS distinct_targets_tested,
   COUNT(DISTINCT IF(is_blocked, tested_url_or_app, NULL)) AS distinct_targets_blocked
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_censorship_measurements`
+FROM `encoded-joy-485413-k5.marts.fact_censorship_measurements`
 GROUP BY test_name, test_category, year, month
 ORDER BY year, month, blocking_rate DESC;
