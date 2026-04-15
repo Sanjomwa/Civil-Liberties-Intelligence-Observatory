@@ -1,6 +1,6 @@
 /* @bruin
 tags:
-  - reporting_bq 
+  - reporting_bq
 name: civil_liberties_mart
 type: bq.sql
 connection: bigquery-default
@@ -32,7 +32,6 @@ materialization:
 
 WITH
 
--- ── Takedown activity aggregated to day level ─────────────────────────────
 daily_takedowns AS (
     SELECT
         measurement_date,
@@ -70,12 +69,11 @@ daily_takedowns AS (
     GROUP BY measurement_date
 ),
 
--- ── Monthly blocking rate context (for trend arrows in dashboard) ─────────
 monthly_blocking AS (
     SELECT
         year,
         month,
-        test_name,
+        platform,                   -- changed from test_name
         blocking_rate,
         confirmed_blocking_rate,
         total_measurements,
@@ -84,10 +82,8 @@ monthly_blocking AS (
     FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_platform_blocking_summary`
 ),
 
--- ── Core join: censorship impact × dates × regions × takedowns ───────────
 mart_base AS (
     SELECT
-        -- Measurement identity
         ci.measurement_id,
         ci.measurement_date,
         ci.year,
@@ -103,7 +99,6 @@ mart_base AS (
         ci.blocked_on_protest_day,
         ci.extracted_at,
 
-        -- Conflict context (from fact_censorship_impact)
         ci.conflict_event_count,
         ci.total_events                             AS conflict_events_on_day,
         ci.total_fatalities                         AS fatalities_on_day,
@@ -112,7 +107,6 @@ mart_base AS (
         ci.counties_affected,
         ci.total_population_exposure,
 
-        -- Date dimension
         dd.day_name,
         dd.month_name,
         dd.year_month,
@@ -122,15 +116,12 @@ mart_base AS (
         dd.is_weekend,
         dd.reporting_period_flag,
 
-        -- Test category dimension
         dtc.category_group,
         dtc.severity_rank                           AS blocking_severity_rank,
 
-        -- Platform dimension
         dp.platform_category,
         dp.source                                   AS platform_source,
 
-        -- Daily takedown context
         td.takedown_records,
         td.total_takedown_requests,
         td.total_items_targeted,
@@ -138,7 +129,6 @@ mart_base AS (
         td.platforms_targeted                       AS takedown_platforms_targeted,
         td.active_reason_groups,
 
-        -- Monthly blocking rate (for context in single-row views)
         mb.blocking_rate                            AS monthly_platform_blocking_rate,
         mb.confirmed_blocking_rate                  AS monthly_confirmed_blocking_rate
 
@@ -160,22 +150,18 @@ mart_base AS (
     LEFT JOIN monthly_blocking mb
         ON ci.year      = mb.year
        AND ci.month     = mb.month
-       AND ci.test_name = mb.test_name
+       AND ci.test_name = mb.platform
 )
 
 SELECT
     *,
 
-    -- ── Observatory headline metrics (pre-computed for dashboard KPI cards) ──
-
-    -- Censorship intensity score: combines blocking + conflict + takedowns
     ROUND(
         (CASE WHEN is_blocked THEN 0.5 ELSE 0.0 END)
         + (CASE WHEN blocked_on_protest_day THEN 0.3 ELSE 0.0 END)
         + LEAST(COALESCE(protest_events_on_day, 0) * 0.05, 0.2),
     2)                                              AS censorship_intensity_score,
 
-    -- Suppression window flag: blocks + protest same day + takedown activity
     CASE
         WHEN is_blocked
          AND COALESCE(protest_events_on_day, 0) > 0
