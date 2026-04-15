@@ -16,19 +16,19 @@ materialization:
 @bruin */
 
 SELECT
-  'google_requests' AS source,
+  'google_requests'                               AS source,
   country,
-  product AS platform,
-  requestor AS requestor_name,
+  product                                         AS platform,
+  requestor                                       AS requestor_name,
   reason,
   time_period,
   number_of_requests,
   items_requested_removal,
   items_removed_legal,
   items_removed_policy,
-  NULL AS item_count,
-  extracted_at,
-  period_date AS measurement_date,
+  NULL                                            AS item_count,
+  CAST(extracted_at AS TIMESTAMP)                 AS extracted_at,
+  period_date                                     AS measurement_date,
   year
 FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
 WHERE country = 'Kenya' OR cldr_territory = 'KE'
@@ -36,19 +36,19 @@ WHERE country = 'Kenya' OR cldr_territory = 'KE'
 UNION ALL
 
 SELECT
-  'google_detailed' AS source,
-  country_region AS country,
-  product AS platform,
-  NULL AS requestor_name,
+  'google_detailed'                               AS source,
+  country_region                                  AS country,
+  product                                         AS platform,
+  NULL                                            AS requestor_name,
   reason,
-  NULL AS time_period,
-  total AS number_of_requests,
-  NULL AS items_requested_removal,
-  NULL AS items_removed_legal,
-  NULL AS items_removed_policy,
-  NULL AS item_count,
-  extracted_at,
-  period_date AS measurement_date,
+  NULL                                            AS time_period,
+  total                                           AS number_of_requests,
+  NULL                                            AS items_requested_removal,
+  NULL                                            AS items_removed_legal,
+  NULL                                            AS items_removed_policy,
+  NULL                                            AS item_count,
+  CAST(extracted_at AS TIMESTAMP)                 AS extracted_at,
+  period_date                                     AS measurement_date,
   year
 FROM `encoded-joy-485413-k5.stg.google_transparency_detailed`
 WHERE cldr_territory_code = 'KE'
@@ -56,19 +56,19 @@ WHERE cldr_territory_code = 'KE'
 UNION ALL
 
 SELECT
-  'lumen' AS source,
+  'lumen'                                         AS source,
   country,
-  recipient AS platform,
-  sender AS requestor_name,
+  recipient                                       AS platform,
+  sender                                          AS requestor_name,
   reason,
-  period AS time_period,
-  request_count AS number_of_requests,
-  item_count AS items_requested_removal,
-  NULL AS items_removed_legal,
-  NULL AS items_removed_policy,
+  period                                          AS time_period,
+  request_count                                   AS number_of_requests,
+  item_count                                      AS items_requested_removal,
+  NULL                                            AS items_removed_legal,
+  NULL                                            AS items_removed_policy,
   item_count,
-  extracted_at,
+  TIMESTAMP_SECONDS(CAST(extracted_at AS INT64))  AS extracted_at,
   measurement_date,
   year
 FROM `encoded-joy-485413-k5.stg.lumen_requests`
-WHERE country = 'Kenya' OR country = 'KE';
+WHERE country = 'Kenya' OR country = 'KE'
