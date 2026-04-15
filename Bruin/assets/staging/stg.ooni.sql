@@ -5,7 +5,7 @@ tags:
 name: stg.ooni
 type: bq.sql
 connection: bigquery-default
-description: Cleaned and standardized OONI censorship measurements for Kenya (Jun 2023 – Jun 2025)
+description: Cleaned and standardized OONI censorship measurements for Kenya (Jun 2023 - Jun 2025)
 owner: civil-liberties-pipeline
 
 depends:
@@ -29,15 +29,14 @@ WITH base AS (
         probe_asn,
         extracted_at,
         CASE
-            -- plausible UNIX seconds range
             WHEN start_time BETWEEN 946684800 AND 4102444800
                 THEN TIMESTAMP_SECONDS(start_time)
-            -- plausible UNIX milliseconds range
             WHEN start_time BETWEEN 946684800000 AND 4102444800000
                 THEN TIMESTAMP_MILLIS(start_time)
-            -- plausible UNIX microseconds range
             WHEN start_time BETWEEN 946684800000000 AND 4102444800000000
                 THEN TIMESTAMP_MICROS(start_time)
+            WHEN start_time BETWEEN 946684800000000000 AND 4102444800000000000
+                THEN TIMESTAMP_MICROS(DIV(start_time, 1000))
             ELSE NULL
         END AS start_ts
     FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.ooni_measurements`
@@ -56,9 +55,9 @@ raw AS (
         probe_cc,
         probe_asn,
         extracted_at,
-        DATE(start_ts)                   AS measurement_date,
-        EXTRACT(YEAR  FROM start_ts)     AS year,
-        EXTRACT(MONTH FROM start_ts)     AS month,
+        DATE(start_ts) AS measurement_date,
+        EXTRACT(YEAR FROM start_ts) AS year,
+        EXTRACT(MONTH FROM start_ts) AS month,
         CASE
             WHEN test_name IN ('web_connectivity', 'dnscheck')
                 THEN 'Website/DNS Blocking'
@@ -67,7 +66,7 @@ raw AS (
             WHEN test_name IN ('tor', 'psiphon')
                 THEN 'Circumvention Tool Blocking'
             ELSE 'Other'
-        END                              AS test_category
+        END AS test_category
     FROM base
     WHERE start_ts IS NOT NULL
 )
