@@ -30,7 +30,7 @@ SELECT
   extracted_at,
   period_date AS measurement_date,
   year
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.stg_google_transparency_requests`
+FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
 WHERE country = 'Kenya' OR cldr_territory = 'KE'
 
 UNION ALL
@@ -50,7 +50,7 @@ SELECT
   extracted_at,
   period_date AS measurement_date,
   year
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.stg_google_transparency_detailed`
+FROM `encoded-joy-485413-k5.stg.google_transparency_detailed`
 WHERE cldr_territory_code = 'KE'
 
 UNION ALL
@@ -70,5 +70,5 @@ SELECT
   extracted_at,
   measurement_date,
   year
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.stg_lumen_requests`
+FROM `encoded-joy-485413-k5.stg.lumen_requests`
 WHERE country = 'Kenya' OR country = 'KE';
