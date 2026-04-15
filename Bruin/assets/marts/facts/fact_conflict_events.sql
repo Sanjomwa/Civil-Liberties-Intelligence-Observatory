@@ -16,6 +16,7 @@ materialization:
 SELECT
   event_id,
   measurement_date,
+  country,
   region,
   admin1 AS county,
   event_type,
