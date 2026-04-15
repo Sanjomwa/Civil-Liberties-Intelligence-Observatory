@@ -30,5 +30,5 @@ SELECT
   month,
   CASE WHEN status IN ('anomaly', 'confirmed', 'failure') THEN TRUE ELSE FALSE END AS is_blocked,
   CASE WHEN status = 'confirmed' THEN TRUE ELSE FALSE END AS is_confirmed_block
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.stg_ooni`
+FROM `encoded-joy-485413-k5.stg.ooni`
 WHERE probe_cc = 'KE';
