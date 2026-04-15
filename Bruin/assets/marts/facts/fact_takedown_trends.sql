@@ -31,7 +31,7 @@ WITH base AS (
     measurement_date,
     EXTRACT(YEAR FROM measurement_date) AS year,
     EXTRACT(MONTH FROM measurement_date) AS month
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_takedown_requests`
+  FROM `encoded-joy-485413-k5.marts.fact_takedown_requests`
   WHERE measurement_date IS NOT NULL
 )
 SELECT
