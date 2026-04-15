@@ -21,6 +21,9 @@ SELECT
   input AS tested_url_or_app,
   start_time,
   status,
+  anomaly,
+  confirmed,
+  failure,
   probe_cc,
   probe_asn,
   extracted_at,
@@ -28,7 +31,12 @@ SELECT
   test_category,
   year,
   month,
-  CASE WHEN status IN ('anomaly', 'confirmed', 'failure') THEN TRUE ELSE FALSE END AS is_blocked,
-  CASE WHEN status = 'confirmed' THEN TRUE ELSE FALSE END AS is_confirmed_block
+  CASE
+    WHEN confirmed THEN TRUE
+    WHEN anomaly THEN TRUE
+    ELSE FALSE
+  END AS is_blocked,
+  confirmed AS is_confirmed_block,
+  failure AS has_measurement_failure
 FROM `encoded-joy-485413-k5.stg.ooni`
 WHERE probe_cc = 'KE';

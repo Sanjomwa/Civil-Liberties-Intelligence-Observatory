@@ -13,13 +13,12 @@ materialization:
   strategy: create+replace
 @bruin"""
 
-import os
 import glob
-import pandas as pd
+import os
 from datetime import datetime
 from pathlib import Path
 
-import os
+import pandas as pd
 
 
 def resolve_env(fallback: str = "dev") -> str:
@@ -50,7 +49,7 @@ def materialize():
         raise FileNotFoundError(f"No files found under {data_root}")
 
     start_ts = pd.Timestamp("2023-06-01")
-    end_ts = pd.Timestamp("2025-06-30")
+    end_ts = pd.Timestamp("2025-06-30 23:59:59")
 
     dfs = []
     for fpath in files:
@@ -61,39 +60,88 @@ def materialize():
                 continue
 
             chunk["start_time"] = pd.to_datetime(
-                chunk["start_time"].astype(str), errors="coerce", utc=True, format="mixed"
+                chunk["start_time"].astype(str),
+                errors="coerce",
+                utc=True,
+                format="mixed",
             ).dt.tz_localize(None)
 
-            filtered = chunk[(chunk["start_time"] >= start_ts) & (
-                chunk["start_time"] <= end_ts)].copy()
+            filtered = chunk[
+                (chunk["start_time"] >= start_ts) & (
+                    chunk["start_time"] <= end_ts)
+            ].copy()
             if filtered.empty:
                 continue
 
             filtered["measurement_id"] = filtered.get(
                 "measurement_uid", filtered.get("id"))
+
             if "probe_asn" not in filtered.columns and "asn" in filtered.columns:
                 filtered["probe_asn"] = filtered["asn"]
 
-            filtered["status"] = "ok"
-            if "anomaly" in filtered.columns:
-                filtered.loc[filtered["anomaly"] == True, "status"] = "anomaly"
-            if "confirmed" in filtered.columns:
-                filtered.loc[filtered["confirmed"]
-                             == True, "status"] = "confirmed"
-            if "failure" in filtered.columns:
-                filtered.loc[filtered["failure"] == True, "status"] = "failure"
+            # Preserve original OONI signal fields instead of collapsing them away.
+            for col in ["anomaly", "confirmed", "failure"]:
+                if col not in filtered.columns:
+                    filtered[col] = False
+                filtered[col] = filtered[col].fillna(False).astype(bool)
 
-            keep = ["measurement_id", "country", "asn", "test_name", "input",
-                    "start_time", "probe_cc", "probe_asn", "status"]
+            filtered["status"] = "ok"
+            filtered.loc[filtered["anomaly"], "status"] = "anomaly"
+            filtered.loc[filtered["confirmed"], "status"] = "confirmed"
+            filtered.loc[filtered["failure"], "status"] = "failure"
+
+            keep = [
+                "measurement_id",
+                "country",
+                "asn",
+                "test_name",
+                "input",
+                "start_time",
+                "probe_cc",
+                "probe_asn",
+                "status",
+                "anomaly",
+                "confirmed",
+                "failure",
+            ]
+
             for c in keep:
                 if c not in filtered.columns:
                     filtered[c] = None
+
             dfs.append(filtered[keep].copy())
 
-    df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+    df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame(columns=[
+        "measurement_id",
+        "country",
+        "asn",
+        "test_name",
+        "input",
+        "start_time",
+        "probe_cc",
+        "probe_asn",
+        "status",
+        "anomaly",
+        "confirmed",
+        "failure",
+    ])
+
     df["extracted_at"] = datetime.now()
-    df = df.reindex(columns=["measurement_id", "country", "asn", "test_name", "input",
-                             "start_time", "status", "probe_cc", "probe_asn", "extracted_at"])
+    df = df.reindex(columns=[
+        "measurement_id",
+        "country",
+        "asn",
+        "test_name",
+        "input",
+        "start_time",
+        "status",
+        "anomaly",
+        "confirmed",
+        "failure",
+        "probe_cc",
+        "probe_asn",
+        "extracted_at",
+    ])
 
     parquet_out = f"{base_path}/ooni_measurements.parquet"
     df.to_parquet(parquet_out, index=False, compression="snappy")

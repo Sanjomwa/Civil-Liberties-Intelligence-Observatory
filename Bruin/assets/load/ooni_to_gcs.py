@@ -19,8 +19,9 @@ materialization:
 @bruin"""
 
 import os
-import pandas as pd
 from datetime import datetime
+
+import pandas as pd
 from google.cloud import bigquery
 
 
@@ -35,7 +36,8 @@ def resolve_env(fallback: str = "staging") -> str:
 def require_cloud_env(env: str) -> None:
     if env not in ("staging", "prod"):
         raise ValueError(
-            f"This load asset supports only staging/prod. Got ENV={env!r}.")
+            f"This load asset supports only staging/prod. Got ENV={env!r}."
+        )
 
 
 PROJECT_ID = "encoded-joy-485413-k5"
@@ -51,20 +53,42 @@ GCS_OBJECT = f"{ENV}/ooni/ooni_measurements.parquet"
 
 
 def materialize():
-    print(f"🌍 Environment : {ENV}")
-    print(f"📦 BQ Dataset  : {DATASET}")
+    print(f"Environment : {ENV}")
+    print(f"BQ Dataset  : {DATASET}")
 
     df = pd.read_parquet(LOCAL_FILE)
-    print(f"📖 Rows read   : {len(df):,}")
+    print(f"Rows read   : {len(df):,}")
+
+    required_cols = {
+        "measurement_id",
+        "country",
+        "asn",
+        "test_name",
+        "input",
+        "start_time",
+        "status",
+        "anomaly",
+        "confirmed",
+        "failure",
+        "probe_cc",
+        "probe_asn",
+        "extracted_at",
+    }
+    missing = required_cols.difference(df.columns)
+    if missing:
+        raise ValueError(
+            f"OONI parquet is missing expected columns: {sorted(missing)}"
+        )
 
     gcs_uri = f"gs://{GCS_BUCKET}/{GCS_OBJECT}"
-    print(f"☁️  Uploading  : {gcs_uri}")
+    print(f"Uploading   : {gcs_uri}")
     df.to_parquet(gcs_uri, index=False, compression="snappy")
-    print("✅ GCS upload complete")
+    print("GCS upload complete")
 
     bq = bigquery.Client(project=PROJECT_ID)
     external_config = bigquery.ExternalConfig(
-        bigquery.ExternalSourceFormat.PARQUET)
+        bigquery.ExternalSourceFormat.PARQUET
+    )
     external_config.source_uris = [gcs_uri]
     external_config.autodetect = True
 
@@ -72,7 +96,7 @@ def materialize():
     table_obj = bigquery.Table(table_ref)
     table_obj.external_data_configuration = external_config
     table_obj.description = (
-        f"External table [{ENV}] — OONI Kenya censorship measurements. "
+        f"External table [{ENV}] - OONI Kenya censorship measurements. "
         f"Backed by {gcs_uri}."
     )
 
@@ -82,7 +106,7 @@ def materialize():
         pass
 
     bq.create_table(table_obj)
-    print(f"✅ BigQuery external table created: {table_ref}")
+    print(f"BigQuery external table created: {table_ref}")
 
     df["extracted_at"] = datetime.now()
     return df

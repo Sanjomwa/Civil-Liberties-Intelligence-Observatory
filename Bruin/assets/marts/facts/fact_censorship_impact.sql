@@ -27,14 +27,19 @@ WITH daily_conflict_summary AS (
   FROM `encoded-joy-485413-k5.marts.fact_conflict_events`
   GROUP BY measurement_date
 )
+
 SELECT
   c.measurement_id,
   c.measurement_date,
   c.test_name,
   c.test_category,
   c.status AS censorship_status,
+  c.anomaly,
+  c.confirmed,
+  c.failure,
   c.is_blocked,
   c.is_confirmed_block,
+  c.has_measurement_failure,
   c.tested_url_or_app,
   c.asn,
   c.probe_asn,
