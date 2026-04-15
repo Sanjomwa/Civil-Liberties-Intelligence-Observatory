@@ -7,7 +7,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from utils.bq_client import run_query, table, PALETTE, SUPPRESSION_COLORS
+from utils.bq_client import run_query, PALETTE, SUPPRESSION_COLORS
+
+PROJECT_ID = "encoded-joy-485413-k5"
+REPORTING_TABLE = f"`{PROJECT_ID}.reporting.civil_liberties_mart`"
 
 st.set_page_config(
     page_title="Kenya Civil Liberties Observatory",
@@ -97,21 +100,22 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Load KPI data ────────────────────────────────────────────────────────────
+
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_kpis():
     return run_query(f"""
         SELECT
-            COUNT(*)                                AS total_measurements,
-            COUNTIF(is_blocked)                     AS total_blocked,
-            COUNTIF(is_confirmed_block)             AS confirmed_blocks,
-            COUNTIF(blocked_on_protest_day)         AS blocked_on_protest_day,
-            ROUND(SAFE_DIVIDE(
-                COUNTIF(is_blocked), COUNT(*)
-            ) * 100, 1)                             AS overall_blocking_rate,
-            COUNT(DISTINCT measurement_date)        AS days_monitored,
-            COUNT(DISTINCT platform)                AS platforms_tested
-        FROM {table('civil_liberties_mart')}
+            COUNT(*) AS total_measurements,
+            COUNTIF(is_blocked) AS total_blocked,
+            COUNTIF(is_confirmed_block) AS confirmed_blocks,
+            COUNTIF(blocked_on_protest_day) AS blocked_on_protest_day,
+            ROUND(SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) * 100, 1) AS overall_blocking_rate,
+            COUNT(DISTINCT measurement_date) AS days_monitored,
+            COUNT(DISTINCT platform) AS platforms_tested
+        FROM {REPORTING_TABLE}
     """)
+
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_suppression_timeline():
@@ -119,14 +123,15 @@ def load_suppression_timeline():
         SELECT
             measurement_date,
             suppression_window_type,
-            COUNT(*)                                AS measurement_count,
-            COUNTIF(is_blocked)                     AS blocked_count,
-            SUM(protest_events_on_day)              AS protest_events,
-            SUM(total_takedown_requests)            AS takedown_requests
-        FROM {table('civil_liberties_mart')}
+            COUNT(*) AS measurement_count,
+            COUNTIF(is_blocked) AS blocked_count,
+            SUM(protest_events_on_day) AS protest_events,
+            SUM(total_takedown_requests) AS takedown_requests
+        FROM {REPORTING_TABLE}
         GROUP BY measurement_date, suppression_window_type
         ORDER BY measurement_date
     """)
+
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_worst_days():
@@ -135,23 +140,24 @@ def load_worst_days():
             measurement_date,
             political_context_flag,
             protest_season_flag,
-            COUNTIF(is_blocked)                     AS blocks,
-            COUNTIF(is_confirmed_block)             AS confirmed_blocks,
-            MAX(protest_events_on_day)              AS protests,
-            MAX(total_takedown_requests)            AS takedowns,
-            MAX(censorship_intensity_score)         AS max_intensity,
-            STRING_AGG(DISTINCT suppression_window_type, ' + ')  AS window_types
-        FROM {table('civil_liberties_mart')}
+            COUNTIF(is_blocked) AS blocks,
+            COUNTIF(is_confirmed_block) AS confirmed_blocks,
+            MAX(protest_events_on_day) AS protests,
+            MAX(total_takedown_requests) AS takedowns,
+            MAX(censorship_intensity_score) AS max_intensity,
+            STRING_AGG(DISTINCT suppression_window_type, ' + ') AS window_types
+        FROM {REPORTING_TABLE}
         GROUP BY measurement_date, political_context_flag, protest_season_flag
         HAVING COUNTIF(is_blocked) > 0
         ORDER BY max_intensity DESC
         LIMIT 10
     """)
 
-with st.spinner("Loading observatory data…"):
-    kpis        = load_kpis()
+
+with st.spinner("Loading observatory data..."):
+    kpis = load_kpis()
     timeline_df = load_suppression_timeline()
-    worst_days  = load_worst_days()
+    worst_days = load_worst_days()
 
 # ── KPI Cards ────────────────────────────────────────────────────────────────
 k = kpis.iloc[0]
@@ -210,8 +216,11 @@ fig = px.bar(
     y="measurement_count",
     color="suppression_window_type",
     color_discrete_map=SUPPRESSION_COLORS,
-    labels={"measurement_date": "", "measurement_count": "Measurements",
-            "suppression_window_type": "Type"},
+    labels={
+        "measurement_date": "",
+        "measurement_count": "Measurements",
+        "suppression_window_type": "Type",
+    },
     height=320,
 )
 fig.update_layout(
@@ -235,21 +244,22 @@ with col_l:
     st.markdown("#### Highest Intensity Suppression Days")
     st.dataframe(
         worst_days.rename(columns={
-            "measurement_date":     "Date",
+            "measurement_date": "Date",
             "political_context_flag": "Context",
-            "blocks":               "Blocks",
-            "confirmed_blocks":     "Confirmed",
-            "protests":             "Protests",
-            "takedowns":            "Takedowns",
-            "max_intensity":        "Intensity Score",
-        })[["Date","Context","Blocks","Confirmed","Protests","Takedowns","Intensity Score"]],
+            "blocks": "Blocks",
+            "confirmed_blocks": "Confirmed",
+            "protests": "Protests",
+            "takedowns": "Takedowns",
+            "max_intensity": "Intensity Score",
+        })[["Date", "Context", "Blocks", "Confirmed", "Protests", "Takedowns", "Intensity Score"]],
         use_container_width=True,
         hide_index=True,
     )
 
 with col_r:
     st.markdown("#### Suppression Type Distribution")
-    dist = timeline_df.groupby("suppression_window_type")["measurement_count"].sum().reset_index()
+    dist = timeline_df.groupby("suppression_window_type")[
+        "measurement_count"].sum().reset_index()
     fig2 = px.pie(
         dist,
         names="suppression_window_type",
