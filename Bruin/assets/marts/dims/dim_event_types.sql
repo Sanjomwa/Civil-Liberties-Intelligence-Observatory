@@ -28,7 +28,7 @@ SELECT DISTINCT
     WHEN sub_event_type LIKE '%march%' THEN TRUE
     ELSE FALSE
   END AS censorship_trigger_likely
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.acled_conflict_events`
+FROM `encoded-joy-485413-k5.stg.acled_conflict_events` 
 WHERE country = 'Kenya'
   AND event_type IS NOT NULL
 ORDER BY event_type, sub_event_type;
