@@ -25,12 +25,21 @@ import pandas as pd
 from google.cloud import bigquery
 
 
-def resolve_env(fallback: str = "staging") -> str:
-    for k in ("BRUIN_ENV", "BRUIN_ENVIRONMENT", "BRUIN_PIPELINE_ENVIRONMENT"):
-        v = os.getenv(k)
-        if v and v.strip():
-            return v.strip().lower()
-    return fallback
+def resolve_env() -> str:
+    candidates = [
+        os.getenv("BRUIN_ENV"),
+        os.getenv("BRUIN_ENVIRONMENT"),
+        os.getenv("BRUIN_PIPELINE_ENVIRONMENT"),
+        os.getenv("TARGET_ENV"),
+    ]
+    for value in candidates:
+        if value and value.strip():
+            return value.strip().lower()
+
+    raise ValueError(
+        "No environment found. Set TARGET_ENV explicitly to 'staging' or 'prod' "
+        "when running this asset."
+    )
 
 
 def require_cloud_env(env: str) -> None:
@@ -45,7 +54,7 @@ GCS_BUCKET = "civil-liberties-data"
 LOCAL_FILE = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/ooni/ooni_measurements.parquet"
 TABLE = "ooni_measurements"
 
-ENV = resolve_env(fallback="staging")
+ENV = resolve_env()
 require_cloud_env(ENV)
 
 DATASET = "civil_liberties_prod" if ENV == "prod" else "civil_liberties_staging"
@@ -53,6 +62,11 @@ GCS_OBJECT = f"{ENV}/ooni/ooni_measurements.parquet"
 
 
 def materialize():
+    print(f"BRUIN_ENV={os.getenv('BRUIN_ENV')}")
+    print(f"BRUIN_ENVIRONMENT={os.getenv('BRUIN_ENVIRONMENT')}")
+    print(
+        f"BRUIN_PIPELINE_ENVIRONMENT={os.getenv('BRUIN_PIPELINE_ENVIRONMENT')}")
+    print(f"TARGET_ENV={os.getenv('TARGET_ENV')}")
     print(f"Environment : {ENV}")
     print(f"BQ Dataset  : {DATASET}")
 
