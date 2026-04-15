@@ -25,7 +25,7 @@ WITH combined AS (
       WHEN test_name IN ('tor', 'psiphon', 'lantern') THEN 'Circumvention Tool'
       ELSE 'Other Protocol'
     END AS platform_category
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.ooni_measurements`
+  FROM `encoded-joy-485413-k5.stg.ooni`
   WHERE probe_cc = 'KE' AND test_name IS NOT NULL
 
   UNION DISTINCT
@@ -34,7 +34,7 @@ WITH combined AS (
     product AS platform_name,
     'Google' AS source,
     'Google Product' AS platform_category
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.google_transparency_requests`
+  FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
   WHERE (country = 'Kenya' OR cldr_territory = 'KE') AND product IS NOT NULL
 
   UNION DISTINCT
@@ -43,7 +43,7 @@ WITH combined AS (
     recipient AS platform_name,
     'Lumen' AS source,
     'Content Platform' AS platform_category
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.lumen_requests`
+  FROM `encoded-joy-485413-k5.stg.lumen_requests`
   WHERE (country = 'Kenya' OR country = 'KE') AND recipient IS NOT NULL
 )
 SELECT
