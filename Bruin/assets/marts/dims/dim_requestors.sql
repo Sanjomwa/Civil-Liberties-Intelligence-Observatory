@@ -16,13 +16,13 @@ materialization:
 
 WITH all_requestors AS (
   SELECT requestor AS requestor_name, 'Google' AS source
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.google_transparency_requests`
+  FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
   WHERE (country = 'Kenya' OR cldr_territory = 'KE') AND requestor IS NOT NULL
 
   UNION DISTINCT
 
   SELECT sender AS requestor_name, 'Lumen' AS source
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.lumen_requests`
+  FROM `encoded-joy-485413-k5.stg.lumen_requests`
   WHERE (country = 'Kenya' OR country = 'KE') AND sender IS NOT NULL
 )
 SELECT DISTINCT
