@@ -24,7 +24,7 @@ WITH daily_conflict_summary AS (
     COUNTIF(is_censorship_trigger_event) AS trigger_event_count,
     STRING_AGG(DISTINCT event_type, ', ') AS event_types_on_day,
     STRING_AGG(DISTINCT county, ', ' ORDER BY county LIMIT 5) AS counties_affected
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_conflict_events`
+  FROM `encoded-joy-485413-k5.stg.fact_conflict_events`
   GROUP BY measurement_date
 )
 SELECT
@@ -52,6 +52,6 @@ SELECT
     WHEN c.is_blocked AND d.trigger_event_count > 0 THEN TRUE
     ELSE FALSE
   END AS blocked_on_protest_day
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_censorship_measurements` c
+FROM `encoded-joy-485413-k5.stg.fact_censorship_measurements` c
 LEFT JOIN daily_conflict_summary d
   ON c.measurement_date = d.measurement_date;
