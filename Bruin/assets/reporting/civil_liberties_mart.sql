@@ -63,7 +63,7 @@ daily_takedowns AS (
                   OR LOWER(reason) LIKE '%spam%'          THEN 'Fraud & Spam'
                 ELSE 'Other'
             END AS reason_group
-        FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_takedown_requests`
+        FROM `encoded-joy-485413-k5.marts.fact_takedown_requests`
         WHERE measurement_date IS NOT NULL
     )
     GROUP BY measurement_date
@@ -79,7 +79,7 @@ monthly_blocking AS (
         total_measurements,
         blocked_count,
         distinct_targets_blocked
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_platform_blocking_summary`
+    FROM `encoded-joy-485413-k5.marts.fact_platform_blocking_summary`
 ),
 
 mart_base AS (
@@ -132,15 +132,15 @@ mart_base AS (
         mb.blocking_rate                            AS monthly_platform_blocking_rate,
         mb.confirmed_blocking_rate                  AS monthly_confirmed_blocking_rate
 
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_censorship_impact` ci
+    FROM `encoded-joy-485413-k5.marts.fact_censorship_impact` ci
 
-    LEFT JOIN `encoded-joy-485413-k5.{{ var.bq_dataset }}.dim_dates` dd
+    LEFT JOIN `encoded-joy-485413-k5.marts.dim_dates` dd
         ON ci.measurement_date = dd.date_key
 
-    LEFT JOIN `encoded-joy-485413-k5.{{ var.bq_dataset }}.dim_test_categories` dtc
+    LEFT JOIN `encoded-joy-485413-k5.marts.dim_test_categories` dtc
         ON ci.test_category = dtc.test_category
 
-    LEFT JOIN `encoded-joy-485413-k5.{{ var.bq_dataset }}.dim_platforms` dp
+    LEFT JOIN `encoded-joy-485413-k5.marts.dim_platforms` dp
         ON ci.test_name = dp.platform_name
        AND dp.source = 'OONI'
 
