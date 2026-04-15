@@ -17,19 +17,19 @@ materialization:
 
 WITH all_reasons AS (
   SELECT reason, 'Google Requests' AS source
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.google_transparency_requests`
+  FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
   WHERE (country = 'Kenya' OR cldr_territory = 'KE') AND reason IS NOT NULL
 
   UNION DISTINCT
 
   SELECT reason, 'Google Detailed' AS source
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.google_transparency_detailed`
+  FROM `encoded-joy-485413-k5.stg.google_transparency_detailed`
   WHERE cldr_territory_code = 'KE' AND reason IS NOT NULL
 
   UNION DISTINCT
 
   SELECT reason, 'Lumen' AS source
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.lumen_requests`
+  FROM `encoded-joy-485413-k5.stg.lumen_requests`
   WHERE (country = 'Kenya' OR country = 'KE') AND reason IS NOT NULL
 )
 SELECT DISTINCT
