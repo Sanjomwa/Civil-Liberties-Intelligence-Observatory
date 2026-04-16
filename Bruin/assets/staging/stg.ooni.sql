@@ -1,5 +1,5 @@
 /* @bruin
-name: stg.ooni
+name: stg.ooni_conflict_measurements
 type: bq.sql
 connection: bigquery-default
 depends:
@@ -8,6 +8,7 @@ materialization:
   type: table
   strategy: create+replace
 @bruin */
+
 WITH raw AS (
 
     SELECT
@@ -18,37 +19,47 @@ WITH raw AS (
         test_name,
         input,
 
-        -- FIX: universal timestamp safety
-        TIMESTAMP(start_time) AS start_time,
+        -- SAFE TIMESTAMP NORMALIZATION
+        SAFE.TIMESTAMP(start_time) AS start_time,
 
         extracted_at,
 
+        -- TELEGRAM
         telegram_http_blocking,
         telegram_tcp_blocking,
 
+        -- SIGNAL
         signal_backend_failure,
 
+        -- WHATSAPP
         whatsapp_endpoints_blocked,
         whatsapp_endpoints_dns_inconsistent,
         whatsapp_web_failure,
 
+        -- TOR
         tor_or_port_accessible,
         tor_obfs4_accessible,
 
+        -- PSIPHON
         psiphon_failure,
 
+        -- RAW DERIVED FLAGS (FROM INGEST ONLY)
         is_blocked,
         is_confirmed_block,
         has_measurement_failure,
-        blocking_signal_type,
+        blocking_signal_type
 
-        -- SAFE DERIVATIONS
-        DATE(TIMESTAMP(start_time)) AS measurement_date,
-        EXTRACT(YEAR FROM TIMESTAMP(start_time)) AS year,
-        EXTRACT(MONTH FROM TIMESTAMP(start_time)) AS month
-
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.ooni_measurements`
+    FROM `encoded-joy-485413-k5.stg.ooni`
     WHERE probe_cc = 'KE'
 )
 
-SELECT * FROM raw;
+SELECT
+    *,
+    
+    -- DERIVED ANALYTICS DIMENSIONS
+    DATE(start_time) AS measurement_date,
+    EXTRACT(YEAR FROM start_time) AS year,
+    EXTRACT(MONTH FROM start_time) AS month,
+    EXTRACT(DAY FROM start_time) AS day
+
+FROM raw;
