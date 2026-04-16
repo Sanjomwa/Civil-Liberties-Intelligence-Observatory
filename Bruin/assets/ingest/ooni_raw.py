@@ -279,6 +279,8 @@ def materialize(start_date: str, end_date: str) -> pd.DataFrame:
     # stable deduplication
     df = df.drop_duplicates(subset=["measurement_id"])
 
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
   df.to_parquet(
         OUTPUT_FILE,
         index=False,
