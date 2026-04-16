@@ -1,245 +1,197 @@
-# =========================================================
-# OONI RAW INGEST - CLEAN PRODUCTION VERSION
-# =========================================================
+"""
+@bruin
+tags:
+  - raw_dev
+  - dataset_ooni_conflict_measurements
+name: raw.ooni_conflict_measurements
+type: python
+image: python:3.12
+connection: duckdb-parquet
+description: |
+  Raw ingestion of OONI Kenya censorship measurements.
+  Flattens test_keys and normalizes blocking signals into a unified schema.
 
-import glob
+materialization:
+  type: table
+  strategy: create+replace
+
+columns:
+  - name: measurement_id
+    type: VARCHAR
+  - name: country
+    type: VARCHAR
+  - name: asn
+    type: VARCHAR
+  - name: test_name
+    type: VARCHAR
+  - name: input
+    type: VARCHAR
+  - name: start_time
+    type: TIMESTAMP
+  - name: probe_cc
+    type: VARCHAR
+  - name: probe_asn
+    type: VARCHAR
+  - name: extracted_at
+    type: TIMESTAMP
+
+  # TELEGRAM
+  - name: telegram_http_blocking
+    type: BOOLEAN
+  - name: telegram_tcp_blocking
+    type: BOOLEAN
+
+  # WHATSAPP
+  - name: whatsapp_endpoints_blocked
+    type: BOOLEAN
+  - name: whatsapp_endpoints_dns_inconsistent
+    type: BOOLEAN
+  - name: whatsapp_web_failure
+    type: VARCHAR
+
+  # SIGNAL
+  - name: signal_backend_failure
+    type: VARCHAR
+
+  # TOR
+  - name: tor_or_port_accessible
+    type: INTEGER
+  - name: tor_obfs4_accessible
+    type: INTEGER
+
+  # PSIPHON
+  - name: psiphon_failure
+    type: VARCHAR
+
+  # DERIVED
+  - name: is_blocked
+    type: BOOLEAN
+  - name: is_confirmed_block
+    type: BOOLEAN
+  - name: has_measurement_failure
+    type: BOOLEAN
+  - name: blocking_signal_type
+    type: VARCHAR
+@bruin
+"""
+
 import os
-from datetime import datetime
-from pathlib import Path
-
+import json
+import gzip
 import pandas as pd
+from pathlib import Path
+from typing import Dict, Any, List, Optional
+from datetime import datetime
 
 
-# =========================================================
-# ENV HANDLING (FIX: removes _env dependency completely)
-# =========================================================
-def resolve_env() -> str:
-    return (
-        os.getenv("TARGET_ENV")
-        or os.getenv("BRUIN_ENV")
-        or os.getenv("BRUIN_ENVIRONMENT")
-        or "dev"
-    )
+# -------------------------
+# BRUIN CONTRACT FIX
+# -------------------------
+def materialize(start_date: str, end_date: str) -> pd.DataFrame:
+    start_ts = pd.to_datetime(start_date, utc=True)
+    end_ts = pd.to_datetime(end_date, utc=True)
 
+    root = "data/dev/ooni/ooni-kenya-censorship"
 
-def require_dev(env: str):
-    if env != "dev":
-        print(f"⚠️ Running in {env} mode")
+    rows: List[Dict[str, Any]] = []
 
-
-ENV = resolve_env()
-require_dev(ENV)
-
-
-# =========================================================
-# PATHS
-# =========================================================
-BASE_PATH = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/ooni"
-DATA_ROOT = os.path.join(BASE_PATH, "ooni-kenya-censorship")
-OUT_FILE = os.path.join(BASE_PATH, "ooni_measurements.parquet")
-
-START_TS = pd.Timestamp("2023-06-01")
-END_TS = pd.Timestamp("2025-06-30")
-
-
-# =========================================================
-# SIGNAL DERIVATION
-# =========================================================
-def derive_blocking_fields(row: dict) -> dict:
-    test = str(row.get("test_name", "")).lower()
-    tk = {k: v for k, v in row.items() if k.startswith("test_keys.")}
-
-    # ---------------- TELEGRAM ----------------
-    tg_http = bool(tk.get("test_keys.telegram_http_blocking", False))
-    tg_tcp = bool(tk.get("test_keys.telegram_tcp_blocking", False))
-
-    # ---------------- WHATSAPP ----------------
-    wa_blocked = bool(tk.get("test_keys.whatsapp_endpoints_blocked", False))
-    wa_dns = bool(
-        tk.get("test_keys.whatsapp_endpoints_dns_inconsistent", False))
-    wa_web = tk.get("test_keys.whatsapp_web_failure")
-    wa_reg = tk.get("test_keys.registration_server_failure")
-
-    # ---------------- SIGNAL ----------------
-    sig_failure = tk.get("test_keys.signal_backend_failure")
-
-    # ---------------- TOR ----------------
-    tor_or = tk.get("test_keys.or_port_accessible")
-    tor_obfs4 = tk.get("test_keys.obfs4_accessible")
-
-    # ---------------- PSIPHON ----------------
-    psi_failure = tk.get("test_keys.failure")
-
-    is_blocked = False
-    is_confirmed_block = False
-    has_failure = False
-    signal_type = "none"
-
-    # =====================================================
-    # TELEGRAM
-    # =====================================================
-    if test == "telegram":
-        is_blocked = tg_http or tg_tcp
-        is_confirmed_block = is_blocked
-        has_failure = bool(tk.get("test_keys.failure"))
-        if is_blocked:
-            signal_type = f"telegram_block(http={tg_http},tcp={tg_tcp})"
-
-    # =====================================================
-    # WHATSAPP
-    # =====================================================
-    elif test == "whatsapp":
-        is_blocked = wa_blocked
-        is_confirmed_block = wa_blocked
-        has_failure = any([wa_web, wa_reg, wa_dns])
-
-        if wa_blocked:
-            signal_type = "whatsapp_endpoints_blocked"
-        elif wa_dns:
-            signal_type = "whatsapp_dns_inconsistent"
-        elif wa_web:
-            signal_type = f"whatsapp_web_failure({wa_web})"
-        elif wa_reg:
-            signal_type = f"whatsapp_registration_failure({wa_reg})"
-
-    # =====================================================
-    # SIGNAL (DISRUPTION ONLY)
-    # =====================================================
-    elif test == "signal":
-        has_failure = sig_failure is not None
-        is_blocked = False
-        is_confirmed_block = False
-
-        if sig_failure:
-            signal_type = f"signal_backend_failure({sig_failure})"
-
-    # =====================================================
-    # TOR (REACHABILITY MODEL)
-    # =====================================================
-    elif test == "tor":
+    for path in Path(root).rglob("*.jsonl.gz"):
         try:
-            or_access = int(tor_or) if tor_or is not None else None
+            with gzip.open(path, "rt") as f:
+                for line in f:
+                    try:
+                        obj = json.loads(line)
+                    except Exception:
+                        continue
+
+                    ts = pd.to_datetime(obj.get("measurement_start_time"), utc=True, errors="coerce")
+                    if pd.isna(ts) or ts < start_ts or ts > end_ts:
+                        continue
+
+                    test_keys = obj.get("test_keys", {}) or {}
+                    test_name = obj.get("test_name")
+
+                    row = {
+                        "measurement_id": obj.get("measurement_uid"),
+                        "country": obj.get("probe_cc"),
+                        "asn": obj.get("asn"),
+                        "test_name": test_name,
+                        "input": obj.get("input"),
+                        "start_time": ts,
+                        "probe_cc": obj.get("probe_cc"),
+                        "probe_asn": obj.get("probe_asn"),
+                        "extracted_at": datetime.utcnow(),
+                    }
+
+                    # -------------------------
+                    # TELEGRAM
+                    # -------------------------
+                    row["telegram_http_blocking"] = bool(test_keys.get("telegram_http_blocking"))
+                    row["telegram_tcp_blocking"] = bool(test_keys.get("telegram_tcp_blocking"))
+
+                    # -------------------------
+                    # WHATSAPP
+                    # -------------------------
+                    row["whatsapp_endpoints_blocked"] = bool(
+                        test_keys.get("endpoints_status") == "blocked"
+                    )
+                    row["whatsapp_endpoints_dns_inconsistent"] = bool(
+                        test_keys.get("dns_consistent") is False
+                    )
+                    row["whatsapp_web_failure"] = test_keys.get("web_failure")
+
+                    # -------------------------
+                    # SIGNAL
+                    # -------------------------
+                    row["signal_backend_failure"] = test_keys.get("signal_backend_failure")
+
+                    # -------------------------
+                    # TOR
+                    # -------------------------
+                    row["tor_or_port_accessible"] = int(
+                        test_keys.get("or_port_accessible", 0) or 0
+                    )
+                    row["tor_obfs4_accessible"] = int(
+                        test_keys.get("obfs4_accessible", 0) or 0
+                    )
+
+                    # -------------------------
+                    # PSIPHON
+                    # -------------------------
+                    row["psiphon_failure"] = test_keys.get("failure")
+
+                    # -------------------------
+                    # DERIVED SIGNALS
+                    # -------------------------
+                    row["has_measurement_failure"] = obj.get("failure") is not None
+
+                    row["is_confirmed_block"] = (
+                        row["telegram_http_blocking"]
+                        or row["telegram_tcp_blocking"]
+                        or row["whatsapp_endpoints_blocked"]
+                    )
+
+                    row["is_blocked"] = row["is_confirmed_block"] or row["has_measurement_failure"]
+
+                    if row["telegram_http_blocking"] or row["telegram_tcp_blocking"]:
+                        row["blocking_signal_type"] = "telegram"
+                    elif row["whatsapp_endpoints_blocked"]:
+                        row["blocking_signal_type"] = "whatsapp"
+                    elif row["signal_backend_failure"]:
+                        row["blocking_signal_type"] = "signal"
+                    elif row["psiphon_failure"]:
+                        row["blocking_signal_type"] = "psiphon"
+                    else:
+                        row["blocking_signal_type"] = None
+
+                    rows.append(row)
+
         except Exception:
-            or_access = None
+            continue
 
-        has_failure = True
+    df = pd.DataFrame(rows)
 
-        if or_access == 0:
-            signal_type = "tor_or_unreachable"
-        elif tor_obfs4 == 0:
-            signal_type = "tor_obfs4_unreachable"
-        else:
-            signal_type = "tor_partial_reachability"
+    if not df.empty:
+        df = df.sort_values("start_time")
 
-    # =====================================================
-    # PSIPHON
-    # =====================================================
-    elif test == "psiphon":
-        has_failure = psi_failure is not None
-        if psi_failure:
-            signal_type = f"psiphon_failure({psi_failure})"
-
-    # =====================================================
-    # GENERIC
-    # =====================================================
-    else:
-        failure = row.get("failure")
-        is_blocked = failure is not None
-        has_failure = failure is not None
-        if failure:
-            signal_type = f"generic_failure({failure})"
-
-    return {
-        "telegram_http_blocking": tg_http,
-        "telegram_tcp_blocking": tg_tcp,
-
-        "signal_backend_failure": sig_failure,
-
-        "whatsapp_endpoints_blocked": wa_blocked,
-        "whatsapp_endpoints_dns_inconsistent": wa_dns,
-        "whatsapp_web_failure": wa_web,
-
-        "tor_or_port_accessible": tor_or,
-        "tor_obfs4_accessible": tor_obfs4,
-
-        "psiphon_failure": psi_failure,
-
-        "is_blocked": is_blocked,
-        "is_confirmed_block": is_confirmed_block,
-        "has_measurement_failure": has_failure,
-        "blocking_signal_type": signal_type,
-    }
-
-
-# =========================================================
-# PROCESSING
-# =========================================================
-def process_chunk(chunk: pd.DataFrame) -> pd.DataFrame:
-    if "test_start_time" in chunk.columns and "start_time" not in chunk.columns:
-        chunk = chunk.rename(columns={"test_start_time": "start_time"})
-
-    # FIX: safe timestamp handling (prevents INT64 DATE crash later)
-    chunk["start_time"] = pd.to_datetime(
-        chunk.get("start_time"),
-        errors="coerce",
-        utc=True,
-    ).dt.tz_localize(None)
-
-    chunk = chunk.dropna(subset=["start_time"])
-
-    chunk = chunk[
-        (chunk["start_time"] >= START_TS) &
-        (chunk["start_time"] <= END_TS)
-    ].copy()
-
-    if chunk.empty:
-        return chunk
-
-    if "measurement_uid" in chunk.columns:
-        chunk["measurement_id"] = chunk["measurement_uid"]
-    elif "id" in chunk.columns:
-        chunk["measurement_id"] = chunk["id"]
-
-    derived = chunk.apply(
-        lambda r: pd.Series(derive_blocking_fields(r.to_dict())),
-        axis=1,
-    )
-
-    chunk = pd.concat([chunk, derived], axis=1)
-    chunk["extracted_at"] = datetime.now()
-
-    return chunk
-
-
-# =========================================================
-# MATERIALIZE
-# =========================================================
-def materialize():
-    Path(BASE_PATH).mkdir(parents=True, exist_ok=True)
-
-    files = sorted(glob.glob(f"{DATA_ROOT}/**/*.jsonl.gz", recursive=True))
-    print(f"Found {len(files):,} files")
-
-    dfs = []
-
-    for f in files:
-        try:
-            for chunk in pd.read_json(
-                f,
-                lines=True,
-                chunksize=80_000,
-                compression="gzip",
-            ):
-                processed = process_chunk(chunk)
-                if not processed.empty:
-                    dfs.append(processed)
-
-        except Exception as e:
-            print(f"Skip {f}: {e}")
-
-    df = pd.concat(dfs, ignore_index=True)
-
-    df.to_parquet(OUT_FILE, index=False, compression="snappy")
-
-    print(f"Saved: {OUT_FILE} ({len(df):,} rows)")
     return df
