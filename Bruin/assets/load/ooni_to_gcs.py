@@ -26,27 +26,24 @@ from google.cloud import bigquery
 
 
 def resolve_env() -> str:
-    candidates = [
-        os.getenv("BRUIN_ENV"),
-        os.getenv("BRUIN_ENVIRONMENT"),
-        os.getenv("BRUIN_PIPELINE_ENVIRONMENT"),
-        os.getenv("TARGET_ENV"),
-    ]
-    for value in candidates:
-        if value and value.strip():
-            return value.strip().lower()
+    # --- explicit override ---
+    if os.getenv("TARGET_ENV"):
+        return os.getenv("TARGET_ENV").strip().lower()
 
-    raise ValueError(
-        "No environment found. Set TARGET_ENV explicitly to 'staging' or 'prod' "
-        "when running this asset."
-    )
+    if os.getenv("BRUIN_ENV"):
+        return os.getenv("BRUIN_ENV").strip().lower()
+
+    # --- PATCH: detect prod via CLI context ---
+    # Bruin doesn't always export env vars → infer from runtime
+    if "prod" in str(os.environ).lower():
+        return "prod"
+
+    return "staging"
 
 
 def require_cloud_env(env: str) -> None:
     if env not in ("staging", "prod"):
-        raise ValueError(
-            f"This load asset supports only staging/prod. Got ENV={env!r}."
-        )
+        raise ValueError(f"Only staging/prod allowed. Got ENV={env!r}.")
 
 
 PROJECT_ID = "encoded-joy-485413-k5"
@@ -62,11 +59,8 @@ GCS_OBJECT = f"{ENV}/ooni/ooni_measurements.parquet"
 
 
 def materialize():
-    print(f"BRUIN_ENV={os.getenv('BRUIN_ENV')}")
-    print(f"BRUIN_ENVIRONMENT={os.getenv('BRUIN_ENVIRONMENT')}")
-    print(
-        f"BRUIN_PIPELINE_ENVIRONMENT={os.getenv('BRUIN_PIPELINE_ENVIRONMENT')}")
     print(f"TARGET_ENV={os.getenv('TARGET_ENV')}")
+    print(f"BRUIN_ENV={os.getenv('BRUIN_ENV')}")
     print(f"Environment : {ENV}")
     print(f"BQ Dataset  : {DATASET}")
 
@@ -75,31 +69,34 @@ def materialize():
 
     required_cols = {
         "measurement_id",
-        "country",
+        "probe_cc",
         "asn",
+        "probe_asn",
         "test_name",
         "input",
         "start_time",
-        "status",
-        "anomaly",
-        "confirmed",
-        "failure",
-        "probe_cc",
-        "probe_asn",
+        "is_blocked",
+        "is_confirmed_block",
+        "has_measurement_failure",
+        "blocking_signal_type",
         "extracted_at",
     }
+
     missing = required_cols.difference(df.columns)
     if missing:
-        raise ValueError(
-            f"OONI parquet is missing expected columns: {sorted(missing)}"
-        )
+        raise ValueError(f"Missing expected columns: {sorted(missing)}")
+
+    df["start_time"] = pd.to_datetime(df["start_time"], errors="coerce")
+    df["extracted_at"] = pd.to_datetime(df["extracted_at"], errors="coerce")
 
     gcs_uri = f"gs://{GCS_BUCKET}/{GCS_OBJECT}"
     print(f"Uploading   : {gcs_uri}")
+
     df.to_parquet(gcs_uri, index=False, compression="snappy")
     print("GCS upload complete")
 
     bq = bigquery.Client(project=PROJECT_ID)
+
     external_config = bigquery.ExternalConfig(
         bigquery.ExternalSourceFormat.PARQUET
     )
@@ -107,6 +104,7 @@ def materialize():
     external_config.autodetect = True
 
     table_ref = f"{PROJECT_ID}.{DATASET}.{TABLE}"
+
     table_obj = bigquery.Table(table_ref)
     table_obj.external_data_configuration = external_config
     table_obj.description = (
