@@ -8,57 +8,34 @@ tags:
   - raw_dev
   - dataset_ooni
 
-description: |
-  STRICT RAW ingestion of OONI Kenya measurements.
-
-  - Read-only ingestion of .jsonl.gz files
-  - Line-by-line JSON parsing (OONI standard)
-  - test_keys treated as dynamic dict
-  - raw_test_keys preserved for reproducibility
-  - Safe atomic parquet output
-
 materialization:
   type: table
   strategy: create+replace
 @bruin"""
 
 import pandas as pd
-from typing import Any, Dict
+from typing import Any, Dict, List
 from pathlib import Path
 from datetime import datetime
-import sys
 import gzip
 import json
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 
 # ---------------------------------------------------------------------------
-# PROJECT ROOT RESOLUTION (CRITICAL FIX)
+# PATH FIX
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-# ---------------------------------------------------------------------------
-# ENV IMPORT
-# ---------------------------------------------------------------------------
-try:
-    sys.path.insert(0, str(PROJECT_ROOT))
-    from _env import require_dev, resolve_env  # type: ignore
-except Exception:
-    def require_dev(x): return None
-    def resolve_env(fallback="dev"): return fallback
-
-ENV = resolve_env(fallback="dev")
-require_dev(ENV)
-
-
-# ---------------------------------------------------------------------------
-# CONFIG (NOW CORRECT)
-# ---------------------------------------------------------------------------
 ROOT = PROJECT_ROOT / "data/dev/ooni/ooni-kenya-censorship"
 OUT_DIR = PROJECT_ROOT / "data/dev/ooni"
 OUT_FILE = OUT_DIR / "ooni_measurements.parquet"
 
 START_DATE = "2023-06-01"
 END_DATE = "2025-06-30"
+
+CHUNK_SIZE = 10_000   # 🔥 LOWERED
 
 
 # ---------------------------------------------------------------------------
@@ -73,7 +50,7 @@ def resolve_time(obj: Dict[str, Any]) -> pd.Timestamp:
     return pd.to_datetime(ts, utc=True, errors="coerce")
 
 
-def safe_bool(x: Any) -> bool:
+def safe_bool(x):
     if x is None:
         return False
     if isinstance(x, bool):
@@ -83,30 +60,17 @@ def safe_bool(x: Any) -> bool:
     return bool(x)
 
 
-def safe_int(x: Any) -> int:
+def safe_int(x):
     try:
         return int(x or 0)
-    except Exception:
+    except:
         return 0
 
 
-def safe_write_parquet(df: pd.DataFrame, path: Path):
-    temp_path = path.with_suffix(".tmp.parquet")
+def extract_row(obj, t):
+    tk = obj.get("test_keys") or {}
 
-    df.to_parquet(
-        temp_path,
-        index=False,
-        engine="pyarrow",
-        compression="snappy"
-    )
-
-    temp_path.replace(path)
-
-
-def extract_row(obj: Dict[str, Any], t: pd.Timestamp) -> Dict[str, Any]:
-    test_keys = obj.get("test_keys") or {}
-
-    row = {
+    return {
         "measurement_id": obj.get("measurement_uid") or obj.get("id"),
         "country": obj.get("probe_cc"),
         "asn": obj.get("asn"),
@@ -119,31 +83,25 @@ def extract_row(obj: Dict[str, Any], t: pd.Timestamp) -> Dict[str, Any]:
         "part": t.strftime("%Y-%m-%d"),
         "extracted_at": datetime.utcnow(),
 
-        "raw_test_keys": json.dumps(test_keys, default=str),
+        "raw_test_keys": json.dumps(tk, default=str),
 
-        "telegram_http_blocking": safe_bool(test_keys.get("telegram_http_blocking")),
-        "telegram_tcp_blocking": safe_bool(test_keys.get("telegram_tcp_blocking")),
+        "telegram_http_blocking": safe_bool(tk.get("telegram_http_blocking")),
+        "telegram_tcp_blocking": safe_bool(tk.get("telegram_tcp_blocking")),
 
-        "whatsapp_endpoints_blocked": test_keys.get("endpoints_status") == "blocked",
-        "whatsapp_dns_inconsistent": test_keys.get("dns_consistent") is False,
-        "whatsapp_web_failure": test_keys.get("web_failure"),
+        "whatsapp_endpoints_blocked": tk.get("endpoints_status") == "blocked",
+        "whatsapp_dns_inconsistent": tk.get("dns_consistent") is False,
+        "whatsapp_web_failure": tk.get("web_failure"),
 
-        "signal_backend_failure": test_keys.get("signal_backend_failure"),
+        "signal_backend_failure": tk.get("signal_backend_failure"),
 
-        "tor_or_port_accessible": safe_int(test_keys.get("or_port_accessible")),
-        "tor_obfs4_accessible": safe_int(test_keys.get("obfs4_accessible")),
-        "tor_dir_port_accessible": safe_int(test_keys.get("dir_port_accessible")),
+        "tor_or_port_accessible": safe_int(tk.get("or_port_accessible")),
+        "tor_obfs4_accessible": safe_int(tk.get("obfs4_accessible")),
+        "tor_dir_port_accessible": safe_int(tk.get("dir_port_accessible")),
 
-        "psiphon_failure": test_keys.get("failure"),
+        "psiphon_failure": tk.get("failure"),
 
         "has_failure": obj.get("failure") is not None,
     }
-
-    hashable = {k: v for k, v in row.items() if k not in (
-        "extracted_at", "row_hash")}
-    row["row_hash"] = hash(json.dumps(hashable, sort_keys=True, default=str))
-
-    return row
 
 
 # ---------------------------------------------------------------------------
@@ -155,24 +113,23 @@ def materialize() -> pd.DataFrame:
     start = pd.to_datetime(START_DATE, utc=True)
     end = pd.to_datetime(END_DATE, utc=True)
 
-    if not ROOT.exists():
-        raise FileNotFoundError(f"OONI data root not found: {ROOT}")
-
     files = sorted(ROOT.rglob("*.jsonl.gz"))
-    if not files:
-        raise FileNotFoundError(f"No files found under {ROOT}")
-
     print(f"Found {len(files)} files")
 
-    rows = []
+    writer = None
+    buffer: List[Dict[str, Any]] = []
+    total_rows = 0
 
-    for f in files:
+    for i, f in enumerate(files, 1):
+        if i % 1000 == 0:
+            print(f"Processing {i}/{len(files)} | rows: {total_rows}")
+
         try:
             with gzip.open(f, "rt", encoding="utf-8") as fh:
                 for line in fh:
                     try:
                         obj = json.loads(line)
-                    except json.JSONDecodeError:
+                    except:
                         continue
 
                     t = resolve_time(obj)
@@ -182,23 +139,43 @@ def materialize() -> pd.DataFrame:
                     if obj.get("probe_cc") != "KE":
                         continue
 
-                    rows.append(extract_row(obj, t))
+                    buffer.append(extract_row(obj, t))
+
+                    if len(buffer) >= CHUNK_SIZE:
+                        df_chunk = pd.DataFrame(buffer)
+                        table = pa.Table.from_pandas(df_chunk)
+
+                        if writer is None:
+                            writer = pq.ParquetWriter(
+                                OUT_FILE,
+                                table.schema,
+                                compression="snappy",
+                                use_dictionary=True,
+                                write_statistics=False,
+                            )
+
+                        writer.write_table(table)
+
+                        total_rows += len(buffer)
+                        buffer.clear()
 
         except Exception:
             continue
 
-    if not rows:
-        raise ValueError("No rows after filtering")
+    if buffer:
+        df_chunk = pd.DataFrame(buffer)
+        table = pa.Table.from_pandas(df_chunk)
 
-    df = (
-        pd.DataFrame(rows)
-        .sort_values("start_time")
-        .drop_duplicates(subset=["measurement_id"])
-        .reset_index(drop=True)
-    )
+        if writer is None:
+            writer = pq.ParquetWriter(OUT_FILE, table.schema)
 
-    safe_write_parquet(df, OUT_FILE)
+        writer.write_table(table)
+        total_rows += len(buffer)
 
-    print(f"✅ Parquet written → {OUT_FILE} ({len(df):,} rows)")
+    if writer:
+        writer.close()
 
-    return df
+    print(f"✅ Finished. Total rows: {total_rows:,}")
+
+    # 🔥 DO NOT LOAD FILE AGAIN
+    return pd.DataFrame()
