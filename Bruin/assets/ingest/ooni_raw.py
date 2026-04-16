@@ -11,10 +11,11 @@ tags:
 description: |
   STRICT RAW ingestion of OONI Kenya measurements.
 
+  - Read-only ingestion of .jsonl.gz files
   - Line-by-line JSON parsing (OONI standard)
   - test_keys treated as dynamic dict
   - raw_test_keys preserved for reproducibility
-  - Explicit parquet output for GCS / BigQuery
+  - Safe atomic parquet output
 
 materialization:
   type: table
@@ -31,10 +32,15 @@ import json
 
 
 # ---------------------------------------------------------------------------
-# ENV IMPORT (CLEAN + SAFE)
+# PROJECT ROOT RESOLUTION (CRITICAL FIX)
+# ---------------------------------------------------------------------------
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+# ---------------------------------------------------------------------------
+# ENV IMPORT
 # ---------------------------------------------------------------------------
 try:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    sys.path.insert(0, str(PROJECT_ROOT))
     from _env import require_dev, resolve_env  # type: ignore
 except Exception:
     def require_dev(x): return None
@@ -45,10 +51,10 @@ require_dev(ENV)
 
 
 # ---------------------------------------------------------------------------
-# CONFIG
+# CONFIG (NOW CORRECT)
 # ---------------------------------------------------------------------------
-ROOT = Path("data/dev/ooni/ooni-kenya-censorship")
-OUT_DIR = Path("data/dev/ooni")
+ROOT = PROJECT_ROOT / "data/dev/ooni/ooni-kenya-censorship"
+OUT_DIR = PROJECT_ROOT / "data/dev/ooni"
 OUT_FILE = OUT_DIR / "ooni_measurements.parquet"
 
 START_DATE = "2023-06-01"
@@ -82,6 +88,19 @@ def safe_int(x: Any) -> int:
         return int(x or 0)
     except Exception:
         return 0
+
+
+def safe_write_parquet(df: pd.DataFrame, path: Path):
+    temp_path = path.with_suffix(".tmp.parquet")
+
+    df.to_parquet(
+        temp_path,
+        index=False,
+        engine="pyarrow",
+        compression="snappy"
+    )
+
+    temp_path.replace(path)
 
 
 def extract_row(obj: Dict[str, Any], t: pd.Timestamp) -> Dict[str, Any]:
@@ -136,9 +155,14 @@ def materialize() -> pd.DataFrame:
     start = pd.to_datetime(START_DATE, utc=True)
     end = pd.to_datetime(END_DATE, utc=True)
 
+    if not ROOT.exists():
+        raise FileNotFoundError(f"OONI data root not found: {ROOT}")
+
     files = sorted(ROOT.rglob("*.jsonl.gz"))
     if not files:
         raise FileNotFoundError(f"No files found under {ROOT}")
+
+    print(f"Found {len(files)} files")
 
     rows = []
 
@@ -159,6 +183,7 @@ def materialize() -> pd.DataFrame:
                         continue
 
                     rows.append(extract_row(obj, t))
+
         except Exception:
             continue
 
@@ -172,12 +197,7 @@ def materialize() -> pd.DataFrame:
         .reset_index(drop=True)
     )
 
-    df.to_parquet(
-        OUT_FILE,
-        index=False,
-        engine="pyarrow",
-        compression="snappy"
-    )
+    safe_write_parquet(df, OUT_FILE)
 
     print(f"✅ Parquet written → {OUT_FILE} ({len(df):,} rows)")
 
