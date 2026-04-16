@@ -1,141 +1,78 @@
 """
 @bruin
-tags:
-  - raw_dev
-  - dataset_ooni_conflict_measurements
 name: raw.ooni_conflict_measurements
 type: python
 image: python:3.12
 connection: duckdb-parquet
 description: |
-  STRICT RAW ingestion of OONI Kenya censorship measurements.
-  Flattens test_keys into deterministic schema for downstream BigQuery/GCS loads.
+  DEV ONLY.
+  Reads raw OONI .jsonl.gz files for Kenya (Jun 2023 - Jun 2025).
+  Follows the OONI Data Pipeline design: line-by-line JSON parsing,
+  test_keys accessed as a dict (no json_normalize), raw_test_keys
+  preserved as JSON string for full reproducibility.
+
+  Produces canonical parquet at data/dev/ooni/ooni_measurements.parquet.
+
+  Blocking fields extracted per test type:
+    telegram  - telegram_http_blocking, telegram_tcp_blocking
+    whatsapp  - whatsapp_endpoints_blocked, whatsapp_dns_inconsistent,
+                whatsapp_web_failure
+    signal    - signal_backend_failure
+    tor       - tor_or_port_accessible, tor_obfs4_accessible,
+                tor_dir_port_accessible
+    psiphon   - psiphon_failure
+
+  Full blocking derivation (is_blocked, is_confirmed_block, etc.)
+  happens in stg.ooni, not here. Raw layer only extracts + preserves.
+
+tags:
+  - raw_dev
+  - dataset_ooni
 
 materialization:
   type: table
   strategy: create+replace
-
-columns:
-  - name: part
-    type: STRING
-    description: Partition date derived from start_time (YYYY-MM-DD)
-
-  - name: measurement_id
-    type: STRING
-    description: Unique OONI measurement identifier
-
-  - name: country
-    type: STRING
-    description: Probe country code
-
-  - name: probe_cc
-    type: STRING
-    description: Probe country code
-
-  - name: probe_asn
-    type: STRING
-    description: Probe ASN
-
-  - name: asn
-    type: STRING
-    description: Target ASN
-
-  - name: test_name
-    type: STRING
-    description: OONI test type
-
-  - name: input
-    type: STRING
-    description: Tested URL or endpoint
-
-  - name: start_time
-    type: TIMESTAMP
-    description: Normalized measurement start time (UTC)
-
-  - name: extracted_at
-    type: TIMESTAMP
-    description: Ingestion timestamp (UTC)
-
-  # TELEGRAM
-  - name: telegram_http_blocking
-    type: BOOLEAN
-  - name: telegram_tcp_blocking
-    type: BOOLEAN
-
-  # WHATSAPP
-  - name: whatsapp_endpoints_blocked
-    type: BOOLEAN
-  - name: whatsapp_endpoints_dns_inconsistent
-    type: BOOLEAN
-  - name: whatsapp_web_failure
-    type: STRING
-
-  # SIGNAL
-  - name: signal_backend_failure
-    type: STRING
-
-  # TOR
-  - name: tor_or_port_accessible
-    type: INTEGER
-  - name: tor_obfs4_accessible
-    type: INTEGER
-
-  # PSIPHON
-  - name: psiphon_failure
-    type: STRING
-
-  # DERIVED
-  - name: is_blocked
-    type: BOOLEAN
-  - name: is_confirmed_block
-    type: BOOLEAN
-  - name: has_measurement_failure
-    type: BOOLEAN
-  - name: blocking_signal_type
-    type: STRING
+@bruin
 """
 
 import gzip
 import json
-from pathlib import Path
+import sys
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from pathlib import Path
+from typing import Any, Dict
 
 import pandas as pd
 
+# ---------------------------------------------------------------------------
+# Allow _env import whether working dir is asset folder or project root
+# ---------------------------------------------------------------------------
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from _env import require_dev, resolve_env
 
-# -----------------------------
-# SAFE TYPE HELPERS
-# -----------------------------
-def safe_bool(val: Any) -> bool:
-    if val is None:
-        return False
-    if isinstance(val, bool):
-        return val
-    if isinstance(val, (int, float)):
-        return val != 0
-    if isinstance(val, str):
-        return val.lower() in ("true", "1", "yes", "t")
-    return False
+ENV = resolve_env(fallback="dev")
+require_dev(ENV)
 
+# ---------------------------------------------------------------------------
+# CONFIG
+# ---------------------------------------------------------------------------
+ROOT     = Path("data/dev/ooni/ooni-kenya-censorship")
+OUT_DIR  = Path("data/dev/ooni")
+OUT_FILE = OUT_DIR / "ooni_measurements.parquet"
 
-def safe_int(val: Any) -> int:
-    try:
-        return int(val or 0)
-    except Exception:
-        return 0
+START_DATE = "2023-06-01"
+END_DATE   = "2025-06-30"
 
 
-def safe_str(val: Any) -> Optional[str]:
-    if val is None:
-        return None
-    return str(val)
+# ---------------------------------------------------------------------------
+# HELPERS
+# ---------------------------------------------------------------------------
 
-
-# -----------------------------
-# TIMESTAMP RESOLVER (CRITICAL FIX)
-# -----------------------------
-def resolve_start_time(obj: Dict[str, Any]) -> Optional[pd.Timestamp]:
+def resolve_time(obj: Dict[str, Any]) -> pd.Timestamp:
+    """
+    Try multiple timestamp field names in priority order.
+    OONI changed the field name across data versions.
+    """
     ts = (
         obj.get("measurement_start_time")
         or obj.get("test_start_time")
@@ -144,148 +81,202 @@ def resolve_start_time(obj: Dict[str, Any]) -> Optional[pd.Timestamp]:
     return pd.to_datetime(ts, utc=True, errors="coerce")
 
 
-# -----------------------------
-# MAIN INGESTION FUNCTION
-# -----------------------------
-def materialize(start_date: str, end_date: str) -> pd.DataFrame:
-    start_ts = pd.to_datetime(start_date, utc=True)
-    end_ts = pd.to_datetime(end_date, utc=True)
+def safe_bool(x) -> bool:
+    """Convert any truthy representation to a Python bool."""
+    if x is None:
+        return False
+    if isinstance(x, bool):
+        return x
+    if isinstance(x, str):
+        return x.lower() in ("true", "1", "yes")
+    return bool(x)
 
-    root = Path("data/dev/ooni/ooni-kenya-censorship")
-    rows: List[Dict[str, Any]] = []
 
-    for path in root.rglob("*.jsonl.gz"):
-        try:
-            with gzip.open(path, "rt", encoding="utf-8") as f:
-                for line in f:
-                    try:
-                        obj = json.loads(line)
-                    except Exception:
-                        continue
+def extract_row(obj: Dict[str, Any], t: pd.Timestamp) -> Dict[str, Any]:
+    """
+    Build one output row from a parsed OONI measurement object.
 
-                    start_time = resolve_start_time(obj)
-                    if start_time is None or pd.isna(start_time):
-                        continue
+    test_keys is accessed as a plain dict — no json_normalize, no column
+    explosion, no field-name clashes from deeply nested tor targets.
+    raw_test_keys is stored as a JSON string for full reproducibility so
+    we can always re-derive signals without re-reading source files.
+    """
+    test_keys = obj.get("test_keys") or {}
 
-                    if start_time < start_ts or start_time > end_ts:
-                        continue
+    row = {
+        # ── Identity ────────────────────────────────────────────────────────
+        "measurement_id":   obj.get("measurement_uid") or obj.get("id"),
+        "country":          obj.get("probe_cc"),
+        "asn":              obj.get("asn"),
+        "probe_cc":         obj.get("probe_cc"),
+        "probe_asn":        obj.get("probe_asn"),
+        "test_name":        obj.get("test_name"),
+        "input":            obj.get("input"),
 
-                    test_keys = obj.get("test_keys") or {}
+        # ── Time ────────────────────────────────────────────────────────────
+        "start_time":   t,
+        "part":         t.strftime("%Y-%m-%d"),
+        "extracted_at": datetime.utcnow(),
 
-                    row: Dict[str, Any] = {
-                        # identity
-                        "measurement_id": obj.get("measurement_uid"),
-                        "country": obj.get("probe_cc"),
-                        "probe_cc": obj.get("probe_cc"),
-                        "probe_asn": obj.get("probe_asn"),
-                        "asn": obj.get("asn"),
-                        "test_name": obj.get("test_name"),
-                        "input": obj.get("input"),
-                        "start_time": start_time,
-                        "extracted_at": datetime.utcnow(),
+        # ── Raw reproducibility (CRITICAL per OONI pipeline design) ─────────
+        "raw_test_keys": json.dumps(test_keys, default=str),
 
-                        # PARTITION COLUMN (CRITICAL FOR BIGQUERY/GCS)
-                        "part": start_time.strftime("%Y-%m-%d"),
-                    }
+        # ── Telegram ────────────────────────────────────────────────────────
+        "telegram_http_blocking": safe_bool(
+            test_keys.get("telegram_http_blocking")
+        ),
+        "telegram_tcp_blocking": safe_bool(
+            test_keys.get("telegram_tcp_blocking")
+        ),
 
-                    # -------------------------
-                    # TELEGRAM (STRICT RAW)
-                    # -------------------------
-                    row["telegram_http_blocking"] = safe_bool(
-                        test_keys.get("telegram_http_blocking")
-                    )
-                    row["telegram_tcp_blocking"] = safe_bool(
-                        test_keys.get("telegram_tcp_blocking")
-                    )
+        # ── WhatsApp ────────────────────────────────────────────────────────
+        # endpoints_status == "blocked" is the strongest confirmed signal.
+        # dns_consistent == False       is the DNS inconsistency signal.
+        "whatsapp_endpoints_blocked": (
+            test_keys.get("endpoints_status") == "blocked"
+        ),
+        "whatsapp_dns_inconsistent": (
+            test_keys.get("dns_consistent") is False
+        ),
+        "whatsapp_web_failure": test_keys.get("web_failure"),
 
-                    # -------------------------
-                    # WHATSAPP (STRICT RAW)
-                    # -------------------------
-                    row["whatsapp_endpoints_blocked"] = (
-                        test_keys.get("endpoints_status") == "blocked"
-                    )
-                    row["whatsapp_endpoints_dns_inconsistent"] = (
-                        test_keys.get("dns_consistent") is False
-                    )
-                    row["whatsapp_web_failure"] = safe_str(
-                        test_keys.get("web_failure")
-                    )
+        # ── Signal ──────────────────────────────────────────────────────────
+        "signal_backend_failure": test_keys.get("signal_backend_failure"),
 
-                    # -------------------------
-                    # SIGNAL (STRICT RAW)
-                    # -------------------------
-                    row["signal_backend_failure"] = safe_str(
-                        test_keys.get("signal_backend_failure")
-                    )
+        # ── Tor ─────────────────────────────────────────────────────────────
+        # Integer counts: 0 means no reachable nodes of that type.
+        # We do NOT flatten the per-target failure dict — too many dynamic
+        # keys. Raw string preserved in raw_test_keys if needed.
+        "tor_or_port_accessible":  test_keys.get("or_port_accessible"),
+        "tor_obfs4_accessible":    test_keys.get("obfs4_accessible"),
+        "tor_dir_port_accessible": test_keys.get("dir_port_accessible"),
 
-                    # -------------------------
-                    # TOR (STRICT RAW)
-                    # -------------------------
-                    row["tor_or_port_accessible"] = safe_int(
-                        test_keys.get("or_port_accessible")
-                    )
-                    row["tor_obfs4_accessible"] = safe_int(
-                        test_keys.get("obfs4_accessible")
-                    )
+        # ── Psiphon ─────────────────────────────────────────────────────────
+        # Only the generic top-level failure field is available.
+        "psiphon_failure": test_keys.get("failure"),
 
-                    # -------------------------
-                    # PSIPHON
-                    # -------------------------
-                    row["psiphon_failure"] = safe_str(
-                        test_keys.get("failure")
-                    )
+        # ── Minimal derived metadata (safe at raw layer) ─────────────────
+        # Full blocking derivation (is_blocked etc.) belongs in stg.ooni.
+        # We only note whether any top-level failure field was present.
+        "has_failure": obj.get("failure") is not None,
+    }
 
-                    # -------------------------
-                    # DERIVED (MINIMAL RAW LOGIC)
-                    # -------------------------
-                    row["has_measurement_failure"] = obj.get("failure") is not None
-
-                    row["is_confirmed_block"] = (
-                        row["telegram_http_blocking"]
-                        or row["telegram_tcp_blocking"]
-                        or row["whatsapp_endpoints_blocked"]
-                    )
-
-                    row["is_blocked"] = (
-                        row["is_confirmed_block"]
-                        or row["has_measurement_failure"]
-                    )
-
-                    if row["telegram_http_blocking"] or row["telegram_tcp_blocking"]:
-                        row["blocking_signal_type"] = "telegram"
-                    elif row["whatsapp_endpoints_blocked"]:
-                        row["blocking_signal_type"] = "whatsapp"
-                    elif row["signal_backend_failure"]:
-                        row["blocking_signal_type"] = "signal"
-                    elif row["psiphon_failure"]:
-                        row["blocking_signal_type"] = "psiphon"
-                    else:
-                        row["blocking_signal_type"] = None
-
-                    rows.append(row)
-
-        except Exception:
-            # RAW LAYER RULE: skip corrupted files but never fail pipeline
-            continue
-
-    df = pd.DataFrame(rows)
-
-    if df.empty:
-        return df
-
-    # deterministic ordering
-    df = df.sort_values("start_time")
-
-    # stable deduplication
-    df = df.drop_duplicates(subset=["measurement_id"])
-
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-  df.to_parquet(
-        OUTPUT_FILE,
-        index=False,
-        engine="pyarrow",
-        compression="snappy"
+    # Deterministic row hash for dedup debugging.
+    # Excludes extracted_at so reruns produce the same hash for the same
+    # source measurement.
+    hashable = {
+        k: v for k, v in row.items()
+        if k not in ("extracted_at", "row_hash")
+    }
+    row["row_hash"] = hash(
+        json.dumps(hashable, sort_keys=True, default=str)
     )
 
-return df
+    return row
+
+
+# ---------------------------------------------------------------------------
+# MAIN
+# ---------------------------------------------------------------------------
+
+def materialize() -> pd.DataFrame:
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    start = pd.to_datetime(START_DATE, utc=True)
+    end   = pd.to_datetime(END_DATE,   utc=True)
+
+    if not ROOT.exists():
+        raise FileNotFoundError(
+            f"OONI data root not found: {ROOT.resolve()}\n"
+            "Download Kenya OONI data and place under:\n"
+            "  data/dev/ooni/ooni-kenya-censorship/"
+        )
+
+    files = sorted(ROOT.rglob("*.jsonl.gz"))
+    print(f"Found {len(files):,} .jsonl.gz files under {ROOT.resolve()}")
+    if not files:
+        raise FileNotFoundError(f"No .jsonl.gz files found under {ROOT}")
+
+    rows          = []
+    total_lines   = 0
+    skipped_parse = 0
+    skipped_date  = 0
+    skipped_cc    = 0
+
+    for i, f in enumerate(files, 1):
+        if i == 1 or i % 100 == 0 or i == len(files):
+            print(
+                f"  [{i:,}/{len(files):,}] {f.name}"
+                f"  (kept so far: {len(rows):,})"
+            )
+
+        try:
+            with gzip.open(f, "rt", encoding="utf-8") as fh:
+                for line in fh:
+                    total_lines += 1
+                    try:
+                        obj = json.loads(line)
+                    except json.JSONDecodeError:
+                        skipped_parse += 1
+                        continue
+
+                    t = resolve_time(obj)
+                    if pd.isna(t) or t < start or t > end:
+                        skipped_date += 1
+                        continue
+
+                    if obj.get("probe_cc") != "KE":
+                        skipped_cc += 1
+                        continue
+
+                    rows.append(extract_row(obj, t))
+
+        except Exception as e:
+            print(f"  ⚠️  Error reading {f.name}: {e}")
+            continue
+
+    # ── Summary ─────────────────────────────────────────────────────────────
+    print(f"\n{'='*60}")
+    print(f"Total lines read         : {total_lines:,}")
+    print(f"Skipped (parse error)    : {skipped_parse:,}")
+    print(f"Skipped (out of date range): {skipped_date:,}")
+    print(f"Skipped (non-KE)         : {skipped_cc:,}")
+    print(f"Rows kept                : {len(rows):,}")
+
+    if not rows:
+        raise ValueError(
+            "No rows passed the date + country filter.\n"
+            f"  Date range : {START_DATE} -> {END_DATE}\n"
+            f"  Country    : KE\n"
+            "Verify your source files are in the correct directory."
+        )
+
+    df = (
+        pd.DataFrame(rows)
+          .sort_values("start_time")
+          .reset_index(drop=True)
+    )
+
+    # ── Per-test signal summary ──────────────────────────────────────────────
+    print(f"\nRows by test_name:")
+    print(df["test_name"].value_counts().to_string())
+
+    print(f"\nSignal counts:")
+    tg_blocked = (df["telegram_http_blocking"] | df["telegram_tcp_blocking"])
+    print(f"  Telegram any blocking     : {tg_blocked.sum():,}")
+    print(f"  WhatsApp endpoints blocked: {df['whatsapp_endpoints_blocked'].sum():,}")
+    print(f"  WhatsApp DNS inconsistent : {df['whatsapp_dns_inconsistent'].sum():,}")
+    print(f"  Signal backend failures   : {df['signal_backend_failure'].notna().sum():,}")
+
+    tor_mask = df["tor_or_port_accessible"].notna()
+    if tor_mask.any():
+        tor_blocked = (df.loc[tor_mask, "tor_or_port_accessible"] == 0).sum()
+        print(f"  Tor OR port unreachable   : {tor_blocked:,}")
+
+    print(f"  Psiphon failures          : {df['psiphon_failure'].notna().sum():,}")
+    print("="*60)
+
+    df.to_parquet(OUT_FILE, index=False, compression="snappy")
+    print(f"\n✅ Written: {OUT_FILE.resolve()}  ({len(df):,} rows)")
+
+    return df
