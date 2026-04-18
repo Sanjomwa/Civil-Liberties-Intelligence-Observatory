@@ -1,6 +1,6 @@
 /* @bruin
 tags:
-  - stg_bq
+  - staging_bq
   - dataset_lumen_requests
 name: stg.lumen_requests
 type: bq.sql

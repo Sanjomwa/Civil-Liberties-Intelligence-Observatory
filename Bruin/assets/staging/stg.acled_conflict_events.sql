@@ -1,6 +1,6 @@
 /* @bruin
 tags:
-  - stg_bq
+  - staging_bq
   - dataset_acled_conflict_events
 name: stg.acled_conflict_events
 type: bq.sql

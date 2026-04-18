@@ -1,4 +1,6 @@
 /* @bruin
+tags:
+  - marts_bq
 name: dim_blocking_signals
 type: bq.sql
 connection: bigquery-default

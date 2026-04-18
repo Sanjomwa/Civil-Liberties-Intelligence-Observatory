@@ -1,4 +1,7 @@
 /* @bruin
+tags:
+  - staging_bq
+  - dataset_ooni_measurements
 name: stg.ooni_measurements
 type: bq.sql
 connection: bigquery-default

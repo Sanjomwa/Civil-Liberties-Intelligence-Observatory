@@ -5,25 +5,24 @@ name: reporting.civil_liberties_mart
 type: bq.sql
 connection: bigquery-default
 description: |
-  Final reporting mart — single wide table that powers all Streamlit dashboards.
-  Joins fact_censorship_impact (OONI × ACLED) with all dimensions and enriches
-  with takedown request context aggregated to the same date grain.
-  Grain: one row per OONI measurement enriched with full dimensional context.
-  All dashboard queries hit this table — no further joins needed in Streamlit.
+  Final observatory mart powering all Streamlit dashboards.
+  Built from cross-source censorship spine (OONI + ACLED + platform + takedowns).
+  One row per censorship event timeline record enriched with full dimensional context.
+
 owner: civil-liberties-pipeline
 
 depends:
-  - marts.fact_censorship_impact
-  - marts.fact_takedown_requests
+  - marts.fact_cross_source_censorship_events
   - marts.fact_platform_blocking_summary
+  - marts.fact_takedown_requests
   - marts.fact_takedown_trends
   - marts.dim_dates
   - marts.dim_regions
   - marts.dim_platforms
-  - marts.dim_test_categories
   - marts.dim_reasons
-  - marts.dim_event_types
-  - marts.dim_requestors
+  - marts.dim_asn
+  - marts.dim_blocking_signals
+  - marts.dim_censorship_confidence
 
 materialization:
   type: table
@@ -32,44 +31,31 @@ materialization:
 
 WITH
 
+/* ─────────────────────────────────────────────
+   TAKEDOWN DAILY AGGREGATION
+──────────────────────────────────────────── */
 daily_takedowns AS (
     SELECT
         measurement_date,
-        COUNT(*)                                    AS takedown_records,
-        SUM(number_of_requests)                     AS total_takedown_requests,
-        SUM(items_requested_removal)                AS total_items_targeted,
-        COUNT(DISTINCT source)                      AS takedown_sources_active,
-        COUNT(DISTINCT platform)                    AS platforms_targeted,
-        STRING_AGG(DISTINCT reason_group, ', '
-            ORDER BY reason_group LIMIT 5)          AS active_reason_groups
-    FROM (
-        SELECT
-            measurement_date,
-            source,
-            platform,
-            number_of_requests,
-            items_requested_removal,
-            CASE
-                WHEN LOWER(reason) LIKE '%defamation%'
-                  OR LOWER(reason) LIKE '%privacy%'       THEN 'Privacy & Reputation'
-                WHEN LOWER(reason) LIKE '%copyright%'
-                  OR LOWER(reason) LIKE '%trademark%'     THEN 'Intellectual Property'
-                WHEN LOWER(reason) LIKE '%hate%'
-                  OR LOWER(reason) LIKE '%violent%'
-                  OR LOWER(reason) LIKE '%terror%'        THEN 'Harmful Content'
-                WHEN LOWER(reason) LIKE '%national security%'
-                  OR LOWER(reason) LIKE '%government%'    THEN 'Government / National Security'
-                WHEN LOWER(reason) LIKE '%fraud%'
-                  OR LOWER(reason) LIKE '%spam%'          THEN 'Fraud & Spam'
-                ELSE 'Other'
-            END AS reason_group
-        FROM `encoded-joy-485413-k5.marts.fact_takedown_requests`
-        WHERE measurement_date IS NOT NULL
-    )
+
+        COUNT(*) AS takedown_records,
+        SUM(number_of_requests) AS total_takedown_requests,
+        SUM(items_requested_removal) AS total_items_targeted,
+
+        COUNT(DISTINCT source) AS takedown_sources_active,
+        COUNT(DISTINCT platform) AS platforms_targeted,
+
+        STRING_AGG(DISTINCT reason, ', ' LIMIT 5) AS top_reasons
+
+    FROM `encoded-joy-485413-k5.marts.fact_takedown_requests`
+    WHERE measurement_date IS NOT NULL
     GROUP BY measurement_date
 ),
 
-monthly_blocking AS (
+/* ─────────────────────────────────────────────
+   PLATFORM MONTHLY SUMMARY
+──────────────────────────────────────────── */
+monthly_platform AS (
     SELECT
         year,
         month,
@@ -77,102 +63,117 @@ monthly_blocking AS (
         blocking_rate,
         confirmed_blocking_rate,
         total_measurements,
-        blocked_count,
-        distinct_targets_blocked
+        blocked_count
     FROM `encoded-joy-485413-k5.marts.fact_platform_blocking_summary`
 ),
 
-mart_base AS (
+/* ─────────────────────────────────────────────
+   BASE SPINE (CORE OBSERVATORY TABLE)
+──────────────────────────────────────────── */
+base AS (
     SELECT
-        ci.measurement_id,
-        ci.measurement_date,
-        ci.year,
-        ci.month,
-        ci.test_name                                AS platform,
-        ci.test_category,
-        ci.censorship_status,
-        ci.is_blocked,
-        ci.is_confirmed_block,
-        ci.tested_url_or_app,
-        ci.asn,
-        ci.probe_asn,
-        ci.blocked_on_protest_day,
-        ci.extracted_at,
+        f.event_id,
+        f.measurement_date,
+        f.year,
+        f.month,
 
-        ci.conflict_event_count,
-        ci.total_events                             AS conflict_events_on_day,
-        ci.total_fatalities                         AS fatalities_on_day,
-        ci.trigger_event_count                      AS protest_events_on_day,
-        ci.event_types_on_day,
-        ci.counties_affected,
-        ci.total_population_exposure,
+        f.asn,
+        f.probe_asn,
 
-        dd.day_name,
-        dd.month_name,
-        dd.year_month,
-        dd.half_year_label,
-        dd.protest_season_flag,
-        dd.political_context_flag,
-        dd.is_weekend,
-        dd.reporting_period_flag,
+        f.platform,
+        f.test_category,
 
-        dtc.category_group,
-        dtc.severity_rank                           AS blocking_severity_rank,
+        f.blocking_signal_type,
+        f.blocking_confidence,
+        f.is_blocked,
 
-        dp.platform_category,
-        dp.source                                   AS platform_source,
+        f.conflict_event_count,
+        f.conflict_events_on_day,
+        f.fatalities_on_day,
+        f.protest_events_on_day,
 
-        td.takedown_records,
-        td.total_takedown_requests,
-        td.total_items_targeted,
-        td.takedown_sources_active,
-        td.platforms_targeted                       AS takedown_platforms_targeted,
-        td.active_reason_groups,
+        f.extracted_at
 
-        mb.blocking_rate                            AS monthly_platform_blocking_rate,
-        mb.confirmed_blocking_rate                  AS monthly_confirmed_blocking_rate
-
-    FROM `encoded-joy-485413-k5.marts.fact_censorship_impact` ci
-
-    LEFT JOIN `encoded-joy-485413-k5.marts.dim_dates` dd
-        ON ci.measurement_date = dd.date_key
-
-    LEFT JOIN `encoded-joy-485413-k5.marts.dim_test_categories` dtc
-        ON ci.test_category = dtc.test_category
-
-    LEFT JOIN `encoded-joy-485413-k5.marts.dim_platforms` dp
-        ON ci.test_name = dp.platform_name
-       AND dp.source = 'OONI'
-
-    LEFT JOIN daily_takedowns td
-        ON ci.measurement_date = td.measurement_date
-
-    LEFT JOIN monthly_blocking mb
-        ON ci.year      = mb.year
-       AND ci.month     = mb.month
-       AND ci.test_name = mb.platform
+    FROM `encoded-joy-485413-k5.marts.fact_cross_source_censorship_events` f
 )
 
+/* ─────────────────────────────────────────────
+   FINAL MART
+──────────────────────────────────────────── */
 SELECT
-    *,
 
-    ROUND(
-        (CASE WHEN is_blocked THEN 0.5 ELSE 0.0 END)
-        + (CASE WHEN blocked_on_protest_day THEN 0.3 ELSE 0.0 END)
-        + LEAST(COALESCE(protest_events_on_day, 0) * 0.05, 0.2),
-    2)                                              AS censorship_intensity_score,
+    b.*,
+
+    /* ── DIMENSIONS ───────────────────────── */
+    d.day_name,
+    d.month_name,
+    d.year_month,
+    d.half_year_label,
+    d.is_weekend,
+
+    r.region_name,
+
+    a.asn_name,
+    a.asn_country,
+    a.asn_type,
+
+    ps.platform_category,
+
+    bs.signal_category,
+
+    cc.confidence_level,
+
+    /* ── TAKEDOWNS ───────────────────────── */
+    t.takedown_records,
+    t.total_takedown_requests,
+    t.total_items_targeted,
+    t.takedown_sources_active,
+    t.top_reasons,
+
+    /* ── PLATFORM BEHAVIOUR ──────────────── */
+    mp.blocking_rate AS monthly_blocking_rate,
+    mp.confirmed_blocking_rate AS monthly_confirmed_blocking_rate,
+
+    /* ── CORE SCORE (LIGHTWEIGHT, NO OVERENGINEERING) ─ */
+    CASE
+        WHEN b.is_blocked THEN 0.6 ELSE 0.0
+    END
+    + CASE WHEN b.protest_events_on_day > 0 THEN 0.3 ELSE 0.0 END
+    + LEAST(COALESCE(t.takedown_records, 0) * 0.02, 0.1)
+    AS censorship_intensity_score,
 
     CASE
-        WHEN is_blocked
-         AND COALESCE(protest_events_on_day, 0) > 0
-         AND COALESCE(total_takedown_requests, 0) > 0 THEN 'Full Suppression Window'
-        WHEN is_blocked
-         AND COALESCE(protest_events_on_day, 0) > 0   THEN 'Blocking + Protest Day'
-        WHEN is_blocked
-         AND COALESCE(total_takedown_requests, 0) > 0 THEN 'Blocking + Removal Activity'
-        WHEN is_blocked                               THEN 'Blocking Only'
-        ELSE 'No Suppression Signal'
-    END                                              AS suppression_window_type
+        WHEN b.is_blocked AND b.protest_events_on_day > 0 THEN 'High Suppression Window'
+        WHEN b.is_blocked THEN 'Blocking Activity'
+        WHEN b.protest_events_on_day > 0 THEN 'Political Unrest Window'
+        ELSE 'Normal'
+    END AS suppression_window_type
 
-FROM mart_base
-ORDER BY measurement_date DESC, blocking_severity_rank ASC
+FROM base b
+
+LEFT JOIN `encoded-joy-485413-k5.marts.dim_dates` d
+    ON b.measurement_date = d.date_key
+
+LEFT JOIN `encoded-joy-485413-k5.marts.dim_regions` r
+    ON r.region_code = 'KE'
+
+LEFT JOIN `encoded-joy-485413-k5.marts.dim_asn` a
+    ON b.asn = a.asn
+
+LEFT JOIN `encoded-joy-485413-k5.marts.dim_platforms` ps
+    ON b.platform = ps.platform_name
+
+LEFT JOIN `encoded-joy-485413-k5.marts.dim_blocking_signals` bs
+    ON b.blocking_signal_type = bs.signal_type
+
+LEFT JOIN `encoded-joy-485413-k5.marts.dim_censorship_confidence` cc
+    ON b.blocking_confidence = cc.confidence_level
+
+LEFT JOIN daily_takedowns t
+    ON b.measurement_date = t.measurement_date
+
+LEFT JOIN monthly_platform mp
+    ON b.year = mp.year
+   AND b.month = mp.month
+   AND b.platform = mp.platform
+;

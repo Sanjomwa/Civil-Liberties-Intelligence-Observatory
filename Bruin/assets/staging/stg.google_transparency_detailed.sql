@@ -1,6 +1,6 @@
 /* @bruin
 tags:
-  - stg_bq
+  - staging_bq
   - dataset_google_transparency_detailed
 name: stg.google_transparency_detailed
 type: bq.sql
