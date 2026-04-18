@@ -1,9 +1,23 @@
 /* @bruin
+tags:
+  - marts_bq
 name: fact_asn_repression_index
 type: bq.sql
 connection: bigquery-default
+description: |
+  ASN-level repression index for Kenya.
+  Measures ISP involvement in censorship using cross-source spine signals
+  (OONI + ACLED + takedown systems).
+
+  Higher score = stronger association with digital repression environments.
+
+owner: civil-liberties-pipeline
+
 depends:
-  - int.ooni_signals
+  - marts.fact_cross_source_censorship_events
+  - marts.dim_asn
+  - marts.dim_censorship_confidence
+  - marts.dim_measurement_quality
 
 materialization:
   type: table
@@ -11,83 +25,140 @@ materialization:
 @bruin */
 
 WITH base AS (
+
     SELECT *
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.int_ooni_signals`
+    FROM `encoded-joy-485413-k5.marts.fact_cross_source_censorship_events`
+
 ),
 
-aggregated AS (
+asn_agg AS (
 
     SELECT
 
-        DATE(start_time) AS event_date,
-        country,
         asn,
 
         COUNT(*) AS total_measurements,
 
-        SUM(CASE WHEN is_blocked THEN 1 ELSE 0 END) AS blocked_measurements,
+        -- =========================
+        -- BLOCKING INTENSITY
+        -- =========================
+        COUNTIF(is_blocked = TRUE) AS blocked_measurements,
 
-        -- platform breakdown
-        SUM(CASE WHEN signal_type = 'telegram' AND is_blocked THEN 1 ELSE 0 END) AS telegram_blocks,
-        SUM(CASE WHEN signal_type = 'whatsapp' AND is_blocked THEN 1 ELSE 0 END) AS whatsapp_blocks,
-        SUM(CASE WHEN signal_type = 'tor' AND is_blocked THEN 1 ELSE 0 END) AS tor_blocks,
-        SUM(CASE WHEN signal_type = 'signal' AND is_blocked THEN 1 ELSE 0 END) AS signal_blocks,
-        SUM(CASE WHEN signal_type = 'psiphon' AND is_blocked THEN 1 ELSE 0 END) AS psiphon_blocks,
+        SAFE_DIVIDE(
+            COUNTIF(is_blocked = TRUE),
+            COUNT(*)
+        ) AS blocking_rate,
 
         AVG(
-            CASE block_confidence
-                WHEN 'HIGH' THEN 1.0
-                WHEN 'MEDIUM' THEN 0.6
-                WHEN 'LOW' THEN 0.3
-                ELSE 0.0
+            CASE
+                WHEN blocking_confidence = 'HIGH' THEN 3
+                WHEN blocking_confidence = 'MEDIUM' THEN 2
+                WHEN blocking_confidence = 'LOW' THEN 1
+                ELSE 0
             END
-        ) AS avg_confidence_score,
+        ) AS avg_blocking_confidence_score,
 
-        CURRENT_TIMESTAMP() AS extracted_at
+        -- =========================
+        -- PROTEST COUPLING
+        -- =========================
+        COUNTIF(conflict_events > 0) AS conflict_overlap_events,
+
+        SAFE_DIVIDE(
+            COUNTIF(is_blocked = TRUE AND conflict_events > 0),
+            NULLIF(COUNTIF(is_blocked = TRUE), 0)
+        ) AS protest_block_coupling_rate,
+
+        -- =========================
+        -- TAKEDOWN COUPLING
+        -- =========================
+        SUM(takedown_count) AS total_takedowns,
+
+        SAFE_DIVIDE(
+            SUM(takedown_count),
+            COUNT(*)
+        ) AS takedown_density,
+
+        -- =========================
+        -- CROSS-SOURCE SUPPRESSION
+        -- =========================
+        COUNTIF(event_classification IN (
+            'FULL_SUPPRESSION_WINDOW',
+            'NETWORK + CIVIL_UNREST',
+            'NETWORK + PLATFORM_SUPPRESSION'
+        )) AS high_intensity_windows,
+
+        SAFE_DIVIDE(
+            COUNTIF(event_classification IN (
+                'FULL_SUPPRESSION_WINDOW',
+                'NETWORK + CIVIL_UNREST',
+                'NETWORK + PLATFORM_SUPPRESSION'
+            )),
+            COUNT(*)
+        ) AS suppression_window_rate
 
     FROM base
-    GROUP BY event_date, country, asn
-),
+    GROUP BY asn
 
-enriched AS (
-
-    SELECT
-        *,
-        
-        SAFE_DIVIDE(blocked_measurements, total_measurements) AS block_rate,
-
-        -- number of platforms affected
-        (
-            CASE WHEN telegram_blocks > 0 THEN 1 ELSE 0 END +
-            CASE WHEN whatsapp_blocks > 0 THEN 1 ELSE 0 END +
-            CASE WHEN tor_blocks > 0 THEN 1 ELSE 0 END +
-            CASE WHEN signal_blocks > 0 THEN 1 ELSE 0 END +
-            CASE WHEN psiphon_blocks > 0 THEN 1 ELSE 0 END
-        ) AS affected_platform_count
-
-    FROM aggregated
 ),
 
 final AS (
 
     SELECT
-        *,
-        
-        -- =========================
-        -- REPRESSION INDEX (0–100)
-        -- =========================
-        LEAST(
-            100,
 
-            (
-                (block_rate * 0.5) +
-                (affected_platform_count / 5.0 * 0.3) +
-                (avg_confidence_score * 0.2)
-            ) * 100
-        ) AS repression_index
+        a.asn,
 
-    FROM enriched
+        d.asn_name,
+        d.asn_org,
+        d.country,
+
+        a.total_measurements,
+        a.blocked_measurements,
+        a.blocking_rate,
+        a.avg_blocking_confidence_score,
+
+        a.conflict_overlap_events,
+        a.protest_block_coupling_rate,
+
+        a.total_takedowns,
+        a.takedown_density,
+
+        a.high_intensity_windows,
+        a.suppression_window_rate,
+
+        -- =========================
+        -- FINAL REPRESSION INDEX
+        -- =========================
+        (
+            COALESCE(a.blocking_rate * 0.35, 0)
+            + COALESCE(a.protest_block_coupling_rate * 0.25, 0)
+            + LEAST(a.takedown_density * 0.2, 0.2)
+            + COALESCE(a.suppression_window_rate * 0.2, 0)
+        ) AS repression_index_score,
+
+        CASE
+            WHEN (
+                a.blocking_rate > 0.3
+                AND a.protest_block_coupling_rate > 0.2
+            ) THEN 'HIGH RISK ISP'
+
+            WHEN (
+                a.blocking_rate > 0.15
+                OR a.suppression_window_rate > 0.15
+            ) THEN 'MEDIUM RISK ISP'
+
+            WHEN a.total_measurements < 50 THEN 'LOW DATA COVERAGE'
+
+            ELSE 'LOW RISK ISP'
+        END AS repression_category,
+
+        CURRENT_TIMESTAMP() AS extracted_at
+
+    FROM asn_agg a
+
+    LEFT JOIN `encoded-joy-485413-k5.marts.dim_asn` d
+        ON a.asn = d.asn
+
 )
 
 SELECT *
-FROM final;
+FROM final
