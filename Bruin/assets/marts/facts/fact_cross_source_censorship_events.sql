@@ -4,78 +4,88 @@ tags:
 name: marts.fact_cross_source_censorship_events
 type: bq.sql
 connection: bigquery-default
-
-description: |
-  Unified cross-source censorship spine combining:
-  - OONI network-level blocking signals
-  - ACLED conflict pressure signals
-  - Lumen takedown / censorship demand signals
-
-  Grain:
-    measurement_date × country × asn
-
-owner: civil-liberties-pipeline
-
-depends:
-  - int.ooni_signals
-  - stg.acled_conflict_events
-  - stg.lumen_requests
-
-materialization:
-  type: table
-  strategy: create+replace
 @bruin */
 
 WITH ooni_spine AS (
+
     SELECT
         measurement_date,
-        country,
+        LOWER(country) AS country,
         asn,
 
         COUNT(*) AS ooni_tests,
-
         COUNTIF(is_blocked = TRUE) AS blocked_tests,
 
         SAFE_DIVIDE(COUNTIF(is_blocked = TRUE), COUNT(*)) AS block_rate,
 
-        MAX(CASE WHEN blocking_confidence = 'HIGH' THEN 1 ELSE 0 END) AS high_conf_block_present,
+        MAX(CASE WHEN blocking_confidence = 'HIGH' THEN 1 ELSE 0 END)
+            AS high_conf_block_present,
 
-        SUM(CASE WHEN blocking_signal_type = 'NETWORK_BLOCK' THEN 1 ELSE 0 END) AS network_block_signals
+        SUM(CASE 
+            WHEN blocking_signal_type = 'NETWORK_BLOCK' THEN 1 ELSE 0 
+        END) AS network_block_signals
 
     FROM `encoded-joy-485413-k5.int.ooni_signals`
-    GROUP BY measurement_date, country, asn
+
+    GROUP BY 1, 2, 3
 ),
 
+/* =========================
+   ACLED FIX (NO PARSING — DATE ALREADY CLEAN)
+   ========================= */
 acled_spine AS (
-    SELECT
-        measurement_date,
-        country,
 
-        COUNT(*) AS conflict_events,
+    SELECT
+        event_date AS measurement_date,
+        LOWER(country) AS country,
+
+        SUM(events) AS conflict_events,
         SUM(fatalities) AS fatalities,
         SUM(population_exposure) AS population_exposure,
-
         COUNT(DISTINCT event_type) AS event_diversity
 
     FROM `encoded-joy-485413-k5.stg.acled_conflict_events`
-    GROUP BY measurement_date, country
+
+    WHERE event_date IS NOT NULL
+
+    GROUP BY 1, 2
+),
+
+/* =========================
+   LUMEN (MICROSECOND FIX)
+   ========================= */
+lumen_normalized AS (
+
+    SELECT
+        LOWER(country) AS country,
+        request_count,
+        item_count,
+
+        DATE(
+            TIMESTAMP_MICROS(CAST(date_submitted AS INT64))
+        ) AS measurement_date
+
+    FROM `encoded-joy-485413-k5.stg.lumen_requests`
+
+    WHERE date_submitted IS NOT NULL
 ),
 
 lumen_spine AS (
+
     SELECT
         measurement_date,
         country,
 
-        SUM(request_count) AS total_requests,
-        SUM(item_count) AS total_items,
+        SUM(request_count) AS takedown_requests,
+        SUM(item_count) AS takedown_items
 
-        COUNT(*) AS request_events
+    FROM lumen_normalized
 
-    FROM `encoded-joy-485413-k5.stg.lumen_requests`
-    GROUP BY measurement_date, country
+    GROUP BY 1, 2
 ),
 
 base_spine AS (
+
     SELECT
         o.measurement_date,
         o.country,
@@ -92,26 +102,22 @@ base_spine AS (
         COALESCE(a.population_exposure, 0) AS population_exposure,
         COALESCE(a.event_diversity, 0) AS event_diversity,
 
-        COALESCE(l.total_requests, 0) AS takedown_requests,
-        COALESCE(l.total_items, 0) AS takedown_items,
-        COALESCE(l.request_events, 0) AS takedown_events
+        COALESCE(l.takedown_requests, 0) AS takedown_requests,
+        COALESCE(l.takedown_items, 0) AS takedown_items
 
     FROM ooni_spine o
+
     LEFT JOIN acled_spine a
         ON o.measurement_date = a.measurement_date
-       AND o.country = a.country
+       AND LOWER(o.country) = a.country
 
     LEFT JOIN lumen_spine l
         ON o.measurement_date = l.measurement_date
-       AND o.country = l.country
+       AND LOWER(o.country) = l.country
 )
 
 SELECT
     *,
-
-    -- =========================
-    -- CROSS-SOURCE PRESSURE SCORE
-    -- =========================
 
     (
         COALESCE(block_rate, 0) * 0.5
@@ -123,10 +129,16 @@ SELECT
         WHEN block_rate > 0.7
          AND conflict_events > 0
          AND takedown_requests > 0 THEN 'High Multi-Source Suppression'
+
         WHEN block_rate > 0.7
          AND conflict_events > 0 THEN 'Conflict-Aligned Blocking'
+
         WHEN block_rate > 0.7 THEN 'Network Blocking Only'
+
         WHEN conflict_events > 0 THEN 'Conflict Pressure Only'
+
+        WHEN takedown_requests > 0 THEN 'Legal / Platform Pressure Only'
+
         ELSE 'Baseline'
     END AS repression_state
 
