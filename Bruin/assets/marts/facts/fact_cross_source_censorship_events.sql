@@ -1,10 +1,21 @@
 /* @bruin
+tags:
+  - marts_bq
 name: fact_cross_source_censorship_events
 type: bq.sql
 connection: bigquery-default
+
+description: |
+  Master observatory spine combining:
+  - OONI censorship signals
+  - ACLED conflict events (same-day enrichment)
+
+  Replaces legacy fact_censorship_impact as canonical cross-source model.
+
+owner: civil-liberties-pipeline
+
 depends:
-  - fact_ooni_censorship_signals
-  - fact_takedown_trends
+  - fact_censorship_measurements
   - fact_conflict_events
 
 materialization:
@@ -12,110 +23,78 @@ materialization:
   strategy: create+replace
 @bruin */
 
-WITH ooni AS (
+WITH daily_conflict_summary AS (
 
     SELECT
-        event_date,
-        country,
-        asn,
-        block_rate AS ooni_block_rate,
-        block_rate * 100 AS ooni_pressure_score
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_ooni_censorship_signals`
-),
+        measurement_date,
 
-legal AS (
+        COUNT(*) AS conflict_event_count,
+        SUM(event_count) AS total_events,
+        SUM(fatalities) AS total_fatalities,
+        SUM(population_exposure) AS total_population_exposure,
 
-    SELECT
-        DATE(event_date) AS event_date,
-        country,
+        COUNTIF(is_censorship_trigger_event) AS trigger_event_count,
 
-        -- aggregate legal + platform pressure
-        SUM(number_of_requests) AS legal_requests,
+        STRING_AGG(DISTINCT event_type, ', ') AS event_types_on_day,
 
-        SAFE_DIVIDE(SUM(items_requested_removal), SUM(number_of_requests)) AS avg_request_intensity
+        STRING_AGG(
+            DISTINCT county, ', '
+            ORDER BY county
+        ) AS counties_affected
 
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_takedown_trends`
-    GROUP BY event_date, country
-),
-
-conflict AS (
-
-    SELECT
-        DATE(event_date) AS event_date,
-        country,
-
-        COUNT(*) AS conflict_events,
-        AVG(fatalities) AS avg_fatalities
     FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_conflict_events`
-    GROUP BY event_date, country
+    GROUP BY measurement_date
 ),
 
-joined AS (
+base AS (
 
     SELECT
-
-        COALESCE(o.event_date, l.event_date, c.event_date) AS event_date,
-        COALESCE(o.country, l.country, c.country) AS country,
-        o.asn,
-
-        -- =========================
-        -- SOURCE SIGNALS
-        -- =========================
-        COALESCE(o.ooni_block_rate, 0) AS ooni_block_rate,
-        COALESCE(l.legal_requests, 0) AS legal_request_volume,
-        COALESCE(c.conflict_events, 0) AS conflict_event_intensity,
-
-        COALESCE(l.avg_request_intensity, 0) AS legal_intensity,
-        COALESCE(c.avg_fatalities, 0) AS avg_fatalities,
+        c.*,
+        d.conflict_event_count,
+        d.total_events,
+        d.total_fatalities,
+        d.total_population_exposure,
+        d.trigger_event_count,
+        d.event_types_on_day,
+        d.counties_affected,
 
         -- =========================
-        -- NORMALIZED SCORES
+        -- CORE CROSS-SOURCE FLAG
         -- =========================
-        (COALESCE(o.ooni_block_rate, 0) * 100) AS ooni_score,
-        (LOG(1 + COALESCE(l.legal_requests, 0)) * 20) AS legal_score,
-        (LOG(1 + COALESCE(c.conflict_events, 0)) * 15) AS conflict_score
-
-    FROM ooni o
-    FULL OUTER JOIN legal l
-        ON o.event_date = l.event_date
-        AND o.country = l.country
-
-    FULL OUTER JOIN conflict c
-        ON COALESCE(o.event_date, l.event_date) = c.event_date
-        AND COALESCE(o.country, l.country) = c.country
-),
-
-final AS (
-
-    SELECT
-        *,
-        
-        -- =========================
-        -- CROSS SOURCE INDEX
-        -- =========================
-        LEAST(
-            100,
-            ooni_score * 0.5 +
-            legal_score * 0.3 +
-            conflict_score * 0.2
-        ) AS multi_source_pressure_score,
-
         CASE
-            WHEN ooni_block_rate > 0.3
-             AND legal_request_volume > 10 THEN TRUE
+            WHEN c.is_blocked AND COALESCE(d.trigger_event_count, 0) > 0
+            THEN TRUE
             ELSE FALSE
-        END AS is_convergent_event,
+        END AS blocked_on_protest_day,
 
+        -- =========================
+        -- SUPPRESSION LOGIC (UNCHANGED BUT CLEANED)
+        -- =========================
         CASE
-            WHEN ooni_block_rate > 0.4
-             AND conflict_event_intensity > 3 THEN TRUE
-            ELSE FALSE
-        END AS is_escalation_cluster,
+            WHEN c.is_confirmed_block
+                 AND COALESCE(d.trigger_event_count, 0) > 0
+            THEN 'Confirmed Block on Protest Day'
 
-        CURRENT_TIMESTAMP() AS extracted_at
+            WHEN c.is_blocked
+                 AND COALESCE(d.trigger_event_count, 0) > 0
+            THEN 'Probable Block on Protest Day'
 
-    FROM joined
+            WHEN c.has_measurement_failure
+                 AND COALESCE(d.trigger_event_count, 0) > 0
+            THEN 'Disruption on Protest Day'
+
+            WHEN c.is_confirmed_block
+            THEN 'Confirmed Block (non-protest)'
+
+            WHEN c.is_blocked
+            THEN 'Probable Block (non-protest)'
+
+            ELSE 'No Suppression Signal'
+        END AS suppression_confidence_type
+
+    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_censorship_measurements` c
+    LEFT JOIN daily_conflict_summary d
+        ON c.measurement_date = d.measurement_date
 )
 
-SELECT *
-FROM final;
+SELECT * FROM base;
