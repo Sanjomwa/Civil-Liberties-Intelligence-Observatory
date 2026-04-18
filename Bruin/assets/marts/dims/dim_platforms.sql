@@ -7,7 +7,7 @@ connection: bigquery-default
 description: Unified platform/service dimension.
 owner: civil-liberties-pipeline
 depends:
-  - stg.ooni
+  - stg.ooni_measurements
   - stg.google_transparency_requests
   - stg.lumen_requests
 materialization:
