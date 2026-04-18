@@ -15,8 +15,8 @@ description: |
 owner: civil-liberties-pipeline
 
 depends:
-  - fact_censorship_measurements
-  - fact_conflict_events
+  - marts.fact_censorship_measurements
+  - marts.facts.fact_conflict_events
 
 materialization:
   type: table
