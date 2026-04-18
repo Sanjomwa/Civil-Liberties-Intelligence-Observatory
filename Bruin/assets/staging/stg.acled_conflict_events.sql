@@ -1,41 +1,76 @@
 /* @bruin
 tags:
-  - staging_bq
-  - dataset_acled_conflict_events
+  - staging
 name: stg.acled_conflict_events
 type: bq.sql
 connection: bigquery-default
-description: Cleaned ACLED conflict events with derived fields for Kenya (Jun 2023 – Jun 2025)
-owner: civil-liberties-pipeline
+description: |
+  Clean ACLED staging layer.
+  Normalizes week string into proper event_date for downstream joins.
 
-depends:
-  - load.acled_conflict_events_to_gcs
+owner: civil-liberties-pipeline
 
 materialization:
   type: table
-  strategy: create+replace
+strategy: create+replace
 @bruin */
 
-WITH raw AS (
+WITH parsed AS (
+
     SELECT
-        id                                                  AS event_id,
         week,
         region,
         country,
         admin1,
+
         event_type,
         sub_event_type,
+
         events,
         fatalities,
         population_exposure,
         disorder_type,
+
+        id,
         centroid_latitude,
         centroid_longitude,
+
         extracted_at,
-        PARSE_DATE('%d-%B-%Y', week)                        AS measurement_date,
-        EXTRACT(YEAR FROM PARSE_DATE('%d-%B-%Y', week))     AS year
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.acled_conflict_events`
-    WHERE country = 'Kenya'
+
+        /* -----------------------------
+           FIX: convert "23-October-2004"
+           ----------------------------- */
+        SAFE.PARSE_DATE(
+            "%d-%B-%Y",
+            week
+        ) AS event_date
+
+    FROM `encoded-joy-485413-k5.raw.acled_conflict_events`
 )
 
-SELECT * FROM raw
+SELECT
+    event_date,
+    week,
+    region,
+    country,
+    admin1,
+
+    event_type,
+    sub_event_type,
+
+    events,
+    fatalities,
+    population_exposure,
+    disorder_type,
+
+    id,
+    centroid_latitude,
+    centroid_longitude,
+
+    extracted_at,
+
+    EXTRACT(YEAR FROM event_date) AS year,
+    EXTRACT(MONTH FROM event_date) AS month,
+    EXTRACT(DAY FROM event_date) AS day
+
+FROM parsed;
