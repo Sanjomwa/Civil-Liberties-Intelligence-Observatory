@@ -5,11 +5,10 @@ name: fact_cross_source_censorship_events
 type: bq.sql
 connection: bigquery-default
 description: |
-  Unified censorship event spine combining OONI, ACLED, Google Transparency, and Lumen.
-  This is the observatory core dataset.
+  v2 Cross-source censorship spine with temporal clustering.
+  Converts daily signals into suppression "episodes" using rolling windows.
 
-  Each row represents a normalized "digital repression event window"
-  across network + platform + legal + real-world protest signals.
+  This is the core observatory event model powering all dashboards.
 
 owner: civil-liberties-pipeline
 
@@ -23,125 +22,169 @@ materialization:
   strategy: create+replace
 @bruin */
 
-WITH ooni AS (
+WITH base_daily AS (
 
     SELECT
-        measurement_id AS event_id,
         measurement_date,
-        asn,
-        probe_asn,
-        test_name,
-        blocking_signal_type,
-        blocking_confidence,
-        is_blocked,
-        'OONI' AS source_system,
-        1 AS ooni_flag
-    FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
 
-),
+        -- OONI
+        COUNTIF(is_blocked = TRUE) AS blocked_count,
+        COUNT(*) AS total_measurements,
 
-conflict AS (
+        AVG(CASE
+            WHEN blocking_confidence = 'HIGH' THEN 3
+            WHEN blocking_confidence = 'MEDIUM' THEN 2
+            WHEN blocking_confidence = 'LOW' THEN 1
+            ELSE 0
+        END) AS avg_blocking_confidence,
 
-    SELECT
-        CAST(measurement_date AS DATE) AS measurement_date,
-        COUNT(*) AS conflict_events,
+        -- ACLED
+        MAX(conflict_events) AS conflict_events,
         SUM(fatalities) AS fatalities,
         SUM(population_exposure) AS population_exposure,
-        1 AS acled_flag
-    FROM `encoded-joy-485413-k5.marts.fact_conflict_events`
+
+        -- TAKEDOWNS
+        SUM(takedown_count) AS takedown_count,
+        SUM(items_targeted) AS items_targeted,
+
+        COUNT(DISTINCT asn) AS affected_asns
+
+    FROM `encoded-joy-485413-k5.marts.fact_cross_source_censorship_events`
     GROUP BY measurement_date
 
 ),
 
-takedowns AS (
+rolling AS (
 
     SELECT
-        measurement_date,
-        SUM(number_of_requests) AS takedown_count,
-        SUM(items_requested_removal) AS items_targeted,
-        COUNT(DISTINCT platform) AS platforms_affected,
-        1 AS takedown_flag
-    FROM `encoded-joy-485413-k5.marts.fact_takedown_requests`
-    GROUP BY measurement_date
+        a.*,
+
+        -- =========================
+        -- 3-DAY ROLLING WINDOWS
+        -- =========================
+        SUM(blocked_count) OVER (
+            ORDER BY measurement_date
+            RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
+        ) AS blocked_3d,
+
+        SUM(conflict_events) OVER (
+            ORDER BY measurement_date
+            RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
+        ) AS conflict_3d,
+
+        SUM(takedown_count) OVER (
+            ORDER BY measurement_date
+            RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
+        ) AS takedown_3d
+
+    FROM base_daily a
+
+),
+
+scored AS (
+
+    SELECT
+        *,
+
+        -- =========================
+        -- SUPPRESSION INTENSITY SCORE
+        -- =========================
+        (
+            LEAST(blocked_count * 0.4, 1.0)
+            + LEAST(conflict_events * 0.2, 1.0)
+            + LEAST(takedown_count * 0.2, 1.0)
+            + LEAST(blocked_3d * 0.2, 1.0)
+        ) AS daily_intensity_score,
+
+        -- =========================
+        -- EVENT TRIGGER FLAG
+        -- =========================
+        CASE
+            WHEN blocked_3d > 50
+             AND conflict_3d > 0
+            THEN 1 ELSE 0
+        END AS is_suppression_episode_day
+
+    FROM rolling
+
+),
+
+episodes AS (
+
+    SELECT
+        *,
+        SUM(is_suppression_episode_day) OVER (
+            ORDER BY measurement_date
+        ) AS episode_group_id
+    FROM scored
 
 )
 
 SELECT
 
     -- =========================
-    -- CORE EVENT IDENTITY
+    -- EVENT IDENTITY
     -- =========================
-    ooni.event_id,
-    ooni.measurement_date,
-    ooni.source_system,
+    CONCAT('EP-', CAST(episode_group_id AS STRING)) AS episode_id,
+    measurement_date,
 
-    ooni.asn,
-    ooni.probe_asn,
-    ooni.test_name,
+    episode_group_id,
 
     -- =========================
-    -- OONI SIGNAL LAYER
+    -- CORE SIGNALS
     -- =========================
-    ooni.is_blocked,
-    ooni.blocking_signal_type,
-    ooni.blocking_confidence,
+    blocked_count,
+    conflict_events,
+    fatalities,
+    population_exposure,
+    takedown_count,
+
+    affected_asns,
 
     -- =========================
-    -- ACLED CONTEXT
+    -- ROLLING CONTEXT
     -- =========================
-    c.conflict_events,
-    c.fatalities,
-    c.population_exposure,
+    blocked_3d,
+    conflict_3d,
+    takedown_3d,
 
     -- =========================
-    -- TAKEDOWN CONTEXT
+    -- INTENSITY MODEL
     -- =========================
-    t.takedown_count,
-    t.items_targeted,
-    t.platforms_affected,
+    daily_intensity_score,
+
+    CASE
+        WHEN daily_intensity_score > 1.5 THEN 'HIGH INTENSITY EPISODE'
+        WHEN daily_intensity_score > 0.8 THEN 'MEDIUM INTENSITY EPISODE'
+        ELSE 'LOW INTENSITY ACTIVITY'
+    END AS episode_severity,
 
     -- =========================
-    -- CROSS-SOURCE FLAGS
-    -- =========================
-    COALESCE(ooni.ooni_flag, 0) AS has_ooni_signal,
-    COALESCE(c.acled_flag, 0) AS has_conflict_signal,
-    COALESCE(t.takedown_flag, 0) AS has_takedown_signal,
-
-    -- =========================
-    -- SPINE EVENT TYPE
+    -- CROSS-SOURCE ALIGNMENT
     -- =========================
     CASE
-        WHEN ooni.is_blocked = TRUE
-         AND c.conflict_events > 0
-         AND t.takedown_count > 0
-        THEN 'FULL_SUPPRESSION_WINDOW'
+        WHEN blocked_count > 0
+         AND conflict_events > 0
+         AND takedown_count > 0
+        THEN 'FULL CROSS-SOURCE ALIGNMENT'
 
-        WHEN ooni.is_blocked = TRUE
-         AND c.conflict_events > 0
-        THEN 'NETWORK + CIVIL_UNREST'
+        WHEN blocked_count > 0
+         AND conflict_events > 0
+        THEN 'NETWORK + CIVIL UNREST'
 
-        WHEN ooni.is_blocked = TRUE
-         AND t.takedown_count > 0
-        THEN 'NETWORK + PLATFORM_SUPPRESSION'
+        WHEN blocked_count > 0
+         AND takedown_count > 0
+        THEN 'NETWORK + PLATFORM ACTION'
 
-        WHEN c.conflict_events > 0
-        THEN 'CIVIL_UNREST_ONLY'
+        WHEN conflict_events > 0
+        THEN 'CIVIL UNREST ONLY'
 
-        WHEN t.takedown_count > 0
-        THEN 'PLATFORM_SUPPRESSION_ONLY'
+        WHEN blocked_count > 0
+        THEN 'NETWORK ONLY'
 
-        WHEN ooni.is_blocked = TRUE
-        THEN 'NETWORK_BLOCKING_ONLY'
-
-        ELSE 'LOW_SIGNAL'
-    END AS event_classification,
+        ELSE 'LOW SIGNAL'
+    END AS cross_source_pattern,
 
     CURRENT_TIMESTAMP() AS extracted_at
 
-FROM ooni
-
-LEFT JOIN conflict c
-    ON ooni.measurement_date = c.measurement_date
-
-LEFT JOIN takedowns t
-    ON ooni.measurement_date = t.measurement_date
+FROM episodes
