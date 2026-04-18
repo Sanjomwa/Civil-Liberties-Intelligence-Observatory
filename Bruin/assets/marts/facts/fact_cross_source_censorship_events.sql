@@ -4,97 +4,144 @@ tags:
 name: fact_cross_source_censorship_events
 type: bq.sql
 connection: bigquery-default
-
 description: |
-  Master observatory spine combining:
-  - OONI censorship signals
-  - ACLED conflict events (same-day enrichment)
+  Unified censorship event spine combining OONI, ACLED, Google Transparency, and Lumen.
+  This is the observatory core dataset.
 
-  Replaces legacy fact_censorship_impact as canonical cross-source model.
+  Each row represents a normalized "digital repression event window"
+  across network + platform + legal + real-world protest signals.
 
 owner: civil-liberties-pipeline
 
 depends:
-  - marts.fact_censorship_measurements
-  - marts.facts.fact_conflict_events
+  - marts.fact_ooni_censorship_signals
+  - marts.fact_conflict_events
+  - marts.fact_takedown_requests
 
 materialization:
   type: table
   strategy: create+replace
 @bruin */
 
-WITH daily_conflict_summary AS (
+WITH ooni AS (
+
+    SELECT
+        measurement_id AS event_id,
+        measurement_date,
+        asn,
+        probe_asn,
+        test_name,
+        blocking_signal_type,
+        blocking_confidence,
+        is_blocked,
+        'OONI' AS source_system,
+        1 AS ooni_flag
+    FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
+
+),
+
+conflict AS (
+
+    SELECT
+        CAST(measurement_date AS DATE) AS measurement_date,
+        COUNT(*) AS conflict_events,
+        SUM(fatalities) AS fatalities,
+        SUM(population_exposure) AS population_exposure,
+        1 AS acled_flag
+    FROM `encoded-joy-485413-k5.marts.fact_conflict_events`
+    GROUP BY measurement_date
+
+),
+
+takedowns AS (
 
     SELECT
         measurement_date,
-
-        COUNT(*) AS conflict_event_count,
-        SUM(event_count) AS total_events,
-        SUM(fatalities) AS total_fatalities,
-        SUM(population_exposure) AS total_population_exposure,
-
-        COUNTIF(is_censorship_trigger_event) AS trigger_event_count,
-
-        STRING_AGG(DISTINCT event_type, ', ') AS event_types_on_day,
-
-        STRING_AGG(
-            DISTINCT county, ', '
-            ORDER BY county
-        ) AS counties_affected
-
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_conflict_events`
+        SUM(number_of_requests) AS takedown_count,
+        SUM(items_requested_removal) AS items_targeted,
+        COUNT(DISTINCT platform) AS platforms_affected,
+        1 AS takedown_flag
+    FROM `encoded-joy-485413-k5.marts.fact_takedown_requests`
     GROUP BY measurement_date
-),
 
-base AS (
-
-    SELECT
-        c.*,
-        d.conflict_event_count,
-        d.total_events,
-        d.total_fatalities,
-        d.total_population_exposure,
-        d.trigger_event_count,
-        d.event_types_on_day,
-        d.counties_affected,
-
-        -- =========================
-        -- CORE CROSS-SOURCE FLAG
-        -- =========================
-        CASE
-            WHEN c.is_blocked AND COALESCE(d.trigger_event_count, 0) > 0
-            THEN TRUE
-            ELSE FALSE
-        END AS blocked_on_protest_day,
-
-        -- =========================
-        -- SUPPRESSION LOGIC (UNCHANGED BUT CLEANED)
-        -- =========================
-        CASE
-            WHEN c.is_confirmed_block
-                 AND COALESCE(d.trigger_event_count, 0) > 0
-            THEN 'Confirmed Block on Protest Day'
-
-            WHEN c.is_blocked
-                 AND COALESCE(d.trigger_event_count, 0) > 0
-            THEN 'Probable Block on Protest Day'
-
-            WHEN c.has_measurement_failure
-                 AND COALESCE(d.trigger_event_count, 0) > 0
-            THEN 'Disruption on Protest Day'
-
-            WHEN c.is_confirmed_block
-            THEN 'Confirmed Block (non-protest)'
-
-            WHEN c.is_blocked
-            THEN 'Probable Block (non-protest)'
-
-            ELSE 'No Suppression Signal'
-        END AS suppression_confidence_type
-
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_censorship_measurements` c
-    LEFT JOIN daily_conflict_summary d
-        ON c.measurement_date = d.measurement_date
 )
 
-SELECT * FROM base;
+SELECT
+
+    -- =========================
+    -- CORE EVENT IDENTITY
+    -- =========================
+    ooni.event_id,
+    ooni.measurement_date,
+    ooni.source_system,
+
+    ooni.asn,
+    ooni.probe_asn,
+    ooni.test_name,
+
+    -- =========================
+    -- OONI SIGNAL LAYER
+    -- =========================
+    ooni.is_blocked,
+    ooni.blocking_signal_type,
+    ooni.blocking_confidence,
+
+    -- =========================
+    -- ACLED CONTEXT
+    -- =========================
+    c.conflict_events,
+    c.fatalities,
+    c.population_exposure,
+
+    -- =========================
+    -- TAKEDOWN CONTEXT
+    -- =========================
+    t.takedown_count,
+    t.items_targeted,
+    t.platforms_affected,
+
+    -- =========================
+    -- CROSS-SOURCE FLAGS
+    -- =========================
+    COALESCE(ooni.ooni_flag, 0) AS has_ooni_signal,
+    COALESCE(c.acled_flag, 0) AS has_conflict_signal,
+    COALESCE(t.takedown_flag, 0) AS has_takedown_signal,
+
+    -- =========================
+    -- SPINE EVENT TYPE
+    -- =========================
+    CASE
+        WHEN ooni.is_blocked = TRUE
+         AND c.conflict_events > 0
+         AND t.takedown_count > 0
+        THEN 'FULL_SUPPRESSION_WINDOW'
+
+        WHEN ooni.is_blocked = TRUE
+         AND c.conflict_events > 0
+        THEN 'NETWORK + CIVIL_UNREST'
+
+        WHEN ooni.is_blocked = TRUE
+         AND t.takedown_count > 0
+        THEN 'NETWORK + PLATFORM_SUPPRESSION'
+
+        WHEN c.conflict_events > 0
+        THEN 'CIVIL_UNREST_ONLY'
+
+        WHEN t.takedown_count > 0
+        THEN 'PLATFORM_SUPPRESSION_ONLY'
+
+        WHEN ooni.is_blocked = TRUE
+        THEN 'NETWORK_BLOCKING_ONLY'
+
+        ELSE 'LOW_SIGNAL'
+    END AS event_classification,
+
+    CURRENT_TIMESTAMP() AS extracted_at
+
+FROM ooni
+
+LEFT JOIN conflict c
+    ON ooni.measurement_date = c.measurement_date
+
+LEFT JOIN takedowns t
+    ON ooni.measurement_date = t.measurement_date
