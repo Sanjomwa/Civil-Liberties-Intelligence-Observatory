@@ -1,4 +1,5 @@
-"""@bruin
+"""
+@bruin
 tags:
   - raw_dev
   - dataset_lumen_requests
@@ -6,37 +7,14 @@ name: raw.lumen_requests
 type: python
 image: python:3.12
 connection: duckdb-parquet
-description: |
-  Generates mock Lumen takedown requests (Jun 2023–Jun 2025) until real API access is available.
+
+description:
+  Deterministic mock Lumen dataset with SAFE timestamp encoding (micros INT64).
 
 materialization:
   type: table
   strategy: create+replace
-
-columns:
-  - name: request_id
-    type: VARCHAR
-  - name: country
-    type: VARCHAR
-  - name: sender
-    type: VARCHAR
-  - name: recipient
-    type: VARCHAR
-  - name: date_submitted
-    type: TIMESTAMP
-  - name: period
-    type: VARCHAR
-  - name: half_year_label
-    type: VARCHAR
-  - name: reason
-    type: VARCHAR
-  - name: request_count
-    type: INTEGER
-  - name: item_count
-    type: INTEGER
-  - name: extracted_at
-    type: TIMESTAMP
-@bruin"""
+"""
 
 import os
 import pandas as pd
@@ -44,23 +22,21 @@ import random
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import os
-
 
 def resolve_env(fallback: str = "dev") -> str:
     for k in ("BRUIN_ENV", "BRUIN_ENVIRONMENT", "BRUIN_PIPELINE_ENVIRONMENT"):
         v = os.getenv(k)
-        if v and v.strip():
+        if v:
             return v.strip().lower()
     return fallback
 
 
 def require_dev(env: str) -> None:
     if env != "dev":
-        raise ValueError(f"This raw asset is dev-only. Got ENV={env!r}.")
+        raise ValueError(f"Dev-only asset. Got ENV={env}")
 
 
-ENV = resolve_env(fallback="dev")
+ENV = resolve_env()
 require_dev(ENV)
 
 
@@ -69,39 +45,45 @@ def materialize():
     Path(base_path).mkdir(parents=True, exist_ok=True)
     parquet_out = Path(base_path) / "lumen_requests.parquet"
 
-    print("Generating mock Lumen takedown data...")
-
     senders = ["Gov Agency", "Law Firm", "Communications Authority of Kenya"]
     recipients = ["Google", "Twitter", "Facebook", "TikTok", "YouTube"]
     reasons = ["Copyright", "Defamation", "National Security", "Other"]
 
     rows = []
+
     start_date = datetime(2023, 6, 1)
     end_date = datetime(2025, 6, 30)
     total_days = (end_date - start_date).days
 
     for i in range(1, 501):
-        date = start_date + timedelta(days=random.randint(0, total_days))
-        year = date.year
-        month = date.month
-        period = f"{year}-06" if month <= 6 else f"{year}-12"
-        half_year_label = f"Jan-Jun {year}" if month <= 6 else f"Jul-Dec {year}"
+        dt = start_date + timedelta(days=random.randint(0, total_days))
+
+        # 🔥 FIX: deterministic micros epoch
+        timestamp_micros = int(dt.timestamp() * 1_000_000)
 
         rows.append({
             "request_id": f"LUMEN-{i:04d}",
             "country": "KE",
             "sender": random.choice(senders),
             "recipient": random.choice(recipients),
-            "date_submitted": date,
-            "period": period,
-            "half_year_label": half_year_label,
+
+            # 🔥 CRITICAL FIX: store INT64 micros, not TIMESTAMP object
+            "date_submitted": timestamp_micros,
+
+            "period": f"{dt.year}-{'06' if dt.month <= 6 else '12'}",
+            "half_year_label": f"{'Jan-Jun' if dt.month <= 6 else 'Jul-Dec'} {dt.year}",
             "reason": random.choice(reasons),
+
             "request_count": 1,
             "item_count": 1,
-            "extracted_at": datetime.now()
+
+            # keep audit field stable
+            "extracted_at": datetime.utcnow()
         })
 
     df = pd.DataFrame(rows)
+
     df.to_parquet(parquet_out, index=False, compression="snappy")
-    print(f"✅ Generated {len(df):,} mock Lumen rows")
+
+    print(f"✅ Generated {len(df)} Lumen rows (micros-safe)")
     return df
