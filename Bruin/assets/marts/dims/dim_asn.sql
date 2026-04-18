@@ -4,7 +4,15 @@ tags:
 name: marts.dim_asn
 type: bq.sql
 connection: bigquery-default
-description: Canonical ASN dimension for Kenya censorship observatory.
+
+description: |
+  Canonical ASN dimension for Kenya censorship observatory.
+  Clean, join-safe representation of ASN extracted from OONI signals.
+
+  Key principle:
+    - No heuristic ISP classification
+    - No pattern-based assumptions
+    - Pure normalization + validity flag
 
 materialization:
   type: table
@@ -12,28 +20,28 @@ materialization:
 @bruin */
 
 WITH base AS (
-
     SELECT DISTINCT
         asn,
         country
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.int_ooni_signals`
+    FROM `encoded-joy-485413-k5.int.ooni_signals`
 ),
 
 cleaned AS (
-
     SELECT
-        asn,
         country,
 
-        -- normalize ASN format (defensive)
-        CAST(asn AS STRING) AS asn_id,
+        -- ── canonical ASN key ─────────────────────────────────────────────
+        SAFE_CAST(asn AS STRING) AS asn_id,
 
-        -- placeholder enrichment fields (future-safe)
+        -- ── validity flags ────────────────────────────────────────────────
         CASE
-            WHEN asn LIKE '32%' THEN 'mobile'
-            WHEN asn LIKE '3%' THEN 'fixed'
-            ELSE 'unknown'
-        END AS isp_type
+            WHEN asn IS NULL THEN FALSE
+            WHEN SAFE_CAST(asn AS STRING) IS NULL THEN FALSE
+            ELSE TRUE
+        END AS is_valid_asn,
+
+        -- ── metadata ──────────────────────────────────────────────────────
+        CURRENT_TIMESTAMP() AS extracted_at
 
     FROM base
 )

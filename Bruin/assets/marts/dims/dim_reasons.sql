@@ -4,44 +4,61 @@ tags:
 name: marts.dim_reasons
 type: bq.sql
 connection: bigquery-default
-description: Standardized takedown/censorship reasons.
+
+description: Unified reason dimension.
+
 owner: civil-liberties-pipeline
 depends:
+  - stg.ooni_measurements
   - stg.google_transparency_requests
-  - stg.google_transparency_detailed
   - stg.lumen_requests
+
 materialization:
   type: table
   strategy: create+replace
 @bruin */
 
-WITH all_reasons AS (
-  SELECT reason, 'Google Requests' AS source
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.stg_google_transparency_requests`
-  WHERE (country = 'Kenya' OR cldr_territory = 'KE') AND reason IS NOT NULL
+WITH ooni AS (
+  SELECT DISTINCT
+    test_name AS platform_name,
+    'OONI' AS source,
+    CASE
+      WHEN test_name IN ('web_connectivity', 'dnscheck', 'http_requests') THEN 'Website / DNS'
+      WHEN test_name IN ('whatsapp', 'telegram', 'signal', 'facebook_messenger') THEN 'Messaging App'
+      WHEN test_name IN ('tor', 'psiphon', 'lantern') THEN 'Circumvention Tool'
+      ELSE 'Other Protocol'
+    END AS platform_category
+  FROM `encoded-joy-485413-k5.stg.ooni_measurements`
+  WHERE test_name IS NOT NULL
+),
 
-  UNION DISTINCT
+google AS (
+  SELECT DISTINCT
+    product AS platform_name,
+    'Google' AS source,
+    'Google Product' AS platform_category
+  FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
+  WHERE product IS NOT NULL
+),
 
-  SELECT reason, 'Google Detailed' AS source
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.stg_google_transparency_detailed`
-  WHERE cldr_territory_code = 'KE' AND reason IS NOT NULL
-
-  UNION DISTINCT
-
-  SELECT reason, 'Lumen' AS source
-  FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.stg_lumen_requests`
-  WHERE (country = 'Kenya' OR country = 'KE') AND reason IS NOT NULL
+lumen AS (
+  SELECT DISTINCT
+    recipient AS platform_name,
+    'Lumen' AS source,
+    'Content Platform' AS platform_category
+  FROM `encoded-joy-485413-k5.stg.lumen_requests`
+  WHERE recipient IS NOT NULL
 )
-SELECT DISTINCT
-  reason,
+
+SELECT
+  FARM_FINGERPRINT(CONCAT(platform_name, '||', source)) AS platform_key,
+  platform_name,
   source,
-  CASE
-    WHEN LOWER(reason) LIKE '%defamation%' OR LOWER(reason) LIKE '%privacy%' THEN 'Privacy & Reputation'
-    WHEN LOWER(reason) LIKE '%copyright%' OR LOWER(reason) LIKE '%trademark%' THEN 'Intellectual Property'
-    WHEN LOWER(reason) LIKE '%hate%' OR LOWER(reason) LIKE '%violent%' OR LOWER(reason) LIKE '%terror%' THEN 'Harmful Content'
-    WHEN LOWER(reason) LIKE '%national security%' OR LOWER(reason) LIKE '%government%' THEN 'Government / National Security'
-    WHEN LOWER(reason) LIKE '%fraud%' OR LOWER(reason) LIKE '%spam%' THEN 'Fraud & Spam'
-    ELSE 'Other'
-  END AS reason_group
-FROM all_reasons
-ORDER BY source, reason;
+  platform_category
+FROM (
+  SELECT * FROM ooni
+  UNION DISTINCT
+  SELECT * FROM google
+  UNION DISTINCT
+  SELECT * FROM lumen
+);

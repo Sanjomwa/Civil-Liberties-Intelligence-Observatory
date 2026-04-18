@@ -6,8 +6,9 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  One row per OONI measurement in Kenya.
-  Thin projection over int.ooni_signals (no re-derivation).
+  One row per OONI measurement (Kenya).
+  Clean projection from int.ooni_signals.
+  Optimized for joins with dims + Streamlit.
 
 owner: civil-liberties-pipeline
 
@@ -21,16 +22,20 @@ materialization:
 
 SELECT
     measurement_id,
+
     country,
-    asn,
+    COALESCE(asn, 'UNKNOWN') AS asn,
     probe_asn,
 
     test_name,
-    input AS tested_url_or_app,
+    input AS tested_entity,
 
     start_time,
     extracted_at,
+
     measurement_date,
+    DATE_TRUNC(measurement_date, MONTH) AS month_date,
+    FORMAT_DATE('%Y-%m', measurement_date) AS year_month,
 
     year,
     month,
@@ -38,13 +43,17 @@ SELECT
 
     test_category,
 
-    -- ── Canonical INT signals ─────────────────────────────────────────────
+    -- canonical signals
     is_blocked,
     has_measurement_failure,
     blocking_confidence,
     blocking_signal_type,
 
-    -- ── Test-specific signals ─────────────────────────────────────────────
+    -- derived flags (useful in dashboards)
+    CASE WHEN blocking_confidence = 'HIGH' THEN TRUE ELSE FALSE END AS is_high_confidence,
+    CASE WHEN is_blocked AND blocking_confidence = 'HIGH' THEN TRUE ELSE FALSE END AS is_confirmed_block,
+
+    -- test-specific signals
     telegram_http_blocking,
     telegram_tcp_blocking,
 
@@ -58,7 +67,7 @@ SELECT
 
     psiphon_failure,
 
-    -- ── lineage/debugging ────────────────────────────────────────────────
+    -- lineage
     int_extracted_at
 
 FROM `encoded-joy-485413-k5.int.ooni_signals`

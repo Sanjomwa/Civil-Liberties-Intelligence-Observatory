@@ -6,11 +6,9 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Detects temporal anomalies in ASN repression behavior using rolling
-  statistical deviation of the ASN repression index.
+  Detects anomalies in ASN repression index using rolling baseline and z-score.
 
-  Grain:
-    measurement_date × country × asn
+  Grain: measurement_date × asn
 
 owner: civil-liberties-pipeline
 
@@ -23,73 +21,65 @@ materialization:
 @bruin */
 
 WITH base AS (
+
     SELECT
         measurement_date,
-        country,
         asn,
-        asn_repression_index
+        asn_repression_index_v3 AS index_value
     FROM `encoded-joy-485413-k5.marts.fact_asn_repression_index`
+
 ),
 
-rolling_stats AS (
+windowed AS (
+
     SELECT
         measurement_date,
-        country,
         asn,
-        asn_repression_index,
+        index_value,
 
-        -- 30-day rolling baseline
-        AVG(asn_repression_index) OVER (
-            PARTITION BY country, asn
+        AVG(index_value) OVER (
+            PARTITION BY asn
             ORDER BY measurement_date
-            ROWS BETWEEN 30 PRECEDING AND CURRENT ROW
-        ) AS avg_index_30d,
+            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+        ) AS rolling_mean,
 
-        STDDEV(asn_repression_index) OVER (
-            PARTITION BY country, asn
+        STDDEV(index_value) OVER (
+            PARTITION BY asn
             ORDER BY measurement_date
-            ROWS BETWEEN 30 PRECEDING AND CURRENT ROW
-        ) AS stddev_index_30d
+            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+        ) AS rolling_std
 
     FROM base
+),
+
+scored AS (
+
+    SELECT
+        *,
+        SAFE_DIVIDE(
+            (index_value - rolling_mean),
+            NULLIF(rolling_std, 0)
+        ) AS z_score
+    FROM windowed
 )
 
 SELECT
-    measurement_date,
-    country,
-    asn,
-    asn_repression_index,
-    avg_index_30d,
-    stddev_index_30d,
+    *,
 
-    -- =========================
-    -- Z-SCORE STYLE ANOMALY
-    -- =========================
-    SAFE_DIVIDE(
-        (asn_repression_index - avg_index_30d),
-        NULLIF(stddev_index_30d, 0)
-    ) AS anomaly_score,
-
-    -- =========================
-    -- INTERPRETATION
-    -- =========================
+    -- anomaly flags
     CASE
-        WHEN SAFE_DIVIDE(
-            (asn_repression_index - avg_index_30d),
-            NULLIF(stddev_index_30d, 0)
-        ) >= 2.5 THEN 'EXTREME_SPIKE'
-
-        WHEN SAFE_DIVIDE(
-            (asn_repression_index - avg_index_30d),
-            NULLIF(stddev_index_30d, 0)
-        ) >= 1.5 THEN 'MODERATE_SPIKE'
-
-        WHEN SAFE_DIVIDE(
-            (asn_repression_index - avg_index_30d),
-            NULLIF(stddev_index_30d, 0)
-        ) <= -1.5 THEN 'DROP_OR_RELAXATION'
-
+        WHEN z_score >= 3 THEN 'EXTREME_SPIKE'
+        WHEN z_score >= 2 THEN 'SPIKE'
+        WHEN z_score <= -2 THEN 'DROP'
         ELSE 'NORMAL'
-    END AS anomaly_class
+    END AS anomaly_type,
 
-FROM rolling_stats;
+    CASE
+        WHEN z_score >= 2 THEN TRUE
+        WHEN z_score <= -2 THEN TRUE
+        ELSE FALSE
+    END AS is_anomaly,
+
+    CURRENT_TIMESTAMP() AS extracted_at
+
+FROM scored;
