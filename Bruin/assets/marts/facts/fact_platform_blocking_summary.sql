@@ -5,58 +5,76 @@ name: marts.fact_platform_blocking_summary
 type: bq.sql
 connection: bigquery-default
 description: |
-  Monthly blocking summary aggregated by platform and test category.
-  Pre-aggregated to power Streamlit "Platform Blocking Trends" charts
-  without scanning the full row-level fact each time.
-
-  Now includes blocking_confidence breakdown so dashboards can distinguish
-  confirmed vs probable vs disruption events per platform per month.
+  Monthly aggregation of OONI censorship signals by platform.
+  Core input to dashboards for tracking censorship intensity over time.
 
 owner: civil-liberties-pipeline
+
 depends:
-  - marts.fact_censorship_measurements
+  - marts.fact_ooni_censorship_signals
+
 materialization:
   type: table
   strategy: create+replace
 @bruin */
 
+WITH base AS (
+    SELECT
+        measurement_date,
+        EXTRACT(YEAR FROM measurement_date) AS year,
+        EXTRACT(MONTH FROM measurement_date) AS month,
+
+        test_name AS platform,
+        test_category,
+
+        blocking_signal,
+        blocking_confidence,
+        is_blocked,
+        is_confirmed_block,
+
+        asn
+    FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
+),
+
+aggregated AS (
+    SELECT
+        year,
+        month,
+        platform,
+        test_category,
+
+        COUNT(*) AS total_measurements,
+
+        COUNTIF(is_blocked) AS blocked_count,
+        COUNTIF(is_confirmed_block) AS confirmed_block_count,
+
+        COUNT(DISTINCT asn) AS distinct_asns_tested,
+
+        -- SIGNAL DISTRIBUTION
+        COUNTIF(blocking_signal = 'confirmed_block') AS confirmed_block_signals,
+        COUNTIF(blocking_signal = 'suspected_block') AS suspected_block_signals,
+        COUNTIF(blocking_signal = 'network_failure') AS network_failure_signals,
+        COUNTIF(blocking_signal = 'no_evidence') AS clean_signals,
+
+        -- RATES
+        SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) AS blocking_rate,
+        SAFE_DIVIDE(COUNTIF(is_confirmed_block), COUNT(*)) AS confirmed_blocking_rate,
+
+        CURRENT_TIMESTAMP() AS extracted_at
+
+    FROM base
+    GROUP BY year, month, platform, test_category
+)
+
 SELECT
-    test_name                                           AS platform,
-    test_category,
-    year,
-    month,
-    FORMAT('%04d-%02d', year, month)                    AS year_month,
+    *,
+    
+    -- INTENSITY SCORE (0–1 normalized)
+    LEAST(
+        (blocking_rate * 0.6) +
+        (confirmed_blocking_rate * 0.3) +
+        (SAFE_DIVIDE(network_failure_signals, total_measurements) * 0.1),
+        1.0
+    ) AS platform_censorship_intensity
 
-    -- ── Volume ────────────────────────────────────────────────────────────
-    COUNT(*)                                            AS total_measurements,
-    COUNTIF(is_blocked)                                AS blocked_count,
-    COUNTIF(is_confirmed_block)                        AS confirmed_blocked_count,
-    COUNTIF(has_measurement_failure AND NOT is_blocked) AS disruption_only_count,
-    COUNTIF(NOT is_blocked AND NOT has_measurement_failure) AS ok_count,
-
-    -- ── Rates ─────────────────────────────────────────────────────────────
-    SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*))          AS blocking_rate,
-    SAFE_DIVIDE(COUNTIF(is_confirmed_block), COUNT(*))  AS confirmed_blocking_rate,
-    SAFE_DIVIDE(
-        COUNTIF(has_measurement_failure), COUNT(*)
-    )                                                   AS failure_rate,
-
-    -- ── Blocking confidence breakdown ─────────────────────────────────────
-    COUNTIF(blocking_confidence = 'Confirmed')          AS confirmed_count,
-    COUNTIF(blocking_confidence = 'Probable')           AS probable_count,
-    COUNTIF(blocking_confidence = 'Disruption')         AS disruption_count,
-    COUNTIF(blocking_confidence = 'OK')                 AS ok_confidence_count,
-
-    -- ── Breadth ───────────────────────────────────────────────────────────
-    COUNT(DISTINCT tested_url_or_app)                   AS distinct_targets_tested,
-    COUNT(DISTINCT IF(is_blocked, tested_url_or_app, NULL)) AS distinct_targets_blocked,
-
-    -- ── Top blocking signal for this platform/month ───────────────────────
-    -- (most frequent non-null, non-'none' signal type)
-    APPROX_TOP_COUNT(
-        IF(blocking_signal_type != 'none', blocking_signal_type, NULL), 1
-    )[SAFE_OFFSET(0)].value                             AS dominant_blocking_signal
-
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.fact_censorship_measurements`
-GROUP BY test_name, test_category, year, month
-ORDER BY year, month, blocking_rate DESC
+FROM aggregated;
