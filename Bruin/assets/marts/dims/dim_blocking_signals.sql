@@ -1,7 +1,7 @@
 /* @bruin
 tags:
   - marts_bq
-name: dim_blocking_signals
+name: marts.dim_blocking_signals
 type: bq.sql
 connection: bigquery-default
 description: Canonical taxonomy of OONI blocking signal types used across all observatory facts.

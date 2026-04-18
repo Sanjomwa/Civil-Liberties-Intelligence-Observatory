@@ -18,7 +18,7 @@ description: |
 
 owner: civil-liberties-pipeline
 depends:
-  - int.ooni_measurements
+  - int.ooni_signals
 materialization:
   type: table
   strategy: create+replace

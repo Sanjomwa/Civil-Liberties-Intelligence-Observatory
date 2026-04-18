@@ -14,46 +14,29 @@ materialization:
   strategy: create+replace
 @bruin */
 
-WITH raw AS (
-
-    SELECT
-        measurement_id,
-        probe_cc AS country,
-        asn,
-        probe_asn,
-        test_name,
-        input,
-
-        SAFE_CAST(start_time AS TIMESTAMP) AS start_time,
-        extracted_at,
-
-        -- =========================
-        -- ONLY RAW FIELDS FROM PARQUET
-        -- =========================
-
-        telegram_http_blocking,
-        telegram_tcp_blocking,
-
-        signal_backend_failure,
-
-        whatsapp_endpoints_blocked,
-        whatsapp_web_failure,
-
-        tor_or_port_accessible,
-        tor_obfs4_accessible,
-
-        psiphon_failure
-
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.ooni_measurements`
-    WHERE probe_cc = 'KE'
-)
-
 SELECT
-    *,
+    measurement_id,
+    probe_cc AS country,
+    asn,
+    probe_asn,
+    test_name,
+    input,
+    SAFE_CAST(start_time AS TIMESTAMP) AS start_time,
+    extracted_at,
 
-    DATE(start_time) AS measurement_date,
-    EXTRACT(YEAR FROM start_time) AS year,
-    EXTRACT(MONTH FROM start_time) AS month,
-    EXTRACT(DAY FROM start_time) AS day
+    telegram_http_blocking,
+    telegram_tcp_blocking,
+    signal_backend_failure,
+    whatsapp_endpoints_blocked,
+    whatsapp_web_failure,
+    tor_or_port_accessible,
+    tor_obfs4_accessible,
+    psiphon_failure,
 
-FROM raw;
+    DATE(SAFE_CAST(start_time AS TIMESTAMP)) AS measurement_date,
+    EXTRACT(YEAR FROM SAFE_CAST(start_time AS TIMESTAMP)) AS year,
+    EXTRACT(MONTH FROM SAFE_CAST(start_time AS TIMESTAMP)) AS month,
+    EXTRACT(DAY FROM SAFE_CAST(start_time AS TIMESTAMP)) AS day
+
+FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.ooni_measurements`
+WHERE probe_cc = 'KE';

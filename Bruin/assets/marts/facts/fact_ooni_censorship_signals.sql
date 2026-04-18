@@ -4,14 +4,10 @@ tags:
 name: marts.fact_ooni_censorship_signals
 type: bq.sql
 connection: bigquery-default
-description: |
-  Canonical OONI fact table for censorship analysis in Kenya.
 
-  Built from int.ooni_signals (fully normalized layer).
-  This table is the ONLY OONI input for downstream marts:
-  - cross-source spine
-  - platform blocking summary
-  - ASN repression index
+description: |
+  OONI censorship signals at measurement × test grain.
+  Preserves per-test blocking behavior for cross-platform analysis.
 
 owner: civil-liberties-pipeline
 
@@ -25,52 +21,57 @@ materialization:
 
 SELECT
     -- =========================
-    -- CORE IDENTIFIERS
+    -- PRIMARY GRAIN
     -- =========================
     measurement_id,
+    test_name,
+
+    -- =========================
+    -- ENTITY DIMENSIONS
+    -- =========================
     country,
     asn,
     probe_asn,
-    test_name,
     input,
 
+    -- =========================
+    -- TIME
+    -- =========================
     start_time,
     measurement_date,
-
     year,
     month,
     day,
-
     extracted_at,
+    int_extracted_at,
 
     -- =========================
-    -- NORMALIZED SIGNALS (FROM INT LAYER)
+    -- CLASSIFICATION
     -- =========================
-    signal_type,
+    test_category,
     blocking_signal_type,
+    blocking_confidence,
 
+    -- =========================
+    -- SIGNAL FLAGS
+    -- =========================
+    telegram_http_blocking,
+    telegram_tcp_blocking,
+
+    whatsapp_endpoints_blocked,
+    whatsapp_web_failure,
+
+    signal_backend_failure,
+
+    tor_or_port_accessible,
+    tor_obfs4_accessible,
+
+    psiphon_failure,
+
+    -- =========================
+    -- CORE OUTCOMES
+    -- =========================
     is_blocked,
-    is_confirmed_block,
+    has_measurement_failure
 
-    block_confidence,
-    measurement_quality_score,
-
-    -- =========================
-    -- TEST CATEGORY
-    -- =========================
-    CASE
-        WHEN test_name IN ('telegram', 'whatsapp', 'signal') THEN 'messaging'
-        WHEN test_name IN ('tor', 'psiphon') THEN 'circumvention'
-        ELSE 'web'
-    END AS test_category,
-
-    -- =========================
-    -- SIMPLE ANALYTICAL FLAGS (NO LOGIC CHANGE)
-    -- =========================
-    CASE
-        WHEN is_confirmed_block THEN 'confirmed'
-        WHEN is_blocked THEN 'suspected'
-        ELSE 'clean'
-    END AS censorship_status
-
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.int.ooni_signals`;
+FROM `encoded-joy-485413-k5.int.ooni_signals`;

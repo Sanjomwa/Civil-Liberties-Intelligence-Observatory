@@ -1,7 +1,7 @@
 /* @bruin
 tags:
   - marts_bq
-name: dim_censorship_confidence
+name: marts.dim_censorship_confidence
 type: bq.sql
 connection: bigquery-default
 description: Confidence levels for censorship detection across datasets.

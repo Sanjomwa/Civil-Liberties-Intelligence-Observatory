@@ -1,7 +1,14 @@
 /* @bruin
+tags:
+  - int_bq
 name: int.ooni_signals
 type: bq.sql
 connection: bigquery-default
+
+description: |
+  Intermediate OONI signal layer.
+  Converts STG OONI measurements into standardized censorship signals
+  using only validated STG fields (OONI pipeline compliant).
 
 depends:
   - stg.ooni_measurements
@@ -13,10 +20,10 @@ materialization:
 
 WITH base AS (
     SELECT *
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.ooni_measurements`
+    FROM `encoded-joy-485413-k5.stg.ooni_measurements`
 ),
 
-normalized AS (
+classified AS (
 
     SELECT
         measurement_id,
@@ -26,155 +33,110 @@ normalized AS (
         test_name,
         input,
         start_time,
+        extracted_at,
         measurement_date,
         year,
         month,
         day,
 
         -- =========================
-        -- SIGNAL TYPE
+        -- TEST CATEGORY (SAFE RULE-BASED)
         -- =========================
         CASE
-            WHEN LOWER(test_name) LIKE '%telegram%' THEN 'telegram'
-            WHEN LOWER(test_name) LIKE '%whatsapp%' THEN 'whatsapp'
-            WHEN LOWER(test_name) LIKE '%signal%' THEN 'signal'
-            WHEN LOWER(test_name) LIKE '%tor%' THEN 'tor'
-            WHEN LOWER(test_name) LIKE '%psiphon%' THEN 'psiphon'
-            ELSE 'unknown'
-        END AS signal_type,
+            WHEN LOWER(test_name) LIKE '%telegram%' THEN 'messaging'
+            WHEN LOWER(test_name) LIKE '%whatsapp%' THEN 'messaging'
+            WHEN LOWER(test_name) LIKE '%signal%' THEN 'messaging'
+            WHEN LOWER(test_name) LIKE '%dns%' THEN 'dns'
+            WHEN LOWER(test_name) LIKE '%tor%' THEN 'circumvention'
+            WHEN LOWER(test_name) LIKE '%psiphon%' THEN 'circumvention'
+            ELSE 'web'
+        END AS test_category,
 
-        -- =========================
-        -- TELEGRAM
-        -- =========================
-        IFNULL(telegram_http_blocking, FALSE) AS telegram_http_blocking,
-        IFNULL(telegram_tcp_blocking, FALSE) AS telegram_tcp_blocking,
-
-        CASE
-            WHEN IFNULL(telegram_http_blocking, FALSE)
-              OR IFNULL(telegram_tcp_blocking, FALSE)
-            THEN TRUE ELSE FALSE
-        END AS telegram_block_flag,
-
-        -- =========================
-        -- WHATSAPP
-        -- =========================
-        IFNULL(whatsapp_endpoints_blocked, FALSE) AS whatsapp_endpoints_blocked,
+        telegram_http_blocking,
+        telegram_tcp_blocking,
+        whatsapp_endpoints_blocked,
         whatsapp_web_failure,
-
-        CASE
-            WHEN IFNULL(whatsapp_endpoints_blocked, FALSE)
-              OR whatsapp_web_failure IS NOT NULL
-            THEN TRUE ELSE FALSE
-        END AS whatsapp_block_flag,
-
-        -- =========================
-        -- SIGNAL
-        -- =========================
         signal_backend_failure,
-
-        CASE
-            WHEN signal_backend_failure IS NOT NULL
-            THEN TRUE ELSE FALSE
-        END AS signal_block_flag,
-
-        -- =========================
-        -- TOR
-        -- =========================
         tor_or_port_accessible,
         tor_obfs4_accessible,
+        psiphon_failure
 
-        CASE
-            WHEN tor_or_port_accessible = 0
-             AND tor_obfs4_accessible = 0 THEN TRUE
-            WHEN tor_or_port_accessible = 0
-             OR tor_obfs4_accessible = 0 THEN TRUE
-            ELSE FALSE
-        END AS tor_block_flag,
+    FROM base
+),
 
-        -- =========================
-        -- PSIPHON
-        -- =========================
-        psiphon_failure,
+signals AS (
 
-        CASE
-            WHEN psiphon_failure IS NOT NULL
-            THEN TRUE ELSE FALSE
-        END AS psiphon_block_flag,
+    SELECT
+        *,
 
         -- =========================
-        -- UNIFIED BLOCK FLAG
+        -- UNIFIED BLOCK SIGNAL TYPE
         -- =========================
         CASE
-            WHEN (
-                IFNULL(telegram_http_blocking, FALSE)
-                OR IFNULL(telegram_tcp_blocking, FALSE)
-                OR IFNULL(whatsapp_endpoints_blocked, FALSE)
-                OR whatsapp_web_failure IS NOT NULL
-                OR signal_backend_failure IS NOT NULL
-                OR tor_or_port_accessible = 0
-                OR tor_obfs4_accessible = 0
-                OR psiphon_failure IS NOT NULL
-            )
-            THEN TRUE ELSE FALSE
-        END AS is_blocked,
-
-        -- =========================
-        -- BLOCKING SIGNAL TYPE
-        -- =========================
-        CASE
-            WHEN IFNULL(telegram_http_blocking, FALSE)
-              OR IFNULL(telegram_tcp_blocking, FALSE)
-              OR IFNULL(whatsapp_endpoints_blocked, FALSE)
-                THEN 'APP_LAYER_BLOCK'
+            WHEN telegram_http_blocking = TRUE
+              OR telegram_tcp_blocking = TRUE
+              OR whatsapp_endpoints_blocked = TRUE
+            THEN 'APP_LAYER_BLOCK'
 
             WHEN whatsapp_web_failure IS NOT NULL
-                THEN 'WEB_FAILURE'
+            THEN 'WEB_FAILURE'
 
             WHEN signal_backend_failure IS NOT NULL
-                THEN 'SERVICE_FAILURE'
+            THEN 'SERVICE_FAILURE'
 
             WHEN tor_or_port_accessible = 0
-                THEN 'NETWORK_BLOCK'
+              OR tor_obfs4_accessible = 0
+            THEN 'NETWORK_BLOCK'
 
             WHEN psiphon_failure IS NOT NULL
-                THEN 'CENSORSHIP_INDICATOR'
+            THEN 'CIRCUMVENTION_FAILURE'
 
             ELSE 'NO_SIGNAL'
         END AS blocking_signal_type,
 
         -- =========================
-        -- CONFIDENCE
+        -- BOOLEAN BLOCK INDICATOR
         -- =========================
         CASE
-            WHEN (
-                IFNULL(telegram_http_blocking, FALSE)
-                OR IFNULL(whatsapp_endpoints_blocked, FALSE)
-            ) THEN 'HIGH'
+            WHEN telegram_http_blocking = TRUE
+              OR telegram_tcp_blocking = TRUE
+              OR whatsapp_endpoints_blocked = TRUE
+              OR (tor_or_port_accessible = 0 AND tor_obfs4_accessible = 0)
+            THEN TRUE
+            ELSE FALSE
+        END AS is_blocked,
 
-            WHEN (
-                whatsapp_web_failure IS NOT NULL
-                OR signal_backend_failure IS NOT NULL
-            ) THEN 'MEDIUM'
+        -- =========================
+        -- CONFIDENCE MODEL (STRICT + SAFE)
+        -- =========================
+        CASE
+            WHEN telegram_http_blocking = TRUE
+              OR whatsapp_endpoints_blocked = TRUE
+            THEN 'HIGH'
 
-            WHEN psiphon_failure IS NOT NULL THEN 'LOW'
+            WHEN whatsapp_web_failure IS NOT NULL
+              OR signal_backend_failure IS NOT NULL
+            THEN 'MEDIUM'
+
+            WHEN psiphon_failure IS NOT NULL
+              OR tor_or_port_accessible = 0
+            THEN 'LOW'
 
             ELSE 'NONE'
-        END AS block_confidence,
+        END AS blocking_confidence,
 
         -- =========================
-        -- QUALITY SCORE
+        -- FAILURE FLAG
         -- =========================
-        (
-            CASE WHEN start_time IS NOT NULL THEN 0.3 ELSE 0 END +
-            CASE WHEN input IS NOT NULL THEN 0.2 ELSE 0 END +
-            CASE WHEN test_name IS NOT NULL THEN 0.2 ELSE 0 END +
-            CASE WHEN asn IS NOT NULL THEN 0.3 ELSE 0 END
-        ) AS measurement_quality_score,
+        CASE
+            WHEN signal_backend_failure IS NOT NULL THEN TRUE
+            ELSE FALSE
+        END AS has_measurement_failure
 
-        CURRENT_TIMESTAMP() AS extracted_at
-
-    FROM base
+    FROM classified
 )
 
-SELECT *
-FROM normalized;
+SELECT
+    *,
+    CURRENT_TIMESTAMP() AS int_extracted_at
+FROM signals;

@@ -1,7 +1,7 @@
 /* @bruin
 tags:
   - marts_bq
-name: dim_asn
+name: marts.dim_asn
 type: bq.sql
 connection: bigquery-default
 description: Canonical ASN dimension for Kenya censorship observatory.
