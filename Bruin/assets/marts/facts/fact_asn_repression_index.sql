@@ -6,13 +6,16 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Daily ASN-level repression index derived from OONI censorship signals.
-  Measures intensity, breadth, and consistency of censorship across ISPs.
+  ASN-level repression index derived from cross-source censorship spine.
+  Combines OONI network blocking + ACLED conflict pressure + Lumen takedown pressure.
+
+  Grain:
+    measurement_date × country × asn
 
 owner: civil-liberties-pipeline
 
 depends:
-  - marts.fact_ooni_censorship_signals
+  - marts.fact_cross_source_censorship_events
 
 materialization:
   type: table
@@ -21,99 +24,95 @@ materialization:
 
 WITH base AS (
     SELECT
-        asn,
-        country,
         measurement_date,
-        test_name,
+        country,
+        asn,
 
-        is_blocked,
-        blocking_confidence,
+        ooni_tests,
+        blocked_tests,
+        block_rate,
+        high_conf_block_present,
+        network_block_signals,
 
-        telegram_http_blocking,
-        telegram_tcp_blocking,
-        whatsapp_endpoints_blocked,
-        whatsapp_web_failure,
-        signal_backend_failure,
-        tor_or_port_accessible,
-        tor_obfs4_accessible,
-        psiphon_failure
+        conflict_events,
+        fatalities,
+        population_exposure,
+        event_diversity,
 
-    FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
+        takedown_requests,
+        takedown_items,
+        takedown_events
+    FROM `encoded-joy-485413-k5.marts.fact_cross_source_censorship_events`
 ),
 
-aggregated AS (
+scored AS (
     SELECT
-        asn,
-        measurement_date,
-
-        COUNT(*) AS total_tests,
-
-        COUNTIF(is_blocked) AS blocked_tests,
-
-        SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) AS raw_block_rate,
+        *,
 
         -- =========================
-        -- confidence weighting
+        -- NORMALIZED PRESSURE COMPONENTS
         -- =========================
-        SUM(
-            CASE blocking_confidence
-                WHEN 'HIGH' THEN 1.0
-                WHEN 'MEDIUM' THEN 0.6
-                WHEN 'LOW' THEN 0.3
-                ELSE 0.1
-            END * IF(is_blocked, 1, 0)
-        ) AS weighted_blocking_intensity,
 
-        -- =========================
-        -- failure pressure
-        -- =========================
-        SUM(
-            IF(signal_backend_failure IS NOT NULL, 1, 0)
-        ) AS failure_signals,
+        -- Conflict pressure (bounded)
+        LEAST(conflict_events / 10.0, 1.0) AS conflict_pressure,
 
-        -- =========================
-        -- breadth (multi-test spread)
-        -- =========================
-        COUNT(DISTINCT test_name) AS test_breadth,
+        -- Takedown pressure (bounded)
+        LEAST(takedown_requests / 100.0, 1.0) AS takedown_pressure,
 
-        -- =========================
-        -- consistency proxy
-        -- =========================
-        COUNTIF(is_blocked) / COUNT(DISTINCT test_name) AS consistency_score
+        -- High confidence boost
+        CASE
+            WHEN high_conf_block_present = 1 THEN 1.0
+            ELSE 0.0
+        END AS high_conf_bonus,
+
+        -- Network signal intensity
+        LEAST(network_block_signals / 5.0, 1.0) AS network_intensity
 
     FROM base
-    GROUP BY asn, measurement_date
 )
 
 SELECT
-    asn,
     measurement_date,
-    total_tests,
+    country,
+    asn,
+
+    ooni_tests,
     blocked_tests,
+    block_rate,
 
-    raw_block_rate,
+    conflict_events,
+    fatalities,
+    population_exposure,
 
-    test_breadth,
-    failure_signals,
+    takedown_requests,
+    takedown_items,
 
-    -- normalized components
-    SAFE_DIVIDE(weighted_blocking_intensity, total_tests) AS blocking_intensity,
-
-    SAFE_DIVIDE(failure_signals, total_tests) AS failure_pressure,
-
-    SAFE_DIVIDE(test_breadth, 5.0) AS breadth_score,
-
-    LEAST(consistency_score, 1.0) AS consistency_score,
+    high_conf_block_present,
+    network_block_signals,
 
     -- =========================
-    -- FINAL INDEX
+    -- FINAL INDEX COMPONENTS
     -- =========================
+
     ROUND(
-        (0.35 * SAFE_DIVIDE(weighted_blocking_intensity, total_tests))
-      + (0.20 * SAFE_DIVIDE(failure_signals, total_tests))
-      + (0.20 * SAFE_DIVIDE(test_breadth, 5.0))
-      + (0.15 * LEAST(consistency_score, 1.0))
-      + (0.10 * LOG(total_tests + 1))
-    , 4) AS asn_repression_index
+        (
+            COALESCE(block_rate, 0) * 0.55
+          + COALESCE(conflict_pressure, 0) * 0.25
+          + COALESCE(takedown_pressure, 0) * 0.15
+          + COALESCE(high_conf_bonus, 0) * 0.05
+        ),
+    4) AS asn_repression_index,
 
-FROM aggregated;
+    -- =========================
+    -- INTERPRETATION BAND
+    -- =========================
+
+    CASE
+        WHEN block_rate >= 0.7 AND conflict_events > 0 THEN 'HIGH_REPRESSION'
+        WHEN block_rate >= 0.7 THEN 'NETWORK_REPRESSION'
+        WHEN conflict_events > 0 THEN 'CIVIC_PRESSURE_ONLY'
+        WHEN takedown_requests > 0 THEN 'LEGAL_PRESSURE_ONLY'
+        ELSE 'BASELINE'
+    END AS repression_category
+
+FROM scored;

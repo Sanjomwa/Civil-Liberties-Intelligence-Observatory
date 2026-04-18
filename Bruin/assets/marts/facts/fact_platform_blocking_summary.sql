@@ -6,7 +6,7 @@ type: bq.sql
 connection: bigquery-default
 description: |
   Monthly aggregation of OONI censorship signals by platform.
-  Core input to dashboards for tracking censorship intensity over time.
+  Built strictly on int.ooni_signals canonical schema.
 
 owner: civil-liberties-pipeline
 
@@ -27,10 +27,11 @@ WITH base AS (
         test_name AS platform,
         test_category,
 
-        blocking_signal,
+        blocking_signal_type,
         blocking_confidence,
+
         is_blocked,
-        is_confirmed_block,
+        has_measurement_failure,
 
         asn
     FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
@@ -45,20 +46,25 @@ aggregated AS (
 
         COUNT(*) AS total_measurements,
 
-        COUNTIF(is_blocked) AS blocked_count,
-        COUNTIF(is_confirmed_block) AS confirmed_block_count,
+        COUNTIF(is_blocked = TRUE) AS blocked_count,
 
         COUNT(DISTINCT asn) AS distinct_asns_tested,
 
-        -- SIGNAL DISTRIBUTION
-        COUNTIF(blocking_signal = 'confirmed_block') AS confirmed_block_signals,
-        COUNTIF(blocking_signal = 'suspected_block') AS suspected_block_signals,
-        COUNTIF(blocking_signal = 'network_failure') AS network_failure_signals,
-        COUNTIF(blocking_signal = 'no_evidence') AS clean_signals,
+        -- SIGNAL DISTRIBUTION (FIXED)
+        COUNTIF(blocking_signal_type = 'NETWORK_BLOCK') AS network_block_signals,
+        COUNTIF(blocking_signal_type = 'APP_BLOCK') AS app_block_signals,
+        COUNTIF(blocking_signal_type = 'DNS_BLOCK') AS dns_block_signals,
+        COUNTIF(blocking_signal_type = 'FAILURE') AS failure_signals,
+
+        -- CONFIDENCE DISTRIBUTION
+        COUNTIF(blocking_confidence = 'HIGH') AS high_confidence_signals,
+        COUNTIF(blocking_confidence = 'MEDIUM') AS medium_confidence_signals,
+        COUNTIF(blocking_confidence = 'LOW') AS low_confidence_signals,
 
         -- RATES
-        SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) AS blocking_rate,
-        SAFE_DIVIDE(COUNTIF(is_confirmed_block), COUNT(*)) AS confirmed_blocking_rate,
+        SAFE_DIVIDE(COUNTIF(is_blocked = TRUE), COUNT(*)) AS blocking_rate,
+        SAFE_DIVIDE(COUNTIF(blocking_confidence = 'HIGH'), COUNT(*)) AS high_confidence_rate,
+        SAFE_DIVIDE(COUNTIF(has_measurement_failure = TRUE), COUNT(*)) AS failure_rate,
 
         CURRENT_TIMESTAMP() AS extracted_at
 
@@ -68,12 +74,12 @@ aggregated AS (
 
 SELECT
     *,
-    
-    -- INTENSITY SCORE (0–1 normalized)
+
+    -- INTENSITY SCORE (clean + bounded)
     LEAST(
-        (blocking_rate * 0.6) +
-        (confirmed_blocking_rate * 0.3) +
-        (SAFE_DIVIDE(network_failure_signals, total_measurements) * 0.1),
+        (blocking_rate * 0.65) +
+        (high_confidence_rate * 0.25) +
+        (failure_rate * 0.10),
         1.0
     ) AS platform_censorship_intensity
 

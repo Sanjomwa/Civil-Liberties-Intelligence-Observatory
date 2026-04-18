@@ -4,138 +4,130 @@ tags:
 name: marts.fact_cross_source_censorship_events
 type: bq.sql
 connection: bigquery-default
-description: |
-  Unified daily Kenya censorship spine combining:
-  - OONI censorship signals
-  - ACLED conflict pressure
-  - Google + Lumen takedown governance pressure
 
-  This is the core temporal observatory dataset used for:
-  - escalation modeling
-  - censorship timeline dashboards
-  - protest correlation analysis
+description: |
+  Unified cross-source censorship spine combining:
+  - OONI network-level blocking signals
+  - ACLED conflict pressure signals
+  - Lumen takedown / censorship demand signals
+
+  Grain:
+    measurement_date × country × asn
 
 owner: civil-liberties-pipeline
 
 depends:
-  - marts.fact_ooni_censorship_signals
-  - marts.fact_conflict_events
-  - marts.fact_takedown_requests
+  - int.ooni_signals
+  - stg.acled_conflict_events
+  - stg.lumen_requests
 
 materialization:
   type: table
   strategy: create+replace
 @bruin */
 
-WITH ooni_daily AS (
+WITH ooni_spine AS (
     SELECT
-        measurement_date AS date,
+        measurement_date,
+        country,
+        asn,
 
-        COUNT(*) AS ooni_measurements,
-        COUNTIF(is_blocked) AS blocked_count,
-        COUNTIF(is_confirmed_block) AS confirmed_block_count,
+        COUNT(*) AS ooni_tests,
 
-        SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) AS blocking_rate,
-        SAFE_DIVIDE(COUNTIF(is_confirmed_block), COUNT(*)) AS confirmed_blocking_rate
+        COUNTIF(is_blocked = TRUE) AS blocked_tests,
 
-    FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
-    GROUP BY measurement_date
+        SAFE_DIVIDE(COUNTIF(is_blocked = TRUE), COUNT(*)) AS block_rate,
+
+        MAX(CASE WHEN blocking_confidence = 'HIGH' THEN 1 ELSE 0 END) AS high_conf_block_present,
+
+        SUM(CASE WHEN blocking_signal_type = 'NETWORK_BLOCK' THEN 1 ELSE 0 END) AS network_block_signals
+
+    FROM `encoded-joy-485413-k5.int.ooni_signals`
+    GROUP BY measurement_date, country, asn
 ),
 
-acled_daily AS (
+acled_spine AS (
     SELECT
-        measurement_date AS date,
+        measurement_date,
+        country,
 
         COUNT(*) AS conflict_events,
         SUM(fatalities) AS fatalities,
         SUM(population_exposure) AS population_exposure,
 
-        COUNTIF(event_type IN ('Protests', 'Riots')) AS protest_events
+        COUNT(DISTINCT event_type) AS event_diversity
 
-    FROM `encoded-joy-485413-k5.marts.fact_conflict_events`
-    GROUP BY measurement_date
+    FROM `encoded-joy-485413-k5.stg.acled_conflict_events`
+    GROUP BY measurement_date, country
 ),
 
-takedown_daily AS (
+lumen_spine AS (
     SELECT
-        measurement_date AS date,
+        measurement_date,
+        country,
 
-        COUNT(*) AS takedown_requests,
-        SUM(number_of_requests) AS total_requests,
-        SUM(items_requested_removal) AS total_items_targeted
+        SUM(request_count) AS total_requests,
+        SUM(item_count) AS total_items,
 
-    FROM `encoded-joy-485413-k5.marts.fact_takedown_requests`
-    GROUP BY measurement_date
+        COUNT(*) AS request_events
+
+    FROM `encoded-joy-485413-k5.stg.lumen_requests`
+    GROUP BY measurement_date, country
 ),
 
-spine AS (
+base_spine AS (
     SELECT
-        COALESCE(o.date, a.date, t.date) AS date,
+        o.measurement_date,
+        o.country,
+        o.asn,
 
-        -- OONI SIGNALS
-        COALESCE(o.ooni_measurements, 0) AS ooni_measurements,
-        COALESCE(o.blocked_count, 0) AS blocked_count,
-        COALESCE(o.confirmed_block_count, 0) AS confirmed_block_count,
-        COALESCE(o.blocking_rate, 0) AS blocking_rate,
-        COALESCE(o.confirmed_blocking_rate, 0) AS confirmed_blocking_rate,
+        o.ooni_tests,
+        o.blocked_tests,
+        o.block_rate,
+        o.high_conf_block_present,
+        o.network_block_signals,
 
-        -- ACLED SIGNALS
         COALESCE(a.conflict_events, 0) AS conflict_events,
         COALESCE(a.fatalities, 0) AS fatalities,
         COALESCE(a.population_exposure, 0) AS population_exposure,
-        COALESCE(a.protest_events, 0) AS protest_events,
+        COALESCE(a.event_diversity, 0) AS event_diversity,
 
-        -- TAKEDOWN SIGNALS
-        COALESCE(t.takedown_requests, 0) AS takedown_requests,
-        COALESCE(t.total_requests, 0) AS total_takedown_requests,
-        COALESCE(t.total_items_targeted, 0) AS total_items_targeted
+        COALESCE(l.total_requests, 0) AS takedown_requests,
+        COALESCE(l.total_items, 0) AS takedown_items,
+        COALESCE(l.request_events, 0) AS takedown_events
 
-    FROM ooni_daily o
-    FULL OUTER JOIN acled_daily a USING (date)
-    FULL OUTER JOIN takedown_daily t USING (date)
+    FROM ooni_spine o
+    LEFT JOIN acled_spine a
+        ON o.measurement_date = a.measurement_date
+       AND o.country = a.country
+
+    LEFT JOIN lumen_spine l
+        ON o.measurement_date = l.measurement_date
+       AND o.country = l.country
 )
 
 SELECT
     *,
-    
-    -- =========================
-    -- NORMALIZED SCORES (0–1)
-    -- =========================
-
-    LEAST(blocking_rate, 1.0) AS censorship_score,
-
-    LEAST(
-        SAFE_DIVIDE(conflict_events, 10) +
-        SAFE_DIVIDE(fatalities, 50),
-        1.0
-    ) AS conflict_pressure_score,
-
-    LEAST(
-        SAFE_DIVIDE(total_takedown_requests, 100),
-        1.0
-    ) AS governance_pressure_score,
 
     -- =========================
-    -- ESCALATION SCORE
+    -- CROSS-SOURCE PRESSURE SCORE
     -- =========================
-    LEAST(
-        (blocking_rate * 0.5) +
-        (SAFE_DIVIDE(conflict_events, 10) * 0.3) +
-        (SAFE_DIVIDE(total_takedown_requests, 100) * 0.2),
-        1.0
-    ) AS escalation_score,
 
-    -- =========================
-    -- EVENT CLASSIFICATION
-    -- =========================
+    (
+        COALESCE(block_rate, 0) * 0.5
+      + LEAST(conflict_events / 10.0, 0.3)
+      + LEAST(takedown_requests / 100.0, 0.2)
+    ) AS cross_source_pressure_score,
+
     CASE
-        WHEN blocking_rate > 0.4 AND conflict_events > 5 THEN 'High Suppression + Protest Activity'
-        WHEN blocking_rate > 0.4 THEN 'High Censorship Period'
-        WHEN conflict_events > 5 THEN 'Conflict Escalation Period'
-        WHEN total_takedown_requests > 50 THEN 'Governance Pressure Spike'
-        ELSE 'Baseline Activity'
-    END AS event_classification,
+        WHEN block_rate > 0.7
+         AND conflict_events > 0
+         AND takedown_requests > 0 THEN 'High Multi-Source Suppression'
+        WHEN block_rate > 0.7
+         AND conflict_events > 0 THEN 'Conflict-Aligned Blocking'
+        WHEN block_rate > 0.7 THEN 'Network Blocking Only'
+        WHEN conflict_events > 0 THEN 'Conflict Pressure Only'
+        ELSE 'Baseline'
+    END AS repression_state
 
-    CURRENT_TIMESTAMP() AS extracted_at
-
-FROM spine;
+FROM base_spine;
