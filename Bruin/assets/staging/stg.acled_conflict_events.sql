@@ -12,7 +12,7 @@ owner: civil-liberties-pipeline
 
 materialization:
   type: table
-strategy: create+replace
+  strategy: create+replace
 @bruin */
 
 WITH parsed AS (
