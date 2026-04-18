@@ -1,5 +1,5 @@
 /* @bruin
-name: stg.ooni
+name: stg.ooni_measurements
 type: bq.sql
 connection: bigquery-default
 depends:
