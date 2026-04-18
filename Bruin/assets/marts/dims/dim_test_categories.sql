@@ -7,7 +7,7 @@ connection: bigquery-default
 description: OONI test category dimension.
 owner: civil-liberties-pipeline
 depends:
-  - stg.ooni
+  - stg.ooni_measurements
 materialization:
   type: table
   strategy: create+replace
