@@ -1,5 +1,5 @@
 /* @bruin
-name: stg.ooni_conflict_measurements
+name: stg.ooni
 type: bq.sql
 connection: bigquery-default
 depends:
@@ -49,7 +49,7 @@ WITH raw AS (
         has_measurement_failure,
         blocking_signal_type
 
-    FROM `encoded-joy-485413-k5.stg.ooni`
+    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.ooni_measurements`
     WHERE probe_cc = 'KE'
 )
 

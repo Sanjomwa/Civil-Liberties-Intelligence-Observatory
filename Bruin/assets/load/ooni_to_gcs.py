@@ -19,37 +19,58 @@ materialization:
 @bruin"""
 
 import os
+import sys
 from datetime import datetime
 
 import pandas as pd
-from google.cloud import bigquery
-
-
-def resolve_env() -> str:
-    # --- explicit override ---
-    if os.getenv("TARGET_ENV"):
-        return os.getenv("TARGET_ENV").strip().lower()
-
-    if os.getenv("BRUIN_ENV"):
-        return os.getenv("BRUIN_ENV").strip().lower()
-
-    # --- PATCH: detect prod via CLI context ---
-    # Bruin doesn't always export env vars → infer from runtime
-    if "prod" in str(os.environ).lower():
-        return "prod"
-
-    return "staging"
-
-
-def require_cloud_env(env: str) -> None:
-    if env not in ("staging", "prod"):
-        raise ValueError(f"Only staging/prod allowed. Got ENV={env!r}.")
+from google.cloud import storage, bigquery
 
 
 PROJECT_ID = "encoded-joy-485413-k5"
 GCS_BUCKET = "civil-liberties-data"
 LOCAL_FILE = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/ooni/ooni_measurements.parquet"
 TABLE = "ooni_measurements"
+
+
+# -----------------------------
+# ENV RESOLUTION (FIXED)
+# -----------------------------
+def resolve_env() -> str:
+    # 1. explicit override
+    env = os.getenv("TARGET_ENV")
+    if env:
+        return env.strip().lower()
+
+    # 2. bruin env vars (if ever set)
+    for key in (
+        "BRUIN_ENV",
+        "BRUIN_ENVIRONMENT",
+        "BRUIN_PIPELINE_ENVIRONMENT",
+    ):
+        val = os.getenv(key)
+        if val:
+            return val.strip().lower()
+
+    # 3. CLI args fallback (critical fix)
+    for arg in sys.argv:
+        if "prod" in arg.lower():
+            return "prod"
+        if "staging" in arg.lower():
+            return "staging"
+
+    # ❌ NEVER silently fallback
+    raise RuntimeError(
+        "Environment not detected. "
+        "Use TARGET_ENV=prod or staging."
+    )
+
+
+def require_cloud_env(env: str):
+    if env not in ("staging", "prod"):
+        raise ValueError(f"Invalid ENV: {env}")
+
+    print(f"[SAFE] Running in {env.upper()}")
+
 
 ENV = resolve_env()
 require_cloud_env(ENV)
@@ -58,44 +79,26 @@ DATASET = "civil_liberties_prod" if ENV == "prod" else "civil_liberties_staging"
 GCS_OBJECT = f"{ENV}/ooni/ooni_measurements.parquet"
 
 
-def materialize():
-    print(f"TARGET_ENV={os.getenv('TARGET_ENV')}")
-    print(f"BRUIN_ENV={os.getenv('BRUIN_ENV')}")
-    print(f"Environment : {ENV}")
-    print(f"BQ Dataset  : {DATASET}")
+# -----------------------------
+# GCS UPLOAD (STREAMING)
+# -----------------------------
+def upload_to_gcs():
+    client = storage.Client()
+    bucket = client.bucket(GCS_BUCKET)
+    blob = bucket.blob(GCS_OBJECT)
 
-    df = pd.read_parquet(LOCAL_FILE)
-    print(f"Rows read   : {len(df):,}")
+    print(f"Uploading to gs://{GCS_BUCKET}/{GCS_OBJECT}")
+    blob.upload_from_filename(LOCAL_FILE)
 
-    required_cols = {
-        "measurement_id",
-        "probe_cc",
-        "asn",
-        "probe_asn",
-        "test_name",
-        "input",
-        "start_time",
-        "is_blocked",
-        "is_confirmed_block",
-        "has_measurement_failure",
-        "blocking_signal_type",
-        "extracted_at",
-    }
 
-    missing = required_cols.difference(df.columns)
-    if missing:
-        raise ValueError(f"Missing expected columns: {sorted(missing)}")
-
-    df["start_time"] = pd.to_datetime(df["start_time"], errors="coerce")
-    df["extracted_at"] = pd.to_datetime(df["extracted_at"], errors="coerce")
+# -----------------------------
+# BQ EXTERNAL TABLE
+# -----------------------------
+def create_external_table():
+    bq = bigquery.Client(project=PROJECT_ID)
 
     gcs_uri = f"gs://{GCS_BUCKET}/{GCS_OBJECT}"
-    print(f"Uploading   : {gcs_uri}")
-
-    df.to_parquet(gcs_uri, index=False, compression="snappy")
-    print("GCS upload complete")
-
-    bq = bigquery.Client(project=PROJECT_ID)
+    table_ref = f"{PROJECT_ID}.{DATASET}.{TABLE}"
 
     external_config = bigquery.ExternalConfig(
         bigquery.ExternalSourceFormat.PARQUET
@@ -103,22 +106,33 @@ def materialize():
     external_config.source_uris = [gcs_uri]
     external_config.autodetect = True
 
-    table_ref = f"{PROJECT_ID}.{DATASET}.{TABLE}"
-
-    table_obj = bigquery.Table(table_ref)
-    table_obj.external_data_configuration = external_config
-    table_obj.description = (
-        f"External table [{ENV}] - OONI Kenya censorship measurements. "
-        f"Backed by {gcs_uri}."
-    )
+    table = bigquery.Table(table_ref)
+    table.external_data_configuration = external_config
 
     try:
         bq.delete_table(table_ref)
     except Exception:
         pass
 
-    bq.create_table(table_obj)
-    print(f"BigQuery external table created: {table_ref}")
+    bq.create_table(table)
+    print(f"Created table: {table_ref}")
 
-    df["extracted_at"] = datetime.now()
-    return df
+
+# -----------------------------
+# ENTRYPOINT
+# -----------------------------
+def materialize():
+    print(f"ENV: {ENV}")
+
+    upload_to_gcs()
+    create_external_table()
+
+    return pd.DataFrame([
+        {
+            "status": "success",
+            "env": ENV,
+            "gcs_path": f"gs://{GCS_BUCKET}/{GCS_OBJECT}",
+            "table": f"{PROJECT_ID}.{DATASET}.{TABLE}",
+            "loaded_at": datetime.utcnow(),
+        }
+    ])
