@@ -1,14 +1,19 @@
 /* @bruin
 tags:
   - marts_bq
-name: fact_cross_source_censorship_events
+name: marts.fact_cross_source_censorship_events
 type: bq.sql
 connection: bigquery-default
 description: |
-  v2 Cross-source censorship spine with temporal clustering.
-  Converts daily signals into suppression "episodes" using rolling windows.
+  Unified daily Kenya censorship spine combining:
+  - OONI censorship signals
+  - ACLED conflict pressure
+  - Google + Lumen takedown governance pressure
 
-  This is the core observatory event model powering all dashboards.
+  This is the core temporal observatory dataset used for:
+  - escalation modeling
+  - censorship timeline dashboards
+  - protest correlation analysis
 
 owner: civil-liberties-pipeline
 
@@ -22,169 +27,115 @@ materialization:
   strategy: create+replace
 @bruin */
 
-WITH base_daily AS (
-
+WITH ooni_daily AS (
     SELECT
-        measurement_date,
+        measurement_date AS date,
 
-        -- OONI
-        COUNTIF(is_blocked = TRUE) AS blocked_count,
-        COUNT(*) AS total_measurements,
+        COUNT(*) AS ooni_measurements,
+        COUNTIF(is_blocked) AS blocked_count,
+        COUNTIF(is_confirmed_block) AS confirmed_block_count,
 
-        AVG(CASE
-            WHEN blocking_confidence = 'HIGH' THEN 3
-            WHEN blocking_confidence = 'MEDIUM' THEN 2
-            WHEN blocking_confidence = 'LOW' THEN 1
-            ELSE 0
-        END) AS avg_blocking_confidence,
+        SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) AS blocking_rate,
+        SAFE_DIVIDE(COUNTIF(is_confirmed_block), COUNT(*)) AS confirmed_blocking_rate
 
-        -- ACLED
-        MAX(conflict_events) AS conflict_events,
+    FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
+    GROUP BY measurement_date
+),
+
+acled_daily AS (
+    SELECT
+        measurement_date AS date,
+
+        COUNT(*) AS conflict_events,
         SUM(fatalities) AS fatalities,
         SUM(population_exposure) AS population_exposure,
 
-        -- TAKEDOWNS
-        SUM(takedown_count) AS takedown_count,
-        SUM(items_targeted) AS items_targeted,
+        COUNTIF(event_type IN ('Protests', 'Riots')) AS protest_events
 
-        COUNT(DISTINCT asn) AS affected_asns
-
-    FROM `encoded-joy-485413-k5.marts.fact_cross_source_censorship_events`
+    FROM `encoded-joy-485413-k5.marts.fact_conflict_events`
     GROUP BY measurement_date
-
 ),
 
-rolling AS (
-
+takedown_daily AS (
     SELECT
-        a.*,
+        measurement_date AS date,
 
-        -- =========================
-        -- 3-DAY ROLLING WINDOWS
-        -- =========================
-        SUM(blocked_count) OVER (
-            ORDER BY measurement_date
-            RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
-        ) AS blocked_3d,
+        COUNT(*) AS takedown_requests,
+        SUM(number_of_requests) AS total_requests,
+        SUM(items_requested_removal) AS total_items_targeted
 
-        SUM(conflict_events) OVER (
-            ORDER BY measurement_date
-            RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
-        ) AS conflict_3d,
-
-        SUM(takedown_count) OVER (
-            ORDER BY measurement_date
-            RANGE BETWEEN INTERVAL 2 DAY PRECEDING AND CURRENT ROW
-        ) AS takedown_3d
-
-    FROM base_daily a
-
+    FROM `encoded-joy-485413-k5.marts.fact_takedown_requests`
+    GROUP BY measurement_date
 ),
 
-scored AS (
-
+spine AS (
     SELECT
-        *,
+        COALESCE(o.date, a.date, t.date) AS date,
 
-        -- =========================
-        -- SUPPRESSION INTENSITY SCORE
-        -- =========================
-        (
-            LEAST(blocked_count * 0.4, 1.0)
-            + LEAST(conflict_events * 0.2, 1.0)
-            + LEAST(takedown_count * 0.2, 1.0)
-            + LEAST(blocked_3d * 0.2, 1.0)
-        ) AS daily_intensity_score,
+        -- OONI SIGNALS
+        COALESCE(o.ooni_measurements, 0) AS ooni_measurements,
+        COALESCE(o.blocked_count, 0) AS blocked_count,
+        COALESCE(o.confirmed_block_count, 0) AS confirmed_block_count,
+        COALESCE(o.blocking_rate, 0) AS blocking_rate,
+        COALESCE(o.confirmed_blocking_rate, 0) AS confirmed_blocking_rate,
 
-        -- =========================
-        -- EVENT TRIGGER FLAG
-        -- =========================
-        CASE
-            WHEN blocked_3d > 50
-             AND conflict_3d > 0
-            THEN 1 ELSE 0
-        END AS is_suppression_episode_day
+        -- ACLED SIGNALS
+        COALESCE(a.conflict_events, 0) AS conflict_events,
+        COALESCE(a.fatalities, 0) AS fatalities,
+        COALESCE(a.population_exposure, 0) AS population_exposure,
+        COALESCE(a.protest_events, 0) AS protest_events,
 
-    FROM rolling
+        -- TAKEDOWN SIGNALS
+        COALESCE(t.takedown_requests, 0) AS takedown_requests,
+        COALESCE(t.total_requests, 0) AS total_takedown_requests,
+        COALESCE(t.total_items_targeted, 0) AS total_items_targeted
 
-),
-
-episodes AS (
-
-    SELECT
-        *,
-        SUM(is_suppression_episode_day) OVER (
-            ORDER BY measurement_date
-        ) AS episode_group_id
-    FROM scored
-
+    FROM ooni_daily o
+    FULL OUTER JOIN acled_daily a USING (date)
+    FULL OUTER JOIN takedown_daily t USING (date)
 )
 
 SELECT
+    *,
+    
+    -- =========================
+    -- NORMALIZED SCORES (0–1)
+    -- =========================
+
+    LEAST(blocking_rate, 1.0) AS censorship_score,
+
+    LEAST(
+        SAFE_DIVIDE(conflict_events, 10) +
+        SAFE_DIVIDE(fatalities, 50),
+        1.0
+    ) AS conflict_pressure_score,
+
+    LEAST(
+        SAFE_DIVIDE(total_takedown_requests, 100),
+        1.0
+    ) AS governance_pressure_score,
 
     -- =========================
-    -- EVENT IDENTITY
+    -- ESCALATION SCORE
     -- =========================
-    CONCAT('EP-', CAST(episode_group_id AS STRING)) AS episode_id,
-    measurement_date,
-
-    episode_group_id,
-
-    -- =========================
-    -- CORE SIGNALS
-    -- =========================
-    blocked_count,
-    conflict_events,
-    fatalities,
-    population_exposure,
-    takedown_count,
-
-    affected_asns,
+    LEAST(
+        (blocking_rate * 0.5) +
+        (SAFE_DIVIDE(conflict_events, 10) * 0.3) +
+        (SAFE_DIVIDE(total_takedown_requests, 100) * 0.2),
+        1.0
+    ) AS escalation_score,
 
     -- =========================
-    -- ROLLING CONTEXT
-    -- =========================
-    blocked_3d,
-    conflict_3d,
-    takedown_3d,
-
-    -- =========================
-    -- INTENSITY MODEL
-    -- =========================
-    daily_intensity_score,
-
-    CASE
-        WHEN daily_intensity_score > 1.5 THEN 'HIGH INTENSITY EPISODE'
-        WHEN daily_intensity_score > 0.8 THEN 'MEDIUM INTENSITY EPISODE'
-        ELSE 'LOW INTENSITY ACTIVITY'
-    END AS episode_severity,
-
-    -- =========================
-    -- CROSS-SOURCE ALIGNMENT
+    -- EVENT CLASSIFICATION
     -- =========================
     CASE
-        WHEN blocked_count > 0
-         AND conflict_events > 0
-         AND takedown_count > 0
-        THEN 'FULL CROSS-SOURCE ALIGNMENT'
-
-        WHEN blocked_count > 0
-         AND conflict_events > 0
-        THEN 'NETWORK + CIVIL UNREST'
-
-        WHEN blocked_count > 0
-         AND takedown_count > 0
-        THEN 'NETWORK + PLATFORM ACTION'
-
-        WHEN conflict_events > 0
-        THEN 'CIVIL UNREST ONLY'
-
-        WHEN blocked_count > 0
-        THEN 'NETWORK ONLY'
-
-        ELSE 'LOW SIGNAL'
-    END AS cross_source_pattern,
+        WHEN blocking_rate > 0.4 AND conflict_events > 5 THEN 'High Suppression + Protest Activity'
+        WHEN blocking_rate > 0.4 THEN 'High Censorship Period'
+        WHEN conflict_events > 5 THEN 'Conflict Escalation Period'
+        WHEN total_takedown_requests > 50 THEN 'Governance Pressure Spike'
+        ELSE 'Baseline Activity'
+    END AS event_classification,
 
     CURRENT_TIMESTAMP() AS extracted_at
 
-FROM episodes
+FROM spine;
