@@ -13,7 +13,7 @@ materialization:
 
 WITH base AS (
     SELECT *
-    FROM `encoded-joy-485413-k5.stg.ooni_measurements`
+    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.ooni_measurements`
 ),
 
 normalized AS (
