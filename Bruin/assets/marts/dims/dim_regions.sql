@@ -32,7 +32,7 @@ SELECT DISTINCT
     WHEN region = 'North Eastern' THEN 'North Eastern'
     ELSE 'Other'
   END AS region_group
-FROM `encoded-joy-485413-k5.stg.acled_conflict_events`
+FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.stg_acled_conflict_events`
 WHERE country = 'Kenya'
   AND admin1 IS NOT NULL
 ORDER BY region, admin1;
