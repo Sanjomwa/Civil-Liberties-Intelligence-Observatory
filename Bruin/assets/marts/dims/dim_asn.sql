@@ -6,13 +6,8 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Canonical ASN dimension for Kenya censorship observatory.
-  Clean, join-safe representation of ASN extracted from OONI signals.
-
-  Key principle:
-    - No heuristic ISP classification
-    - No pattern-based assumptions
-    - Pure normalization + validity flag
+  Canonical ASN dimension (stable + deduplicated).
+  One row per ASN.
 
 materialization:
   type: table
@@ -20,31 +15,31 @@ materialization:
 @bruin */
 
 WITH base AS (
-    SELECT DISTINCT
-        asn,
-        country
+
+    SELECT
+        CAST(asn AS STRING) AS asn_id,
+        ANY_VALUE(country) AS country
+
     FROM `encoded-joy-485413-k5.int.ooni_signals`
+    WHERE asn IS NOT NULL
+
+    GROUP BY asn_id
 ),
 
-cleaned AS (
+enriched AS (
+
     SELECT
+        asn_id,
         country,
 
-        -- ── canonical ASN key ─────────────────────────────────────────────
-        SAFE_CAST(asn AS STRING) AS asn_id,
-
-        -- ── validity flags ────────────────────────────────────────────────
         CASE
-            WHEN asn IS NULL THEN FALSE
-            WHEN SAFE_CAST(asn AS STRING) IS NULL THEN FALSE
-            ELSE TRUE
-        END AS is_valid_asn,
-
-        -- ── metadata ──────────────────────────────────────────────────────
-        CURRENT_TIMESTAMP() AS extracted_at
+            WHEN asn_id LIKE '32%' THEN 'mobile'
+            WHEN asn_id LIKE '3%' THEN 'fixed'
+            ELSE 'unknown'
+        END AS isp_type
 
     FROM base
 )
 
 SELECT *
-FROM cleaned;
+FROM enriched;
