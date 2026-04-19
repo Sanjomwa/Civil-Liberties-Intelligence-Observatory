@@ -387,6 +387,8 @@ This project implements a **multi-source dimensional model** that integrates:
 
 All datasets are harmonized into a **conformed dimensional model** designed for cross-domain analysis of civil liberties, censorship, and political instability.
 
+---
+
 ### 🧱 Model Architecture
 
 - **Facts (event-centric tables)**  
@@ -417,7 +419,10 @@ All datasets are harmonized into a **conformed dimensional model** designed for 
 📖 Full schema design, joins, grain definitions, surrogate keys, and validation rules are documented in:
 👉 [`docs/data-modelling.md`](./docs/data-modelling.md)
 
-📈 Risk Index Formula     
+---
+
+## 📈 
+## Risk Index Formula     
 
                             Risk Index =
                             ( Normalized Takedown Requests
@@ -431,11 +436,12 @@ Interpretation:
           Kenya heatmap
           timeline spikes
           regional comparisons
-Risk Index =
-( Normalized Takedown Requests
-× Conflict Event Intensity
-× Censorship Signal Weight )
-÷ Time Normalization Factor
+          
+                            Risk Index =
+                            ( Normalized Takedown Requests
+                            × Conflict Event Intensity
+                            × Censorship Signal Weight )
+                            ÷ Time Normalization Factor
 Interpretation:
 High score → strong correlation between unrest & censorship
 Used for:
