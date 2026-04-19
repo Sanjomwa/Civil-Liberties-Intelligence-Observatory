@@ -152,9 +152,10 @@ Layers
 
 ---
 
-📐
-##ERD & Lineage
+## 📐
+## ERD & Lineage
 
+```
 erDiagram
     %% Raw Sources
     google_transparency_raw ||--o{ stg_google_transparency : "1:1"
@@ -223,7 +224,7 @@ erDiagram
 
     civil_liberties_mart["Data Mart: Civil Liberties"]
 
-
+```
 
 ---
 
