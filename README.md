@@ -155,7 +155,7 @@ Layers
 ## 📐
 ## ERD & Lineage
 
-```
+```mermaid
 erDiagram
     %% Raw Sources
     google_transparency_raw ||--o{ stg_google_transparency : "1:1"
