@@ -5,18 +5,13 @@ tags:
 name: load.lumen_requests_to_gcs
 type: python
 image: python:3.12
-connection: duckdb-parquet
-description: Uploads canonical Lumen mock parquet to GCS and refreshes BigQuery external table.
+description: Uploads canonical Lumen Parquet to GCS and creates schema-stable BigQuery external table (no DuckDB).
 depends:
   - raw.lumen_requests
-materialization:
-  type: table
-  strategy: create+replace
 @bruin"""
 
 import os
 import pandas as pd
-from datetime import datetime
 from google.cloud import bigquery
 
 
@@ -45,38 +40,54 @@ def materialize():
 
     df = pd.read_parquet(LOCAL_FILE)
 
-    # FIX 1: normalize timestamps (CRITICAL)
+    # Ensure clean microsecond UTC timestamps for Parquet → BigQuery
     for col in ["date_submitted", "extracted_at"]:
         if col in df.columns:
-            df[col] = pd.to_datetime(df[col], utc=True).dt.floor("us")
+            df[col] = pd.to_datetime(df[col], utc=True).dt.as_unit("us")
 
-    print(df.dtypes)
+    print("📊 dtypes for GCS Parquet:\n", df.dtypes)
 
+    # 1. Upload to GCS
     gcs_uri = f"gs://{GCS_BUCKET}/{GCS_OBJECT}"
-
     df.to_parquet(gcs_uri, index=False, compression="snappy")
+    print(f"✅ Uploaded Parquet to: {gcs_uri}")
+
+    # 2. Create BigQuery external table with EXPLICIT schema (no autodetect)
+    schema = [
+        bigquery.SchemaField("request_id", "STRING"),
+        bigquery.SchemaField("country", "STRING"),
+        bigquery.SchemaField("sender", "STRING"),
+        bigquery.SchemaField("recipient", "STRING"),
+        # ← proper TIMESTAMP(UTC)
+        bigquery.SchemaField("date_submitted", "TIMESTAMP"),
+        bigquery.SchemaField("period", "STRING"),
+        bigquery.SchemaField("half_year_label", "STRING"),
+        bigquery.SchemaField("reason", "STRING"),
+        bigquery.SchemaField("request_count", "INTEGER"),
+        bigquery.SchemaField("item_count", "INTEGER"),
+        # ← proper TIMESTAMP(UTC)
+        bigquery.SchemaField("extracted_at", "TIMESTAMP"),
+    ]
 
     bq = bigquery.Client(project=PROJECT_ID)
-
     table_ref = f"{PROJECT_ID}.{DATASET}.{TABLE}"
 
     external_config = bigquery.ExternalConfig(
-        bigquery.ExternalSourceFormat.PARQUET
-    )
+        bigquery.ExternalSourceFormat.PARQUET)
     external_config.source_uris = [gcs_uri]
-    external_config.autodetect = True
+    external_config.autodetect = False
 
     table = bigquery.Table(table_ref)
     table.external_data_configuration = external_config
+    table.schema = schema
 
-    # SAFE DROP
     try:
         bq.delete_table(table_ref, not_found_ok=True)
     except Exception:
         pass
 
     bq.create_table(table)
+    print(f"✅ BigQuery external table ready: {table_ref}")
 
-    print(f"✅ Loaded: {table_ref}")
-
-    return df
+    # No return needed — this is now a pure side-effect task (no DuckDB load)
+    return None

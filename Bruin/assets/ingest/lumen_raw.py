@@ -1,11 +1,11 @@
-"""
-@bruin
+"""@bruin
 name: raw.lumen_requests
 type: python
 materialization:
   type: table
   strategy: create+replace
-"""
+connection: duckdb-parquet
+@bruin"""
 
 import pandas as pd
 import numpy as np
@@ -14,9 +14,8 @@ from datetime import datetime, timezone
 
 def materialize():
     """
-    Generates synthetic Lumen dataset (required for pipeline stability)
+    Generates synthetic Lumen dataset with GUARANTEED TIMESTAMP(UTC) types.
     """
-
     n = 500
 
     df = pd.DataFrame({
@@ -41,10 +40,8 @@ def materialize():
         "extracted_at": pd.Timestamp(datetime.now(timezone.utc))
     })
 
-    # -----------------------------
-    # FIX TIMESTAMP CONSISTENCY
-    # -----------------------------
-
+    # CRITICAL: Force deterministic microsecond-precision UTC timestamps
+    # (prevents any ns → BIGINT inference in Parquet/BigQuery)
     for col in ["date_submitted", "extracted_at"]:
         df[col] = pd.to_datetime(df[col], utc=True).dt.floor("us")
 
