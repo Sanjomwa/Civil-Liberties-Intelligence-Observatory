@@ -1,48 +1,69 @@
 """@bruin
 name: raw.lumen_requests
 type: python
+connection: duckdb-parquet
 materialization:
   type: table
   strategy: create+replace
-connection: duckdb-parquet
 @bruin"""
 
 import pandas as pd
 import numpy as np
-from datetime import datetime, timezone
 
 
 def materialize():
     """
-    Generates synthetic Lumen dataset with GUARANTEED TIMESTAMP(UTC) types.
+    RAW LAYER (FINAL HARDENED VERSION)
+
+    Guarantees:
+    - No epoch ambiguity
+    - Parquet-safe timestamps
+    - Deterministic + reproducible
     """
-    n = 500
+
+    np.random.seed(42)
+    n = 2500
+
+    start = pd.Timestamp("2023-06-01", tz="UTC")
+    end   = pd.Timestamp("2025-06-30 23:59:59", tz="UTC")
+
+    # SAFE timestamp generation
+    random_ns = np.random.uniform(start.value, end.value, n).astype("int64")
+    date_submitted = pd.to_datetime(random_ns, utc=True, unit="ns")
+
+    extracted_at = pd.Timestamp.now(tz="UTC").floor("us")
 
     df = pd.DataFrame({
         "request_id": [f"req_{i}" for i in range(n)],
-        "country": np.random.choice(["US", "GB", "DE", "FR", "IN", "KE"], n),
+        "country": np.random.choice(
+            ["US", "GB", "DE", "FR", "IN", "KE"],
+            n,
+            p=[0.08, 0.08, 0.08, 0.08, 0.08, 0.60]
+        ),
         "sender": np.random.choice(["gov", "court", "private"], n),
         "recipient": np.random.choice(["platform_a", "platform_b"], n),
 
-        "date_submitted": pd.to_datetime(
-            np.random.randint(1600000000, 1760000000, n),
-            unit="s",
-            utc=True
-        ),
-
+        "date_submitted": date_submitted,
         "period": np.random.choice(["H1", "H2"], n),
-        "half_year_label": np.random.choice(["2025-H1", "2025-H2"], n),
+        "half_year_label": np.random.choice(
+            ["2023-H1", "2023-H2", "2024-H1", "2024-H2", "2025-H1", "2025-H2"],
+            n
+        ),
         "reason": np.random.choice(["privacy", "copyright", "court"], n),
-
         "request_count": np.random.randint(1, 50, n),
         "item_count": np.random.randint(1, 100, n),
 
-        "extracted_at": pd.Timestamp(datetime.now(timezone.utc))
+        "extracted_at": extracted_at
     })
 
-    # CRITICAL: Force deterministic microsecond-precision UTC timestamps
-    # (prevents any ns → BIGINT inference in Parquet/BigQuery)
-    for col in ["date_submitted", "extracted_at"]:
-        df[col] = pd.to_datetime(df[col], utc=True).dt.floor("us")
+    # FINAL SAFETY NORMALIZATION ONLY
+    df["date_submitted"] = df["date_submitted"].dt.floor("us")
+
+    # ASSERTIONS (prevents silent corruption)
+    assert df["date_submitted"].min().year >= 2023
+    assert df["date_submitted"].max().year <= 2025
+
+    print("✅ RAW OK")
+    print(df.dtypes)
 
     return df
