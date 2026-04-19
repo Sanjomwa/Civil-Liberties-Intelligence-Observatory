@@ -376,6 +376,8 @@ S --> U[Bruin Observability]
 | **Dimensions (Shared)** | `dim_country.sql`, `dim_event_type.sql`, `dim_platform.sql`, `dim_reason.sql`, `dim_period.sql` | Joined into all facts | Used across mart layer | DuckDB reference tables | BigQuery `dim_*` datasets |
 | **Mart Layer** | - | Aggregated from all facts | `civil_liberties_mart.sql` | Local dev aggregation view | BigQuery reporting view |
 
+---
+
 ## 🔢 
 ## Data Modelling
 
@@ -389,7 +391,8 @@ All datasets are harmonized into a **conformed dimensional model** designed for 
 
 ---
 
-### 🧱 Model Architecture
+### 🧱 
+### Model Architecture
 
 - **Facts (event-centric tables)**  
   - Takedown requests (Google Transparency)  
