@@ -142,42 +142,27 @@ flowchart TB
 ## Data Pipeline (DAG)
 ```mermaid
 flowchart LR
-    %% Local Layer
-    subgraph Local["DuckDB Local Layer"]
-        Raw[Raw Data Sources\nPython ingestion scripts]:::raw --> Ingest[Ingest into DuckDB]:::process
-        Ingest --> Validation[Schema Validation]:::process
-        Validation --> Cleaning[Data Cleaning]:::process
-        Cleaning --> Parquet[Parquet Export\nPartitioned datasets]:::storage
-        Parquet --> Light[Intermediate Models (DuckDB)]:::intermediate
-    end
+subgraph Local["DuckDB Local Layer"]
+Raw[Raw Data Sources\nPython ingestion scripts] --> Ingest[Ingest into DuckDB]
+Ingest --> Validation[Schema Validation]
+Validation --> Cleaning[Data Cleaning]
+Cleaning --> Parquet[Parquet Export\nPartitioned datasets]
+Parquet --> Light[Intermediate Models (DuckDB)]
+end
 
-    %% GCP Layer
-    subgraph GCP["GCP Analytics Layer"]
-        GCS[GCS Data Lake]:::storage --> Staging[BigQuery Staging Tables]:::staging
-        Staging --> Intermediate[Intermediate Models]:::intermediate
-        Intermediate --> Facts[Fact Tables]:::fact
-        Facts --> Mart[Data Mart:\ncivil_liberties_mart.sql]:::mart
-        Facts --> Dims[Dimension Tables]:::dim
-    end
+subgraph GCP["GCP Analytics Layer"]
+GCS[GCS Data Lake] --> Staging[BigQuery Staging Tables]
+Staging --> Intermediate[Intermediate Models]
+Intermediate --> Facts[Fact Tables]
+Facts --> Mart[Data Mart:\ncivil_liberties_mart.sql]
+Facts --> Dims[Dimension Tables]
+end
 
-    %% DAG Controller
-    Bruin[Bruin DAG Controller]:::process --> Local
-    Bruin --> GCP
+Bruin[Bruin DAG Controller] --> Local
+Bruin --> GCP
 
-    %% Outputs
-    Mart --> Dashboard[Streamlit Dashboards]:::output
-    Mart --> Monitoring[Bruin Cloud Monitoring]:::output
-
-    %% Styles
-    classDef raw fill:#ccc,stroke:#333;
-    classDef process fill:#87CEFA,stroke:#333;
-    classDef storage fill:#ADD8E6,stroke:#333;
-    classDef staging fill:#FFD700,stroke:#333;
-    classDef intermediate fill:#FFA500,stroke:#333;
-    classDef fact fill:#FF6347,stroke:#333;
-    classDef dim fill:#90EE90,stroke:#333;
-    classDef mart fill:#32CD32,stroke:#333;
-    classDef output fill:#9370DB,stroke:#333;
+Mart --> Dashboard[Streamlit Dashboards]
+Mart --> Monitoring[Bruin Cloud Monitoring]
 ```
 
 Defined in:
