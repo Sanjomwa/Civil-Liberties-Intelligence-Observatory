@@ -64,7 +64,8 @@ def validate_parquet(df: pd.DataFrame):
 
         # HARD 1970 GUARD
         if df[col].min().year < 2000:
-            raise ValueError(f"❌ {col} contains epoch corruption (1970 detected)")
+            raise ValueError(
+                f"❌ {col} contains epoch corruption (1970 detected)")
 
     # DOMAIN CHECK
     if not df["country"].isin(["US", "GB", "DE", "FR", "IN", "KE"]).any():
@@ -112,7 +113,8 @@ def materialize():
     bq = bigquery.Client(project=PROJECT_ID)
     table_ref = f"{PROJECT_ID}.{DATASET}.{TABLE}"
 
-    external_config = bigquery.ExternalConfig(bigquery.ExternalSourceFormat.PARQUET)
+    external_config = bigquery.ExternalConfig(
+        bigquery.ExternalSourceFormat.PARQUET)
     external_config.source_uris = [gcs_uri]
     external_config.autodetect = False
 
