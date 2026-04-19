@@ -358,48 +358,33 @@ If Lumen access remains unavailable, similar transparency datasets can be substi
 
 ## 📊
 ## Dataset Lineage
+```mermaid
 flowchart TD
-    %% Raw Sources
-    A[Google Transparency Raw]:::raw --> B[DuckDB Ingestion Layer]:::process
-    C[ACLED Raw Events]:::raw --> B
-    D[OONI Measurements]:::raw --> B
-    E[Lumen Raw Data]:::raw --> B
+A[Google Transparency Raw] --> B[DuckDB Ingestion Layer]
+C[ACLED Raw Events] --> B
+D[OONI Measurements] --> B
+E[Lumen Raw Data] --> B
 
-    %% Processing
-    B --> F[Validation Layer]:::process
-    F --> G[Parquet Storage Layer]:::storage
-    G --> H[GCS Data Lake]:::storage
-    H --> I[Staging Tables]:::staging
-    I --> J[Intermediate Models]:::intermediate
+B --> F[Validation Layer]
+F --> G[Parquet Storage Layer]
+G --> H[GCS Data Lake]
+H --> I[Staging Tables]
+I --> J[Intermediate Models]
 
-    %% Facts + Dimensions
-    J --> K[fact_takedown_requests.sql]:::fact
-    J --> L[fact_conflict_events.sql]:::fact
-    J --> M[fact_censorship_measurements.sql]:::fact
-    J --> N[dim_regions.sql]:::dim
-    J --> O[dim_platforms.sql]:::dim
-    J --> P[dim_event_type.sql]:::dim
-    J --> Q[dim_reasons.sql]:::dim
-    J --> R[dim_dates.sql]:::dim
+J --> K[fact_takedown_requests.sql]
+J --> L[fact_conflict_events.sql]
+J --> M[fact_censorship_measurements.sql]
+J --> N[dim_regions.sql]
+J --> O[dim_platforms.sql]
+J --> P[dim_event_type.sql]
+J --> Q[dim_reasons.sql]
+J --> R[dim_dates.sql]
 
-    %% Data Mart
-    K & L & M & N & O & P & Q & R --> S[civil_liberties_mart.sql]:::mart
+K & L & M & N & O & P & Q & R --> S[civil_liberties_mart.sql]
 
-    %% Outputs
-    S --> T[Streamlit Dashboards]:::output
-    S --> U[Bruin Observability]:::output
-
-    %% Styles
-    classDef raw fill:#ccc,stroke:#333;
-    classDef process fill:#87CEFA,stroke:#333;
-    classDef storage fill:#ADD8E6,stroke:#333;
-    classDef staging fill:#FFD700,stroke:#333;
-    classDef intermediate fill:#FFA500,stroke:#333;
-    classDef fact fill:#FF6347,stroke:#333;
-    classDef dim fill:#90EE90,stroke:#333;
-    classDef mart fill:#32CD32,stroke:#333;
-    classDef output fill:#9370DB,stroke:#333;
-
+S --> T[Streamlit Dashboards]
+S --> U[Bruin Observability]
+```
 
 ---
 
