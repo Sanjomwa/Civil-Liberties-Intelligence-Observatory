@@ -105,31 +105,80 @@ Kenya is used as a case study, but architecture is globally reusable
     •	intermediate + marts 
 ```mermaid
 flowchart TB
+    %% Local Development
     subgraph LocalDev["Local Development"]
-        RawSrc[Raw Data Sources\nCSV / API / JSON] --> DuckDBIng[DuckDB Raw Ingestion]
-        DuckDBIng --> Validation[Data Validation\nSchema checks / null checks / type fixes]
-        Validation --> ParquetNorm[Parquet Normalization Layer\nPartitioned files]
-        ParquetNorm --> LocalModels[Local Intermediate Models\n(light transforms only)]
+        RawSrc[Raw Data Sources\nCSV / API / JSON]:::raw --> DuckDBIng[DuckDB Raw Ingestion]:::process
+        DuckDBIng --> Validation[Data Validation\nSchema checks / null checks / type fixes]:::process
+        Validation --> ParquetNorm[Parquet Normalization Layer\nPartitioned files]:::storage
+        ParquetNorm --> LocalModels[Local Intermediate Models\nLight transforms only]:::intermediate
     end
 
+    %% GCP Production
     subgraph GCPProd["GCP Production Layer"]
-        GCS[GCS Data Lake\nRaw + Parquet Storage] --> BQStaging[BigQuery Staging Layer]
-        BQStaging --> BQIntermediate[BigQuery Intermediate Models]
-        BQIntermediate --> BQMarts[BigQuery Marts\nAnalytics Ready Tables]
-        BQMarts --> BruinObs[Bruin Cloud Observability\nLineage + DAG Tracking]
-        BQMarts --> Streamlit[Streamlit Dashboard\nCloud Run Deployment]
+        GCS[GCS Data Lake\nRaw + Parquet Storage]:::storage --> BQStaging[BigQuery Staging Layer]:::staging
+        BQStaging --> BQIntermediate[BigQuery Intermediate Models]:::intermediate
+        BQIntermediate --> BQMarts[BigQuery Marts\nAnalytics Ready Tables]:::mart
+        BQMarts --> BruinObs[Bruin Cloud Observability\nLineage + DAG Tracking]:::output
+        BQMarts --> Streamlit[Streamlit Dashboards\nCloud Run Deployment]:::output
     end
 
+    %% Cross-link
     LocalModels -.-> GCS
     ParquetNorm -.-> GCS
+
+    %% Styles
+    classDef raw fill:#ccc,stroke:#333;
+    classDef process fill:#87CEFA,stroke:#333;
+    classDef storage fill:#ADD8E6,stroke:#333;
+    classDef staging fill:#FFD700,stroke:#333;
+    classDef intermediate fill:#FFA500,stroke:#333;
+    classDef mart fill:#32CD32,stroke:#333;
+    classDef output fill:#9370DB,stroke:#333;
 ```
 
 ---
 
 ## 🚧
 ## Data Pipeline (DAG)
+```mermaid
+flowchart LR
+    %% Local Layer
+    subgraph Local["DuckDB Local Layer"]
+        Raw[Raw Data Sources\nPython ingestion scripts]:::raw --> Ingest[Ingest into DuckDB]:::process
+        Ingest --> Validation[Schema Validation]:::process
+        Validation --> Cleaning[Data Cleaning]:::process
+        Cleaning --> Parquet[Parquet Export\nPartitioned datasets]:::storage
+        Parquet --> Light[Intermediate Models (DuckDB)]:::intermediate
+    end
 
+    %% GCP Layer
+    subgraph GCP["GCP Analytics Layer"]
+        GCS[GCS Data Lake]:::storage --> Staging[BigQuery Staging Tables]:::staging
+        Staging --> Intermediate[Intermediate Models]:::intermediate
+        Intermediate --> Facts[Fact Tables]:::fact
+        Facts --> Mart[Data Mart:\ncivil_liberties_mart.sql]:::mart
+        Facts --> Dims[Dimension Tables]:::dim
+    end
 
+    %% DAG Controller
+    Bruin[Bruin DAG Controller]:::process --> Local
+    Bruin --> GCP
+
+    %% Outputs
+    Mart --> Dashboard[Streamlit Dashboards]:::output
+    Mart --> Monitoring[Bruin Cloud Monitoring]:::output
+
+    %% Styles
+    classDef raw fill:#ccc,stroke:#333;
+    classDef process fill:#87CEFA,stroke:#333;
+    classDef storage fill:#ADD8E6,stroke:#333;
+    classDef staging fill:#FFD700,stroke:#333;
+    classDef intermediate fill:#FFA500,stroke:#333;
+    classDef fact fill:#FF6347,stroke:#333;
+    classDef dim fill:#90EE90,stroke:#333;
+    classDef mart fill:#32CD32,stroke:#333;
+    classDef output fill:#9370DB,stroke:#333;
+```
 
 Defined in:
 ```yaml
@@ -320,7 +369,48 @@ If Lumen access remains unavailable, similar transparency datasets can be substi
 
 ## 📊
 ## Dataset Lineage
-<img width="3609" height="1906" alt="DATA_LINEAGE" src="https://github.com/user-attachments/assets/6da21053-173d-44e2-88bb-f80ebfd1bf46" />
+flowchart TD
+    %% Raw Sources
+    A[Google Transparency Raw]:::raw --> B[DuckDB Ingestion Layer]:::process
+    C[ACLED Raw Events]:::raw --> B
+    D[OONI Measurements]:::raw --> B
+    E[Lumen Raw Data]:::raw --> B
+
+    %% Processing
+    B --> F[Validation Layer]:::process
+    F --> G[Parquet Storage Layer]:::storage
+    G --> H[GCS Data Lake]:::storage
+    H --> I[Staging Tables]:::staging
+    I --> J[Intermediate Models]:::intermediate
+
+    %% Facts + Dimensions
+    J --> K[fact_takedown_requests.sql]:::fact
+    J --> L[fact_conflict_events.sql]:::fact
+    J --> M[fact_censorship_measurements.sql]:::fact
+    J --> N[dim_regions.sql]:::dim
+    J --> O[dim_platforms.sql]:::dim
+    J --> P[dim_event_type.sql]:::dim
+    J --> Q[dim_reasons.sql]:::dim
+    J --> R[dim_dates.sql]:::dim
+
+    %% Data Mart
+    K & L & M & N & O & P & Q & R --> S[civil_liberties_mart.sql]:::mart
+
+    %% Outputs
+    S --> T[Streamlit Dashboards]:::output
+    S --> U[Bruin Observability]:::output
+
+    %% Styles
+    classDef raw fill:#ccc,stroke:#333;
+    classDef process fill:#87CEFA,stroke:#333;
+    classDef storage fill:#ADD8E6,stroke:#333;
+    classDef staging fill:#FFD700,stroke:#333;
+    classDef intermediate fill:#FFA500,stroke:#333;
+    classDef fact fill:#FF6347,stroke:#333;
+    classDef dim fill:#90EE90,stroke:#333;
+    classDef mart fill:#32CD32,stroke:#333;
+    classDef output fill:#9370DB,stroke:#333;
+
 
 ---
 
