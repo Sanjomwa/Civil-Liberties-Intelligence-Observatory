@@ -103,7 +103,7 @@ Kenya is used as a case study, but architecture is globally reusable
   GCP does: 
     •	staging 
     •	intermediate + marts 
-
+```mermaid
 flowchart TB
     subgraph LocalDev["Local Development"]
         RawSrc[Raw Data Sources\nCSV / API / JSON] --> DuckDBIng[DuckDB Raw Ingestion]
@@ -122,6 +122,7 @@ flowchart TB
 
     LocalModels -.-> GCS
     ParquetNorm -.-> GCS
+```
 
 ---
 
@@ -158,71 +159,64 @@ Layers
 ```mermaid
 erDiagram
     %% Raw Sources
-    google_transparency_raw ||--o{ stg_google_transparency : "1:1"
-    lumen_raw ||--o{ stg_lumen : "1:1"
+    google_transparency_detailed ||--o{ stg_google_transparency_detailed : "1:1"
+    google_transparency_requests ||--o{ stg_google_transparency_requests : "1:1"
+    lumen_raw ||--o{ stg_lumen_requests : "1:1"
     ooni_raw ||--o{ stg_ooni : "1:1"
-    acled_raw ||--o{ stg_acled : "1:1"
+    raw_acled_aggregated ||--o{ stg_acled_conflict_events : "1:1"
 
     %% Staging to Dimensions
-    stg_google_transparency }o--|| dim_platform : "references"
-    stg_google_transparency }o--|| dim_reason : "references"
-    stg_google_transparency }o--|| dim_country : "references"
-    stg_google_transparency }o--|| dim_period : "references"
+    stg_google_transparency_detailed }o--|| dim_platforms : "references"
+    stg_google_transparency_detailed }o--|| dim_reasons : "references"
+    stg_google_transparency_detailed }o--|| dim_regions : "references"
+    stg_google_transparency_detailed }o--|| dim_dates : "references"
 
-    stg_lumen }o--|| dim_reason : "references"
-    stg_lumen }o--|| dim_country : "references"
-    stg_lumen }o--|| dim_period : "references"
+    stg_google_transparency_requests }o--|| dim_platforms
+    stg_google_transparency_requests }o--|| dim_reasons
+    stg_google_transparency_requests }o--|| dim_regions
+    stg_google_transparency_requests }o--|| dim_dates
 
-    stg_ooni }o--|| dim_country : "references"
-    stg_ooni }o--|| dim_period : "references"
+    stg_lumen_requests }o--|| dim_reasons
+    stg_lumen_requests }o--|| dim_regions
+    stg_lumen_requests }o--|| dim_dates
 
-    stg_acled }o--|| dim_country : "references"
-    stg_acled }o--|| dim_event_type : "references"
-    stg_acled }o--|| dim_period : "references"
+    stg_ooni }o--|| dim_regions
+    stg_ooni }o--|| dim_dates
+    stg_ooni }o--|| dim_asn
+    stg_ooni }o--|| dim_blocking_signals
+    stg_ooni }o--|| dim_measurement_quality
+
+    stg_acled_conflict_events }o--|| dim_regions
+    stg_acled_conflict_events }o--|| dim_dates
+    stg_acled_conflict_events }o--|| dim_event_type
 
     %% Facts to Dimensions
-    fact_takedown_requests }o--|| dim_country : "references"
-    fact_takedown_requests }o--|| dim_platform : "references"
-    fact_takedown_requests }o--|| dim_reason : "references"
-    fact_takedown_requests }o--|| dim_period : "references"
+    fact_takedown_requests }o--|| dim_platforms
+    fact_takedown_requests }o--|| dim_reasons
+    fact_takedown_requests }o--|| dim_regions
+    fact_takedown_requests }o--|| dim_dates
 
-    fact_lumen_requests }o--|| dim_country : "references"
-    fact_lumen_requests }o--|| dim_reason : "references"
-    fact_lumen_requests }o--|| dim_period : "references"
+    fact_conflict_events }o--|| dim_event_type
+    fact_conflict_events }o--|| dim_regions
+    fact_conflict_events }o--|| dim_dates
 
-    fact_censorship_tests }o--|| dim_country : "references"
-    fact_censorship_tests }o--|| dim_period : "references"
+    fact_censorship_measurements }o--|| dim_asn
+    fact_censorship_measurements }o--|| dim_blocking_signals
+    fact_censorship_measurements }o--|| dim_measurement_quality
+    fact_censorship_measurements }o--|| dim_regions
+    fact_censorship_measurements }o--|| dim_dates
 
-    fact_conflict_events }o--|| dim_country : "references"
-    fact_conflict_events }o--|| dim_event_type : "references"
-    fact_conflict_events }o--|| dim_period : "references"
+    fact_platform_blocking_summary }o--|| dim_platforms
+    fact_platform_blocking_summary }o--|| dim_regions
+    fact_platform_blocking_summary }o--|| dim_dates
 
-    civil_liberties_mart }o--|| dim_country : "references"
-    civil_liberties_mart }o--|| dim_period : "references"
+    fact_cross_source_censorship_events }o--|| dim_regions
+    fact_cross_source_censorship_events }o--|| dim_dates
 
-    %% Labels
-    google_transparency_raw["Google Transparency Raw"]
-    lumen_raw["Lumen Raw"]
-    ooni_raw["OONI Raw"]
-    acled_raw["ACLED Raw"]
+    %% Mart
+    civil_liberties_mart }o--|| dim_regions
+    civil_liberties_mart }o--|| dim_dates
 
-    stg_google_transparency["Staging: Google Transparency"]
-    stg_lumen["Staging: Lumen"]
-    stg_ooni["Staging: OONI"]
-    stg_acled["Staging: ACLED"]
-
-    dim_platform["Dimension: Platform"]
-    dim_reason["Dimension: Reason"]
-    dim_country["Dimension: Country"]
-    dim_period["Dimension: Period"]
-    dim_event_type["Dimension: Event Type"]
-
-    fact_takedown_requests["Fact: Takedown Requests"]
-    fact_lumen_requests["Fact: Lumen Requests"]
-    fact_censorship_tests["Fact: Censorship Tests"]
-    fact_conflict_events["Fact: Conflict Events"]
-
-    civil_liberties_mart["Data Mart: Civil Liberties"]
 
 ```
 
