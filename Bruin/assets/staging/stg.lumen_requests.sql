@@ -23,47 +23,23 @@ WITH base AS (
         LOWER(country) AS country,
         sender,
         recipient,
-
-        -- already TIMESTAMP(UTC) from load layer
         date_submitted,
+        extracted_at,
         period,
         half_year_label,
         reason,
         request_count,
-        item_count,
-        extracted_at
+        item_count
 
     FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.lumen_requests`
 
-    WHERE LOWER(country) IN ('kenya', 'ke')
-      AND date_submitted IS NOT NULL
-),
-
-final AS (
-
-    SELECT
-        request_id,
-        country,
-        sender,
-        recipient,
-        date_submitted,
-        period,
-        half_year_label,
-        reason,
-        request_count,
-        item_count,
-        extracted_at,
-
-        -- CONTRACT ALIGNED DERIVATIONS (SAFE ONLY)
-
-        DATE(date_submitted) AS measurement_date,
-
-        EXTRACT(YEAR FROM date_submitted) AS year,
-
-        -- optional enrichment (safe, deterministic)
-        FORMAT_DATE('%Y-%m', DATE(date_submitted)) AS year_month
-
-    FROM base
+    WHERE date_submitted IS NOT NULL
 )
 
-SELECT * FROM final;
+SELECT
+    *,
+    DATE(date_submitted) AS measurement_date,
+    EXTRACT(YEAR FROM date_submitted) AS year,
+    FORMAT_DATE('%Y-%m', DATE(date_submitted)) AS year_month
+
+FROM base;
