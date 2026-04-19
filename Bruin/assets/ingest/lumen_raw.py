@@ -25,7 +25,7 @@ def materialize():
     n = 2500
 
     start = pd.Timestamp("2023-06-01", tz="UTC")
-    end   = pd.Timestamp("2025-06-30 23:59:59", tz="UTC")
+    end = pd.Timestamp("2025-06-30 23:59:59", tz="UTC")
 
     # SAFE timestamp generation
     random_ns = np.random.uniform(start.value, end.value, n).astype("int64")
