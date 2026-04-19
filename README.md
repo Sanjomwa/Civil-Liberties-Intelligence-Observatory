@@ -140,6 +140,7 @@ flowchart TB
 
 ## 🚧
 ## Data Pipeline (DAG)
+
 ```mermaid
 flowchart LR
 subgraph Local["DuckDB Local Layer"]
@@ -147,14 +148,14 @@ Raw[Raw Data Sources\nPython ingestion scripts] --> Ingest[Ingest into DuckDB]
 Ingest --> Validation[Schema Validation]
 Validation --> Cleaning[Data Cleaning]
 Cleaning --> Parquet[Parquet Export\nPartitioned datasets]
-Parquet --> Light[Intermediate Models (DuckDB)]
+Parquet --> Light[Intermediate Models\nDuckDB]
 end
 
 subgraph GCP["GCP Analytics Layer"]
 GCS[GCS Data Lake] --> Staging[BigQuery Staging Tables]
 Staging --> Intermediate[Intermediate Models]
 Intermediate --> Facts[Fact Tables]
-Facts --> Mart[Data Mart:\ncivil_liberties_mart.sql]
+Facts --> Mart[Data Mart\ncivil_liberties_mart.sql]
 Facts --> Dims[Dimension Tables]
 end
 
@@ -164,6 +165,7 @@ Bruin --> GCP
 Mart --> Dashboard[Streamlit Dashboards]
 Mart --> Monitoring[Bruin Cloud Monitoring]
 ```
+
 
 Defined in:
 ```yaml
