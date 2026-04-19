@@ -103,37 +103,26 @@ Kenya is used as a case study, but architecture is globally reusable
   GCP does: 
     •	staging 
     •	intermediate + marts 
+    
 ```mermaid
 flowchart TB
-    %% Local Development
-    subgraph LocalDev["Local Development"]
-        RawSrc[Raw Data Sources\nCSV / API / JSON]:::raw --> DuckDBIng[DuckDB Raw Ingestion]:::process
-        DuckDBIng --> Validation[Data Validation\nSchema checks / null checks / type fixes]:::process
-        Validation --> ParquetNorm[Parquet Normalization Layer\nPartitioned files]:::storage
-        ParquetNorm --> LocalModels[Local Intermediate Models\nLight transforms only]:::intermediate
-    end
+subgraph LocalDev["Local Development"]
+RawSrc[Raw Data Sources\nCSV / API / JSON] --> DuckDBIng[DuckDB Raw Ingestion]
+DuckDBIng --> Validation[Data Validation\nSchema checks / null checks / type fixes]
+Validation --> ParquetNorm[Parquet Normalization Layer\nPartitioned files]
+ParquetNorm --> LocalModels[Local Intermediate Models\nLight transforms only]
+end
 
-    %% GCP Production
-    subgraph GCPProd["GCP Production Layer"]
-        GCS[GCS Data Lake\nRaw + Parquet Storage]:::storage --> BQStaging[BigQuery Staging Layer]:::staging
-        BQStaging --> BQIntermediate[BigQuery Intermediate Models]:::intermediate
-        BQIntermediate --> BQMarts[BigQuery Marts\nAnalytics Ready Tables]:::mart
-        BQMarts --> BruinObs[Bruin Cloud Observability\nLineage + DAG Tracking]:::output
-        BQMarts --> Streamlit[Streamlit Dashboards\nCloud Run Deployment]:::output
-    end
+subgraph GCPProd["GCP Production Layer"]
+GCS[GCS Data Lake\nRaw + Parquet Storage] --> BQStaging[BigQuery Staging Layer]
+BQStaging --> BQIntermediate[BigQuery Intermediate Models]
+BQIntermediate --> BQMarts[BigQuery Marts\nAnalytics Ready Tables]
+BQMarts --> BruinObs[Bruin Cloud Observability\nLineage + DAG Tracking]
+BQMarts --> Streamlit[Streamlit Dashboards\nCloud Run Deployment]
+end
 
-    %% Cross-link
-    LocalModels -.-> GCS
-    ParquetNorm -.-> GCS
-
-    %% Styles
-    classDef raw fill:#ccc,stroke:#333;
-    classDef process fill:#87CEFA,stroke:#333;
-    classDef storage fill:#ADD8E6,stroke:#333;
-    classDef staging fill:#FFD700,stroke:#333;
-    classDef intermediate fill:#FFA500,stroke:#333;
-    classDef mart fill:#32CD32,stroke:#333;
-    classDef output fill:#9370DB,stroke:#333;
+LocalModels -.-> GCS
+ParquetNorm -.-> GCS
 ```
 
 ---
