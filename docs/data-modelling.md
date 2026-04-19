@@ -391,16 +391,16 @@ The Civil Liberties Risk Index (CLRI) quantifies the combined intensity of:
 
 It enables cross-county and temporal comparison of civil liberties pressure, with a strong Kenya-focused lens. 
 ### Formula Definitiontext
-                    ```yaml 
+                    
                     CLRI =
                      ( normalized_takedown_requests
                      + normalized_lumen_requests
                      + censorship_signal_score
                      + conflict_intensity_score ) × temporal_weight
-                     ```
+                     
 
 ### ComponentsTakedown Pressure
-                     ```yaml
+                     
                      Derived from fact_takedown_requests — normalized per country-period
                      Legal Request Pressure
                      Derived from Lumen dataset — represents formal legal suppression requests
@@ -408,15 +408,15 @@ It enables cross-county and temporal comparison of civil liberties pressure, wit
                      Derived from OONI anomalies (DNS blocking + connectivity failures)
                      Conflict Intensity
                      Derived from ACLED fatalities + event counts, weighted by severity
-                     ```
+                     
 
 ### Temporal WeightingTo reflect escalation periods:text
-                    ```yaml
+                    
                     temporal_weight =
                       1.0 (baseline)
                       1.2 (election periods)
                       1.5 (protest escalation windows)
-                     ```
+                     
 
 ### Output UsageThe CLRI is used in:
 - county vs county comparison dashboards
