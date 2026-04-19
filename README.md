@@ -4,6 +4,30 @@
 
 ---
 
+## 📑 Table of Contents
+
+1. [Problem Statement](#-problem-statement)
+2. [Why It Matters](#-why-it-matters)
+3. [Audience](#-audience)
+4. [Tech Stack](#-tech-stack)
+5. [Architecture](#-architecture)
+6. [Data Pipeline (DAG)](#-data-pipeline-dag)
+7. [Data Model Overview](#-data-model-overview)
+8. [ERD & Lineage](#-erd--lineage)
+9. [Project Structure](#-project-structure)
+10. [Datasets](#-datasets)
+11. [Data Modelling](#-data-modelling)
+12. [Setup Instructions](#-setup-instructions)
+13. [Infrastructure (Terraform)](#-infrastructure-terraform)
+14. [Dashboard](#-dashboard)
+15. [Ethics](#-ethics)
+16. [Roadmap](#-roadmap)
+17. [Contact](#-contact)
+18. [License](#-license)
+19. [Acknowledgements](#-acknowledgements)
+
+---
+
 ## 🎯 Problem Statement
 
 Governments increasingly request online content removal. While sometimes justified, these actions can undermine **freedom of expression and civil liberties**.
@@ -18,12 +42,11 @@ Kenya offers a critical case:
 
 ---
 
-## 🌍 Why This Matters
+## 🌍 Why It Matters
 
-This is not just Kenya:
-- Governments globally expanding censorship powers
-- Lack of **reproducible analysis pipelines**
-- Need for **auditable, transparent data systems**
+- Governments globally expanding censorship powers  
+- Lack of **reproducible analysis pipelines**  
+- Need for **transparent, auditable data systems**  
 
 This project provides a **reusable blueprint**.
 
@@ -31,7 +54,7 @@ This project provides a **reusable blueprint**.
 
 ## 👥 Audience
 
-- Researchers (digital rights, governance)
+- Researchers (digital rights)
 - Journalists (investigations)
 - Civil society (accountability)
 - Data engineers (real-world pipelines)
@@ -66,7 +89,9 @@ flowchart TD
         E[GCS] --> F[BigQuery Staging]
         F --> G[BigQuery Facts/Marts]
         G --> H[Streamlit Cloud Run]
-        G --> I[Bruin Cloud]
+        G --> I[Bruin Cloud Dashboard]
     end
+
+
 
     DEV --> PROD
