@@ -18,8 +18,9 @@ Kenya offers a critical case:
 
 👉 Core Question:
 ```yaml
-> How do censorship actions correlate with political unrest and conflict dynamics?
+> How political unrest correlates with digital censorship in Kenya
 ```
+
 
 
 ---
@@ -50,11 +51,12 @@ Kenya offers a critical case:
 ## 🌍
 ## Why It Matters
 
-- Governments globally expanding censorship powers  
-- Lack of **reproducible analysis pipelines**  
-- Need for **transparent, auditable data systems**  
+- Rising global censorship trends
+- Increasing digital authoritarianism
+- Lack of transparent reproducible pipelines
+- Need for auditable civil liberties monitoring systems
 
-This project provides a **reusable blueprint**.
+Kenya is used as a case study, but architecture is globally reusable
 
 ---
 
@@ -143,33 +145,45 @@ Layers
 
 📂
 ## Project Structure
+
+# Project Structure
+
+This repository follows a **modern data engineering + analytics** layout optimized for:
+
+- Bruin orchestration
+- Terraform infrastructure
+- Streamlit dashboards
+- Clear documentation and separation of concerns
+
+## 📁 Overall Directory Tree
+
+```bash
 .
-├── .vscode/
-├── Bruin/
-│   └── assets/
-├── docs/
+├── .vscode/                          # VS Code workspace settings
+├── Bruin/                            # Core data pipeline (orchestration)
+│   └── assets/                       # All Bruin assets (raw, staging, int, marts, etc.)
+├── docs/                             # Documentation & knowledge base
 │   ├── data-modelling.md
 │   ├── erd-lineage.md
 │   └── analysts-questions-playbook.md
-├── infra/
+├── infra/                            # Infrastructure as Code (Terraform)
 │   ├── modules/
-│   │   ├── bigquery/
-│   │   ├── gcs/
-│   │   └── iam/
+│   │   ├── bigquery/                 # BigQuery resources
+│   │   ├── gcs/                      # Google Cloud Storage buckets
+│   │   └── iam/                      # IAM roles & service accounts
 │   ├── main.tf
 │   ├── provider.tf
 │   ├── variables.tf
 │   └── terraform.tfvars
-├── streamlit/
-│   ├── pages/
-│   ├── utils/
-│   ├── app.py
+├── streamlit/                        # Interactive dashboards & analytics UI
+│   ├── pages/                        # Multi-page Streamlit app
+│   ├── utils/                        # Helper functions & data loaders
+│   ├── app.py                        # Main Streamlit application
 │   └── requirements.txt
-├── pipeline.yml
-├── requirements.txt
-├── README.md
-└── LICENSE
-
+├── pipeline.yml                      # Bruin pipeline configuration
+├── requirements.txt                  # Python dependencies (shared)
+├── README.md                         # Project overview & getting started
+└── LICENSE                           # License file
 ---
 
 📌 
@@ -283,3 +297,97 @@ All datasets are harmonized into a **conformed dimensional model** designed for 
 
 📖 Full schema design, joins, grain definitions, surrogate keys, and validation rules are documented in:
 👉 [`docs/data-modelling.md`](./docs/data-modelling.md)
+
+### 📈 Risk Index Formula     
+
+                            Risk Index =
+                            ( Normalized Takedown Requests
+                            × Conflict Event Intensity
+                            × Censorship Signal Weight )
+                            ÷ Time Normalization Factor
+                           
+### Interpretation:
+ High score → strong correlation between unrest & censorship
+ Used for:
+          Kenya heatmap
+          timeline spikes
+          regional comparisons
+Risk Index =
+( Normalized Takedown Requests
+× Conflict Event Intensity
+× Censorship Signal Weight )
+÷ Time Normalization Factor
+Interpretation:
+High score → strong correlation between unrest & censorship
+Used for:
+Kenya heatmap
+timeline spikes
+regional comparisons
+
+--
+
+## 📜 
+## Data Contracts 
+
+### Google Transparency Contract
+```country NOT NULL
+request_count ≥ 0
+period ∈ valid_date_range
+```
+---
+
+### ACLED Contract
+```
+event_id UNIQUE
+fatalities ≥ 0
+event_type NOT NULL
+```
+---
+
+### OONI Contract
+```
+measurement_id UNIQUE
+test_name NOT NULL
+```
+## ⚖️ 
+## Ethics and Responsible Use
+
+Only aggregated public datasets used
+No personal data processing
+No attribution of individuals
+Neutral analytical framing only
+Designed for transparency research
+
+## 🚀 
+## Setup Instructions
+
+```bash
+git clone <repo>
+cd civil-liberties-project
+
+uv venv
+source .venv/bin/activate
+
+uv pip install -e .
+```
+
+Run pipeline:
+``` bash
+bruin run pipeline.yml
+```
+Run dashboard:
+```bash
+streamlit run app.py
+```
+CI/CD
+workflow:
+  - Run tests on push.
+  - Lint + format with pre-commit.
+  - Deploy infra + dashboard on tagged release.
+
+## Contact Information
+Project Owner: Samwel Njogu
+
+## Focus: Civil liberties, conflict & censorship analysis observatory as a reproducible pipeline.
+
+## X: @sam_njogu9
