@@ -104,7 +104,24 @@ Kenya is used as a case study, but architecture is globally reusable
     •	staging 
     •	intermediate + marts 
 
-<img width="2022" height="2225" alt="mermaid-diagram_architecture" src="https://github.com/user-attachments/assets/96140493-b31c-4c04-b7e9-1e97394e05df" />
+flowchart TB
+    subgraph LocalDev["Local Development"]
+        RawSrc[Raw Data Sources\nCSV / API / JSON] --> DuckDBIng[DuckDB Raw Ingestion]
+        DuckDBIng --> Validation[Data Validation\nSchema checks / null checks / type fixes]
+        Validation --> ParquetNorm[Parquet Normalization Layer\nPartitioned files]
+        ParquetNorm --> LocalModels[Local Intermediate Models\n(light transforms only)]
+    end
+
+    subgraph GCPProd["GCP Production Layer"]
+        GCS[GCS Data Lake\nRaw + Parquet Storage] --> BQStaging[BigQuery Staging Layer]
+        BQStaging --> BQIntermediate[BigQuery Intermediate Models]
+        BQIntermediate --> BQMarts[BigQuery Marts\nAnalytics Ready Tables]
+        BQMarts --> BruinObs[Bruin Cloud Observability\nLineage + DAG Tracking]
+        BQMarts --> Streamlit[Streamlit Dashboard\nCloud Run Deployment]
+    end
+
+    LocalModels -.-> GCS
+    ParquetNorm -.-> GCS
 
 ---
 
