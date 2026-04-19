@@ -204,71 +204,60 @@ Layers
 
 ## 📐
 ## ERD & Lineage
-
 ```mermaid
 erDiagram
-    %% Raw Sources
-    google_transparency_detailed ||--o{ stg_google_transparency_detailed : "1:1"
-    google_transparency_requests ||--o{ stg_google_transparency_requests : "1:1"
-    lumen_raw ||--o{ stg_lumen_requests : "1:1"
-    ooni_raw ||--o{ stg_ooni : "1:1"
-    raw_acled_aggregated ||--o{ stg_acled_conflict_events : "1:1"
+google_transparency_detailed ||--o{ stg_google_transparency_detailed : ""
+google_transparency_requests ||--o{ stg_google_transparency_requests : ""
+lumen_raw ||--o{ stg_lumen_requests : ""
+ooni_raw ||--o{ stg_ooni : ""
+raw_acled_aggregated ||--o{ stg_acled_conflict_events : ""
 
-    %% Staging to Dimensions
-    stg_google_transparency_detailed }o--|| dim_platforms : "references"
-    stg_google_transparency_detailed }o--|| dim_reasons : "references"
-    stg_google_transparency_detailed }o--|| dim_regions : "references"
-    stg_google_transparency_detailed }o--|| dim_dates : "references"
+stg_google_transparency_detailed }o--|| dim_platforms : ""
+stg_google_transparency_detailed }o--|| dim_reasons : ""
+stg_google_transparency_detailed }o--|| dim_regions : ""
+stg_google_transparency_detailed }o--|| dim_dates : ""
 
-    stg_google_transparency_requests }o--|| dim_platforms
-    stg_google_transparency_requests }o--|| dim_reasons
-    stg_google_transparency_requests }o--|| dim_regions
-    stg_google_transparency_requests }o--|| dim_dates
+stg_google_transparency_requests }o--|| dim_platforms : ""
+stg_google_transparency_requests }o--|| dim_reasons : ""
+stg_google_transparency_requests }o--|| dim_regions : ""
+stg_google_transparency_requests }o--|| dim_dates : ""
 
-    stg_lumen_requests }o--|| dim_reasons
-    stg_lumen_requests }o--|| dim_regions
-    stg_lumen_requests }o--|| dim_dates
+stg_lumen_requests }o--|| dim_reasons : ""
+stg_lumen_requests }o--|| dim_regions : ""
+stg_lumen_requests }o--|| dim_dates : ""
 
-    stg_ooni }o--|| dim_regions
-    stg_ooni }o--|| dim_dates
-    stg_ooni }o--|| dim_asn
-    stg_ooni }o--|| dim_blocking_signals
-    stg_ooni }o--|| dim_measurement_quality
+stg_ooni }o--|| dim_regions : ""
+stg_ooni }o--|| dim_dates : ""
+stg_ooni }o--|| dim_asn : ""
+stg_ooni }o--|| dim_blocking_signals : ""
+stg_ooni }o--|| dim_measurement_quality : ""
 
-    stg_acled_conflict_events }o--|| dim_regions
-    stg_acled_conflict_events }o--|| dim_dates
-    stg_acled_conflict_events }o--|| dim_event_type
+stg_acled_conflict_events }o--|| dim_regions : ""
+stg_acled_conflict_events }o--|| dim_dates : ""
+stg_acled_conflict_events }o--|| dim_event_type : ""
 
-    %% Facts to Dimensions
-    fact_takedown_requests }o--|| dim_platforms
-    fact_takedown_requests }o--|| dim_reasons
-    fact_takedown_requests }o--|| dim_regions
-    fact_takedown_requests }o--|| dim_dates
+fact_takedown_requests }o--|| dim_platforms : ""
+fact_takedown_requests }o--|| dim_reasons : ""
+fact_takedown_requests }o--|| dim_regions : ""
+fact_takedown_requests }o--|| dim_dates : ""
 
-    fact_conflict_events }o--|| dim_event_type
-    fact_conflict_events }o--|| dim_regions
-    fact_conflict_events }o--|| dim_dates
+fact_conflict_events }o--|| dim_event_type : ""
+fact_conflict_events }o--|| dim_regions : ""
+fact_conflict_events }o--|| dim_dates : ""
 
-    fact_censorship_measurements }o--|| dim_asn
-    fact_censorship_measurements }o--|| dim_blocking_signals
-    fact_censorship_measurements }o--|| dim_measurement_quality
-    fact_censorship_measurements }o--|| dim_regions
-    fact_censorship_measurements }o--|| dim_dates
+fact_censorship_measurements }o--|| dim_asn : ""
+fact_censorship_measurements }o--|| dim_blocking_signals : ""
+fact_censorship_measurements }o--|| dim_measurement_quality : ""
+fact_censorship_measurements }o--|| dim_regions : ""
+fact_censorship_measurements }o--|| dim_dates : ""
 
-    fact_platform_blocking_summary }o--|| dim_platforms
-    fact_platform_blocking_summary }o--|| dim_regions
-    fact_platform_blocking_summary }o--|| dim_dates
+fact_platform_blocking_summary }o--|| dim_platforms : ""
+fact_platform_blocking_summary }o--|| dim_regions : ""
+fact_platform_blocking_summary }o--|| dim_dates : ""
 
-    fact_cross_source_censorship_events }o--|| dim_regions
-    fact_cross_source_censorship_events }o--|| dim_dates
-
-    %% Mart
-    civil_liberties_mart }o--|| dim_regions
-    civil_liberties_mart }o--|| dim_dates
-
-
+fact_cross_source_censorship_events }o--|| dim_regions : ""
+fact_cross_source_censorship_events }o--|| dim_dates : ""
 ```
-
 ---
 
 📂
