@@ -128,7 +128,7 @@ flowchart TB
 ## 🚧
 ## Data Pipeline (DAG)
 
-<img width="5707" height="908" alt="data_pipeline_DAG" src="https://github.com/user-attachments/assets/19ca0498-0dd2-42a0-9729-cdaecc2b54e4" />
+
 
 Defined in:
 ```yaml
@@ -155,7 +155,74 @@ Layers
 📐
 ##ERD & Lineage
 
-<img width="5797" height="2819" alt="erd_clean" src="https://github.com/user-attachments/assets/4fddc6a5-cb7d-4f8f-ba4b-f4eff0741afd" />
+erDiagram
+    %% Raw Sources
+    google_transparency_raw ||--o{ stg_google_transparency : "1:1"
+    lumen_raw ||--o{ stg_lumen : "1:1"
+    ooni_raw ||--o{ stg_ooni : "1:1"
+    acled_raw ||--o{ stg_acled : "1:1"
+
+    %% Staging to Dimensions
+    stg_google_transparency }o--|| dim_platform : "references"
+    stg_google_transparency }o--|| dim_reason : "references"
+    stg_google_transparency }o--|| dim_country : "references"
+    stg_google_transparency }o--|| dim_period : "references"
+
+    stg_lumen }o--|| dim_reason : "references"
+    stg_lumen }o--|| dim_country : "references"
+    stg_lumen }o--|| dim_period : "references"
+
+    stg_ooni }o--|| dim_country : "references"
+    stg_ooni }o--|| dim_period : "references"
+
+    stg_acled }o--|| dim_country : "references"
+    stg_acled }o--|| dim_event_type : "references"
+    stg_acled }o--|| dim_period : "references"
+
+    %% Facts to Dimensions
+    fact_takedown_requests }o--|| dim_country : "references"
+    fact_takedown_requests }o--|| dim_platform : "references"
+    fact_takedown_requests }o--|| dim_reason : "references"
+    fact_takedown_requests }o--|| dim_period : "references"
+
+    fact_lumen_requests }o--|| dim_country : "references"
+    fact_lumen_requests }o--|| dim_reason : "references"
+    fact_lumen_requests }o--|| dim_period : "references"
+
+    fact_censorship_tests }o--|| dim_country : "references"
+    fact_censorship_tests }o--|| dim_period : "references"
+
+    fact_conflict_events }o--|| dim_country : "references"
+    fact_conflict_events }o--|| dim_event_type : "references"
+    fact_conflict_events }o--|| dim_period : "references"
+
+    civil_liberties_mart }o--|| dim_country : "references"
+    civil_liberties_mart }o--|| dim_period : "references"
+
+    %% Labels
+    google_transparency_raw["Google Transparency Raw"]
+    lumen_raw["Lumen Raw"]
+    ooni_raw["OONI Raw"]
+    acled_raw["ACLED Raw"]
+
+    stg_google_transparency["Staging: Google Transparency"]
+    stg_lumen["Staging: Lumen"]
+    stg_ooni["Staging: OONI"]
+    stg_acled["Staging: ACLED"]
+
+    dim_platform["Dimension: Platform"]
+    dim_reason["Dimension: Reason"]
+    dim_country["Dimension: Country"]
+    dim_period["Dimension: Period"]
+    dim_event_type["Dimension: Event Type"]
+
+    fact_takedown_requests["Fact: Takedown Requests"]
+    fact_lumen_requests["Fact: Lumen Requests"]
+    fact_censorship_tests["Fact: Censorship Tests"]
+    fact_conflict_events["Fact: Conflict Events"]
+
+    civil_liberties_mart["Data Mart: Civil Liberties"]
+
 
 
 ---
