@@ -233,8 +233,115 @@ Why no direct joins between facts?
  - Reproducible transformations
 
 ---
+# Gold Layer, Data Contracts & Civil Liberties Risk Index
 
-## 📌 10. Summary
+
+## ➕ 10. Gold Layer Definition (Semantic Mart Layer)
+
+## 🥇 10. Gold Layer (Semantic Mart Definition)
+
+The **Gold Layer** represents the final, analytics-ready abstraction of all integrated datasets.
+
+In this project, the Gold Layer is implemented as:
+
+> `civil_liberties_mart`
+
+### 🧭 Purpose
+
+The Gold Layer acts as a **semantic bridge between raw data engineering and business analysis**, enabling:
+
+- Cross-country comparisons (Kenya vs global patterns)
+- Time-series analysis across heterogeneous datasets
+- Country-level normalization and benchmarking
+- Dashboard-ready aggregations without additional transformation logic
+
+---
+
+### 🧱 Characteristics
+
+- Fully denormalized
+- Aggregated at `(country_id, period_id)` grain
+- Derived exclusively from conformed fact tables
+- No direct dependency on raw or staging layers
+
+---
+
+### 📊 Inputs
+
+The Gold Layer is built from:
+
+- `fact_takedown_requests`
+- `fact_lumen_requests`
+- `fact_censorship_tests`
+- `fact_conflict_events`
+
+and joined via:
+
+- `dim_country`
+- `dim_period`
+
+---
+
+### 📌 Output Structure
+
+| Column                  | Meaning                                      |
+|-------------------------|----------------------------------------------|
+| country_id              | Geographical unit (ISO code)                 |
+| period_id               | Time window                                  |
+| takedown_requests       | Government censorship requests               |
+| lumen_requests          | Legal/content removal requests               |
+| censorship_tests        | Network interference signals                 |
+| conflict_events         | ACLED recorded violence                      |
+| fatalities              | Severity indicator                           |
+
+---
+
+### 🧠 Design Principle
+
+The Gold Layer is intentionally **analysis-first, not transformation-first**:
+
+> All heavy transformations are pushed upstream (DuckDB / BigQuery staging + facts)  
+> to ensure the mart remains fast, stable, and reproducible.
+
+---
+
+## ⚠️ 11. Data Contracts (Per Dataset)
+
+This is a very strong engineering signal — it shows governance thinking.
+
+### 📜 11.0 Data Contracts (Source-Level Guarantees)
+
+Each dataset is governed by a **data contract** defining structure, expectations, and validation rules.
+
+These contracts ensure reproducibility across:
+- DuckDB (dev)
+- BigQuery (prod)
+- Bruin orchestration layer
+
+---
+
+### 🌐 11.1 Google Transparency Contract
+
+**📥 Schema**
+- `request_id` (string, unique)
+- `country` (string, ISO-normalized)
+- `product` (string)
+- `reason` (string)
+- `items_requested` (integer ≥ 0)
+
+**📐 Constraints**
+- `request_id` MUST be unique
+- `items_requested` ≥ 0
+- `country` must exist in `dim_country`
+
+**🔍 Quality Checks**
+```sql
+SELECT *
+FROM stg_google_transparency
+WHERE request_id IS NULL;
+```
+
+## 📌 12. Summary
 
 This model enables:
   - Cross-domain civil liberties analysis
