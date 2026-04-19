@@ -1,89 +1,51 @@
 """
 @bruin
-tags:
-  - raw_dev
-  - dataset_lumen_requests
 name: raw.lumen_requests
 type: python
-image: python:3.12
-connection: duckdb-parquet
-
-description:
-  Deterministic mock Lumen dataset with SAFE timestamp encoding (micros INT64).
-
 materialization:
   type: table
   strategy: create+replace
 """
 
-import os
 import pandas as pd
-import random
-from datetime import datetime, timedelta
-from pathlib import Path
-
-
-def resolve_env(fallback: str = "dev") -> str:
-    for k in ("BRUIN_ENV", "BRUIN_ENVIRONMENT", "BRUIN_PIPELINE_ENVIRONMENT"):
-        v = os.getenv(k)
-        if v:
-            return v.strip().lower()
-    return fallback
-
-
-def require_dev(env: str) -> None:
-    if env != "dev":
-        raise ValueError(f"Dev-only asset. Got ENV={env}")
-
-
-ENV = resolve_env()
-require_dev(ENV)
+import numpy as np
+from datetime import datetime, timezone
 
 
 def materialize():
-    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/lumen"
-    Path(base_path).mkdir(parents=True, exist_ok=True)
-    parquet_out = Path(base_path) / "lumen_requests.parquet"
+    """
+    Generates synthetic Lumen dataset (required for pipeline stability)
+    """
 
-    senders = ["Gov Agency", "Law Firm", "Communications Authority of Kenya"]
-    recipients = ["Google", "Twitter", "Facebook", "TikTok", "YouTube"]
-    reasons = ["Copyright", "Defamation", "National Security", "Other"]
+    n = 500
 
-    rows = []
+    df = pd.DataFrame({
+        "request_id": [f"req_{i}" for i in range(n)],
+        "country": np.random.choice(["US", "GB", "DE", "FR", "IN", "KE"], n),
+        "sender": np.random.choice(["gov", "court", "private"], n),
+        "recipient": np.random.choice(["platform_a", "platform_b"], n),
 
-    start_date = datetime(2023, 6, 1)
-    end_date = datetime(2025, 6, 30)
-    total_days = (end_date - start_date).days
+        "date_submitted": pd.to_datetime(
+            np.random.randint(1600000000, 1760000000, n),
+            unit="s",
+            utc=True
+        ),
 
-    for i in range(1, 501):
-        dt = start_date + timedelta(days=random.randint(0, total_days))
+        "period": np.random.choice(["H1", "H2"], n),
+        "half_year_label": np.random.choice(["2025-H1", "2025-H2"], n),
+        "reason": np.random.choice(["privacy", "copyright", "court"], n),
 
-        # 🔥 FIX: deterministic micros epoch
-        timestamp_micros = int(dt.timestamp() * 1_000_000)
+        "request_count": np.random.randint(1, 50, n),
+        "item_count": np.random.randint(1, 100, n),
 
-        rows.append({
-            "request_id": f"LUMEN-{i:04d}",
-            "country": "KE",
-            "sender": random.choice(senders),
-            "recipient": random.choice(recipients),
+        "extracted_at": pd.Timestamp(datetime.now(timezone.utc))
+    })
 
-            # 🔥 CRITICAL FIX: store INT64 micros, not TIMESTAMP object
-            "date_submitted": timestamp_micros,
+    # -----------------------------
+    # FIX TIMESTAMP CONSISTENCY
+    # -----------------------------
 
-            "period": f"{dt.year}-{'06' if dt.month <= 6 else '12'}",
-            "half_year_label": f"{'Jan-Jun' if dt.month <= 6 else 'Jul-Dec'} {dt.year}",
-            "reason": random.choice(reasons),
+    for col in ["date_submitted", "extracted_at"]:
+        df[col] = pd.to_datetime(df[col], utc=True).dt.floor("us")
 
-            "request_count": 1,
-            "item_count": 1,
-
-            # keep audit field stable
-            "extracted_at": datetime.utcnow()
-        })
-
-    df = pd.DataFrame(rows)
-
-    df.to_parquet(parquet_out, index=False, compression="snappy")
-
-    print(f"✅ Generated {len(df)} Lumen rows (micros-safe)")
     return df
