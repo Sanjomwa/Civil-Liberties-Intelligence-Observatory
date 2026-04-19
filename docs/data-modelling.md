@@ -1,126 +1,243 @@
+# 📐 Data Modelling — Civil Liberties & Censorship Observatory
 
-This document explains how our data flows from **raw sources → staging → marts → reporting**.
+## 🧭 Overview
 
----
+This document defines the **dimensional data model** used to integrate:
+- Google Transparency Reports
+- Lumen (mock legal requests)
+- OONI network interference data
+- ACLED conflict events
 
-## 🏗️ **1. Ingestion Layer**
-We ingested or generated **four datasets**, each chosen for its relevance to civil liberties and censorship analysis:
-
-### 🔹 **Google Transparency Reports**
-- **Source**: Google’s public transparency portal  
-- **Why**: Official counts of government takedown requests by product/platform  
-- **Rationale**: Provides baseline for platform‑level censorship activity  
-- **Files**:  
-  - `raw.google_transparency_requests.py` → ingests country-level request counts  
-  - `raw.google_transparency_detailed.py` → ingests detailed platform-level request counts  
-- **Keys**: `country`, `platform`, `reason`, `period`  
-- **Quality checks**: `not_null` on country, product, reason; `non_negative` on request counts  
-
-### 🔹 **Lumen Database**
-- **Source**: Mock dataset generated locally  
-- **Why**: Complements Google data with broader legal requests  
-- **Rationale**: Needed to demonstrate harmonization of multiple request sources  
-- **Keys**: `recipient`, `reason`, `request_id`, `period`  
-- **Quality checks**: `unique` on request_id; `not_null` on recipient and reason  
-
-### 🔹 **OONI (Open Observatory of Network Interference)**
-- **Source**: OONI Probe measurements (Kenya, June 2023–June 2025)  
-- **Why**: Captures censorship anomalies at the network level  
-- **Rationale**: Provides ground‑truth evidence of censorship beyond formal requests  
-- **File**: `raw.ooni_conflict_measurements.py`  
-- **Keys**: `measurement_id`, `country`, `test_name`, `period`  
-- **Quality checks**: `not_null` on test_name and country; `unique` on measurement_id  
-
-### 🔹 **ACLED (Armed Conflict Location & Event Data)**
-- **Source**: ACLED aggregated conflict events dataset  
-- **Why**: Provides context on political violence and fatalities  
-- **Rationale**: Enables correlation between conflict intensity and censorship activity  
-- **File**: `raw.acled_conflict_events`  
-- **Keys**: `week`, `country`, `region`, `event_type`, `id`  
-- **Quality checks**: `non_negative` on fatalities/events; surrogate key added for uniqueness  
+The model is designed to support:
+- Cross-domain correlation analysis
+- Time-series alignment
+- Country-level comparisons
+- Reproducible analytics in DuckDB and BigQuery
 
 ---
 
-## 🧹 **2. Staging Layer**
-The staging layer is like a *laundry room* — we clean and prepare the data before analysis.
+## 🏗️ 1. Data Architecture Pattern
 
-### 🔹 **Google Transparency Staging**
-- **File**: `stg_google_transparency.sql`  
-- **Purpose**: Harmonizes the two ingest files  
-- **Transformations**:  
-  - Normalizes country names and product labels  
-  - Aligns request counts into a unified schema  
-  - Adds `half_year_label` for temporal analysis  
+This project follows a **Kimball-style dimensional modeling approach**:
 
-### 🔹 **Lumen Staging**
-- **File**: `stg_lumen.sql`  
-- **Purpose**: Cleans mock Lumen data  
-- **Transformations**:  
-  - Deduplicates request IDs  
-  - Normalizes recipient and reason fields  
-  - Aligns with Google schema for union  
+Raw Sources → Staging → Facts → Dimensions → Mart → Reporting Views
 
-### 🔹 **OONI Staging**
-- **File**: `stg_ooni.sql`  
-- **Purpose**: Cleans OONI measurements  
-- **Transformations**:  
-  - Extracts `period` from `start_time`  
-  - Normalizes test names  
-  - Filters to June 2023–June 2025  
 
-### 🔹 **ACLED Staging**
-- **File**: `stg_acled.sql`  
-- **Purpose**: Cleans ACLED aggregated conflict events  
-- **Transformations**:  
-  - Parses `week` strings into proper DATE  
-  - Uppercases region and country  
-  - Casts events/fatalities to integers  
-  - Adds surrogate key for uniqueness  
-  - Retains centroid lat/long for spatial analysis  
+### Key Principles:
+- Each fact table represents a **single analytical grain**
+- Dimensions are **conformed across all facts**
+- Mart layer is **denormalized for analytics**
+- No heavy computation in reporting layer
 
 ---
 
-## 📊 **3. Civil Liberties Mart**
-This is our **main analytical layer**. It combines all sources into a single schema for reporting.
+## 📊 2. Fact Tables
 
-### 🗂️ **Dimensions (Dims)**
-- **`dim_country`** → unified country codes/names  
-- **`dim_platform`** → platforms (Google, YouTube, etc.)  
-- **`dim_event_type`** → conflict event categories (protests, battles, etc.)  
-- **`dim_test_type`** → OONI test categories (web connectivity, DNS anomalies)  
+### 2.1 fact_takedown_requests
 
-### 📈 **Facts**
-- **`fact_takedown_requests`** → harmonized from Google + Lumen staging  
-- **`fact_network_anomalies`** → from OONI staging  
-- **`fact_conflict_events`** → from ACLED staging  
+**Grain:** One row per (request_id, country, platform, period)
 
-### 📝 **Reporting View: `civil_liberties_mart`**
-This is the **union‑ready view** examiners and dashboards use. It joins dims + facts into one table:
-
-| country | period | platform | reason | takedown_requests | censorship_tests | conflict_events | fatalities |
-|---------|--------|----------|--------|------------------|-----------------|----------------|------------|
-
-- **Keys**: `country`, `period`  
-- **Purpose**: Enables dashboards to compare Kenya vs Global across censorship, conflict, and fatalities  
-- **Quality checks**: Surrogate keys, non‑negative counts, consistent period alignment  
+| Column | Type | Description |
+|------|------|-------------|
+| request_id | string | Unique takedown request |
+| country_id | string | FK → dim_country |
+| platform_id | string | FK → dim_platform |
+| reason_id | string | FK → dim_reason |
+| period_id | string | FK → dim_period |
+| request_count | int | Number of requests |
+| items_requested | int | Content items affected |
 
 ---
 
-## 📈 **4. Reporting Layer**
-This is where dashboards and charts live:
+### 2.2 fact_lumen_requests
 
-- **Kenya Focus** → Profile, Platform Analysis, Reasons, Conflict vs Censorship, Fatalities, Heatmap  
-- **Global Comparison** → Leaders & Losers, Global Heatmap, Kenya vs Global Overview  
-- **Civil Liberties Mart** → feeds all dashboards with harmonized facts and dims  
+**Grain:** One row per Lumen legal request event
 
----
-
-## 📝 **5. Summary**
-- **Ingestion** → raw data from Google, Lumen, OONI, ACLED  
-- **Staging** → cleaned, standardized schemas  
-- **Mart** → dims + facts combined into `civil_liberties_mart`  
-- **Reporting** → dashboards for Kenya and global comparison  
+| Column | Type | Description |
+|------|------|-------------|
+| lumen_id | string | Unique request ID |
+| country_id | string | FK → dim_country |
+| reason_id | string | FK → dim_reason |
+| period_id | string | FK → dim_period |
 
 ---
 
+### 2.3 fact_censorship_tests (OONI)
+
+**Grain:** One row per measurement
+
+| Column | Type | Description |
+|------|------|-------------|
+| measurement_id | string | Unique probe measurement |
+| country_id | string | FK → dim_country |
+| period_id | string | FK → dim_period |
+
+---
+
+### 2.4 fact_conflict_events (ACLED)
+
+**Grain:** One row per conflict event
+
+| Column | Type | Description |
+|------|------|-------------|
+| event_id | string | Unique ACLED event |
+| country_id | string | FK → dim_country |
+| event_type_id | string | FK → dim_event_type |
+| period_id | string | FK → dim_period |
+| fatalities | int | Number of deaths |
+
+---
+
+## 🧱 3. Dimension Tables (Conformed Dimensions)
+
+### 3.1 dim_country
+- Normalized country names
+- ISO codes for consistency
+
+```text
+country_id (PK)
+country_name
+iso_code
+```
+
+---
+
+### 3.2 dim_platform
+Used for mapping digital platforms targeted by takedown requests.
+```
+platform_id (PK)
+platform_name
+```
+
+---
+
+### 3.3 dim_event_type
+Used for ACLED classification.
+```
+event_type_id (PK)
+event_type
+```
+
+---
+
+### 3.4 dim_reason
+Standardized classification of censorship or legal justification.
+```
+reason_id (PK)
+reason_name
+```
+
+---
+
+### 3.5 dim_period
+Temporal alignment layer across all datasets.
+```
+period_id (PK)
+period (YYYY-MM)
+half_year_label
+```
+
+---
+
+## 🧮 4. Mart Layer — civil_liberties_mart
+Purpose:
+A fully denormalized analytical dataset used for dashboards and reporting.
+Grain:
+One row per:
+```
+(country_id, period_id)
+```
+| Column            | Description                  |
+| ----------------- | ---------------------------- |
+| country_id        | Geography                    |
+| period_id         | Time period                  |
+| takedown_requests | Google + aggregated requests |
+| lumen_requests    | Legal requests               |
+| censorship_tests  | OONI anomalies               |
+| conflict_events   | ACLED events                 |
+| fatalities        | Conflict severity metric     |
  
+---
+
+## 🔗 5. Join Strategy
+All facts are joined through conformed dimensions:
+
+country_id → dim_country
+period_id → dim_period
+reason_id → dim_reason
+platform_id → dim_platform
+event_type_id → dim_event_type
+
+This ensures:
+  - No duplication across facts
+  - Consistent aggregation logic
+  - Cross-dataset comparability
+    
+---
+
+## 🧠 6. Data Grain Rules
+| Layer   | Grain                           |
+| ------- | ------------------------------- |
+| Raw     | Source-specific event           |
+| Staging | Cleaned record per dataset      |
+| Facts   | One event per analytical entity |
+| Mart    | One row per country-period      |
+
+---
+
+## 🧹 7. Data Quality Checks
+
+Implemented in DuckDB + Bruin:
+
+Mandatory rules:
+NOT NULL constraints on all keys
+Unique constraints on all primary IDs
+Non-negative values for:
+request_count
+fatalities
+Validation examples:
+```sql
+-- Ensure no duplicate events
+SELECT request_id, COUNT(*)
+FROM fact_takedown_requests
+GROUP BY request_id
+HAVING COUNT(*) > 1;
+```
+
+---
+
+## ⏱️ 8. Temporal Alignment Logic
+
+All datasets are normalized to:
+
+period = YYYY-MM
+Derived from raw timestamps
+Ensures alignment across:
+ACLED weekly events
+Google semiannual reports
+OONI daily measurements
+
+----
+
+## ⚠️ 9. Design Decisions
+
+Why no direct joins between facts?
+ - Prevents double counting
+ - Maintains independence of event domains
+ - Why a mart layer?
+ - Enables fast dashboard queries
+ - Removes join complexity from BI layer
+ - Why DuckDB + Parquet locally?
+ - Fast iteration
+ - Columnar performance
+ - Reproducible transformations
+
+---
+
+## 📌 10. Summary
+
+This model enables:
+  - Cross-domain civil liberties analysis
+  - Temporal correlation between censorship and conflict
+  - Scalable migration from DuckDB → BigQuery
+  - Reproducible, audit-friendly data engineering pipeline
