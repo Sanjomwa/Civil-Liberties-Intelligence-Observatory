@@ -340,6 +340,101 @@ SELECT *
 FROM stg_google_transparency
 WHERE request_id IS NULL;
 ```
+---
+
+## 11.2 ACLED Contract Schemaevent_id (string, unique)
+```country (string)
+event_type (string)
+fatalities (integer)
+```
+ Constraintsevent_id must be unique
+fatalities ≥ 0
+event_type must map to dim_event_type
+
+ ### Quality Checkssql
+```
+SELECT *
+FROM stg_acled
+WHERE fatalities < 0;
+```
+
+---
+
+## 11.3 OONI Contract Schemameasurement_id (string, unique)
+```country (string)
+test_name (string)
+anomaly_type (string)
+```
+ Constraintsmeasurement_id must be unique
+country must be ISO-normalized
+test_name must be non-null
+
+ ### Quality Checkssql
+```
+SELECT *
+FROM stg_ooni
+WHERE measurement_id IS NULL;
+```
+ Contract PhilosophyData contracts enforce:
+- Predictability across pipelines
+- Schema stability across environments
+- Early failure detection (before marts)
+- Trust in downstream analytics
+  
+---
+
+##12. Civil Liberties Risk Index Overview
+The Civil Liberties Risk Index (CLRI) quantifies the combined intensity of:
+- Government censorship activity
+- Political conflict events
+- Network interference signals
+
+It enables cross-county and temporal comparison of civil liberties pressure, with a strong Kenya-focused lens. 
+### Formula Definitiontext
+                    ```yaml 
+                    CLRI =
+                     ( normalized_takedown_requests
+                     + normalized_lumen_requests
+                     + censorship_signal_score
+                     + conflict_intensity_score ) × temporal_weight
+                     ```
+
+### ComponentsTakedown Pressure
+                     ```yaml
+                     Derived from fact_takedown_requests — normalized per country-period
+                     Legal Request Pressure
+                     Derived from Lumen dataset — represents formal legal suppression requests
+                     Network Censorship Signal
+                     Derived from OONI anomalies (DNS blocking + connectivity failures)
+                     Conflict Intensity
+                     Derived from ACLED fatalities + event counts, weighted by severity
+                     ```
+
+### Temporal WeightingTo reflect escalation periods:text
+                    ```yaml
+                    temporal_weight =
+                      1.0 (baseline)
+                      1.2 (election periods)
+                      1.5 (protest escalation windows)
+                     ```
+
+### Output UsageThe CLRI is used in:
+- county vs county comparison dashboards
+- Heatmaps of suppression intensity
+- Timeline spike detection
+- Correlation analysis between conflict and censorship
+
+**InterpretationHigh CLRI = high combined civil pressure  
+Low CLRI = stable informational environment  
+Spikes = likely political unrest or policy enforcement events**
+
+ What this upgrade achievesYou now have: Architecture maturity jump  Gold layer properly defined  
+Semantic layer cleanly separated from facts
+
+ Governance maturity  Data contracts per dataset  
+Explicit validation logic
+
+ Analytical maturity  Risk Index = real composite metric (portfolio-grade feature)
 
 ## 📌 12. Summary
 
