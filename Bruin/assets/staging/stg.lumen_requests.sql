@@ -1,11 +1,11 @@
-/* @bruin
+/*@bruin
 tags:
   - staging_bq
   - dataset_lumen_requests
 name: stg.lumen_requests
 type: bq.sql
 connection: bigquery-default
-description: Cleaned Lumen takedown requests for Kenya (Jun 2023 - Jun 2025)
+description: Cleaned Lumen takedown requests (contract-aligned staging layer)
 owner: civil-liberties-pipeline
 
 depends:
@@ -14,35 +14,33 @@ depends:
 materialization:
   type: table
   strategy: create+replace
-@bruin */
+@bruin*/
 
 WITH base AS (
+
     SELECT
         request_id,
         LOWER(country) AS country,
         sender,
         recipient,
-        SAFE_CAST(date_submitted AS INT64) AS date_submitted,
+
+        -- already TIMESTAMP(UTC) from load layer
+        date_submitted,
         period,
         half_year_label,
         reason,
         request_count,
         item_count,
         extracted_at
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.lumen_requests`
-    WHERE LOWER(country) IN ('kenya', 'ke')
-),
 
-normalized AS (
-    SELECT
-        *,
-        -- deterministic: nanoseconds → micros
-        TIMESTAMP_MICROS(DIV(date_submitted, 1000)) AS submitted_ts
-    FROM base
-    WHERE date_submitted IS NOT NULL
+    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.lumen_requests`
+
+    WHERE LOWER(country) IN ('kenya', 'ke')
+      AND date_submitted IS NOT NULL
 ),
 
 final AS (
+
     SELECT
         request_id,
         country,
@@ -56,9 +54,16 @@ final AS (
         item_count,
         extracted_at,
 
-        DATE(submitted_ts) AS measurement_date,
-        EXTRACT(YEAR FROM submitted_ts) AS year
-    FROM normalized
+        -- CONTRACT ALIGNED DERIVATIONS (SAFE ONLY)
+
+        DATE(date_submitted) AS measurement_date,
+
+        EXTRACT(YEAR FROM date_submitted) AS year,
+
+        -- optional enrichment (safe, deterministic)
+        FORMAT_DATE('%Y-%m', DATE(date_submitted)) AS year_month
+
+    FROM base
 )
 
 SELECT * FROM final;
