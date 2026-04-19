@@ -1,4 +1,4 @@
-<img width="5797" height="2819" alt="erd_clean" src="https://github.com/user-attachments/assets/bd8b2379-46e5-42d0-abf1-43000daa35f6" /># 🇰🇪 Kenya Civil Liberties & Censorship Observatory
+# 🇰🇪 Kenya Civil Liberties & Censorship Observatory
 ---
 
 ### Tracking Digital Repression & Real-World Impact (June 2023 → June 2025)  
@@ -216,6 +216,7 @@ If Lumen access remains unavailable, similar transparency datasets can be substi
 | OONI (Open Observatory of Network Interference) | [OONI Data](https://ooni.org/data/) | API / CSV download | Kenya‑specific | test_id, date, platform, shutdown_type, measurement |
 | WHO Infodemic Proxies *(Optional)* | WHO datasets / reports | Manual CSV / API | Kenya‑specific | misinfo_event_id, date, topic, severity |
 
+
 | Dataset             | Purpose              |
 | ------------------- | -------------------- |
 | Google Transparency | Government takedowns |
@@ -223,14 +224,15 @@ If Lumen access remains unavailable, similar transparency datasets can be substi
 | OONI                | Network censorship   |
 | ACLED               | Conflict events      |
 
+
 ## 📊
 ## Dataset Lineage
 <img width="3609" height="1906" alt="DATA_LINEAGE" src="https://github.com/user-attachments/assets/6da21053-173d-44e2-88bb-f80ebfd1bf46" />
 
 ---
 
-##📊 
-##Dataset Lineage with Environments
+## 📊 
+## Dataset Lineage with Environments
 
 | Dataset (Raw) | Staging Layer | Fact Layer | Reporting Layer | DEV (DuckDB) | PROD (GCP) |
 | --- | --- | --- | --- | --- | --- |
