@@ -185,8 +185,8 @@ This repository follows a **modern data engineering + analytics** layout optimiz
 ├── README.md                         # Project overview & getting started
 └── LICENSE                           # License file
 ---
-
-📌 
+```
+## 📌 
 ## Data Access
 
 ### Lumen Database Access
@@ -219,7 +219,7 @@ If Lumen access remains unavailable, similar transparency datasets can be substi
   
 ---
 
-📊
+## 📊
 ## Datasets
 
 | Dataset | Source | Access Method | Coverage Focus | Key Fields |
@@ -298,7 +298,7 @@ All datasets are harmonized into a **conformed dimensional model** designed for 
 📖 Full schema design, joins, grain definitions, surrogate keys, and validation rules are documented in:
 👉 [`docs/data-modelling.md`](./docs/data-modelling.md)
 
-### 📈 Risk Index Formula     
+📈 Risk Index Formula     
 
                             Risk Index =
                             ( Normalized Takedown Requests
@@ -306,7 +306,7 @@ All datasets are harmonized into a **conformed dimensional model** designed for 
                             × Censorship Signal Weight )
                             ÷ Time Normalization Factor
                            
-### Interpretation:
+Interpretation:
  High score → strong correlation between unrest & censorship
  Used for:
           Kenya heatmap
@@ -334,6 +334,7 @@ regional comparisons
 request_count ≥ 0
 period ∈ valid_date_range
 ```
+
 ---
 
 ### ACLED Contract
@@ -352,11 +353,11 @@ test_name NOT NULL
 ## ⚖️ 
 ## Ethics and Responsible Use
 
-Only aggregated public datasets used
-No personal data processing
-No attribution of individuals
-Neutral analytical framing only
-Designed for transparency research
+- Only aggregated public datasets used
+- No personal data processing
+- No attribution of individuals
+- Neutral analytical framing only
+- Designed for transparency research
 
 ## 🚀 
 ## Setup Instructions
@@ -379,6 +380,7 @@ Run dashboard:
 ```bash
 streamlit run app.py
 ```
+
 CI/CD
 workflow:
   - Run tests on push.
@@ -388,6 +390,6 @@ workflow:
 ## Contact Information
 Project Owner: Samwel Njogu
 
-## Focus: Civil liberties, conflict & censorship analysis observatory as a reproducible pipeline.
+ Focus: Civil liberties, conflict & censorship analysis observatory as a reproducible pipeline.
 
-## X: @sam_njogu9
+ X: @sam_njogu9
