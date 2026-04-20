@@ -27,6 +27,7 @@
 ![Datetime](https://img.shields.io/badge/Python%20StdLib-datetime-555555?style=for-the-badge)
 ---
 
+## 🎯
 ## Problem Statement
 
 Governments are increasingly intervening in digital spaces through:
@@ -42,17 +43,11 @@ While sometimes justified, these actions may intensify during political instabil
 
 Kenya provides a high-signal environment where three forces intersect:
 
-**📌 Political unrest**
+**📌 Political unrest** - Protests and conflict events (ACLED)
 
-Protests and conflict events (ACLED)
+**📌 Digital censorship pressure** - Google / Lumen takedown requests
 
-**📌 Digital censorship pressure**
-
-Google / Lumen takedown requests
-
-**📌 Network-level interference**
-
-Blocking signals and access disruptions (OONI)
+**📌 Network-level interference** - Blocking signals and access disruptions (OONI)
 
 🔍 Core Insight Question
 ```
