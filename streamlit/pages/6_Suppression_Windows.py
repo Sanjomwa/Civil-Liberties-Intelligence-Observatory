@@ -1,6 +1,7 @@
 """
 pages/6_Suppression_Windows.py
 Deep dive into full suppression windows — blocking + protests + takedowns.
+Hardened production version.
 """
 
 import streamlit as st
@@ -18,6 +19,10 @@ st.set_page_config(
     layout="wide"
 )
 
+
+# ─────────────────────────────────────────────
+# STYLES
+# ─────────────────────────────────────────────
 
 st.markdown("""
 <style>
@@ -60,7 +65,7 @@ st.caption("Days where blocking, protests, and takedowns overlap.")
 
 
 # ─────────────────────────────────────────────
-# DATA
+# SAFE SQL (FIXED BIGQUERY COMPATIBILITY)
 # ─────────────────────────────────────────────
 
 @st.cache_data(ttl=3600)
@@ -81,8 +86,8 @@ def load_windows():
             MAX(fatalities_on_day) AS fatalities,
             MAX(total_takedown_requests) AS takedowns,
 
-            STRING_AGG(DISTINCT test_category, ', ') AS categories_blocked,
-            STRING_AGG(DISTINCT platform, ', ') AS platforms_blocked,
+            STRING_AGG(DISTINCT test_category, ', ' LIMIT 5) AS categories_blocked,
+            STRING_AGG(DISTINCT platform, ', ' LIMIT 5) AS platforms_blocked,
 
             MAX(counties_affected) AS counties_affected
 
@@ -119,6 +124,10 @@ def load_window_heatmap():
     """)
 
 
+# ─────────────────────────────────────────────
+# LOAD
+# ─────────────────────────────────────────────
+
 with st.spinner("Loading suppression window data…"):
     windows_df = load_windows()
     dist_df = load_intensity_distribution()
@@ -126,23 +135,17 @@ with st.spinner("Loading suppression window data…"):
 
 
 # ─────────────────────────────────────────────
-# SAFETY NORMALIZATION
+# SAFE NORMALIZATION
 # ─────────────────────────────────────────────
 
-if not windows_df.empty:
-    windows_df["measurement_date"] = pd.to_datetime(
-        windows_df["measurement_date"], errors="coerce"
-    )
+if windows_df is None or windows_df.empty:
+    st.warning("No suppression window data available.")
+    st.stop()
 
-    windows_df["max_intensity"] = pd.to_numeric(
-        windows_df["max_intensity"], errors="coerce"
-    )
+windows_df["measurement_date"] = pd.to_datetime(windows_df["measurement_date"], errors="coerce")
 
-
-def safe(val, fmt=None):
-    if val is None or pd.isna(val):
-        return "—"
-    return fmt.format(val) if fmt else val
+for col in ["max_intensity", "protests", "fatalities", "takedowns"]:
+    windows_df[col] = pd.to_numeric(windows_df[col], errors="coerce").fillna(0)
 
 
 # ─────────────────────────────────────────────
@@ -168,33 +171,29 @@ c1, c2, c3, c4 = st.columns(4)
 
 c1.metric("Full Suppression Window days", len(full_suppress))
 c2.metric("Blocking + Protest days", len(block_protest))
-
 c3.metric(
     "Peak intensity score",
-    safe(windows_df["max_intensity"].max(), "{:.2f}")
+    f"{windows_df['max_intensity'].max():.2f}"
 )
-
 c4.metric(
     "Avg intensity — full windows",
-    safe(full_mean, "{:.2f}")
+    f"{full_mean:.2f}" if pd.notna(full_mean) else "—"
 )
 
 st.divider()
 
 
 # ─────────────────────────────────────────────
-# HEATMAP
+# HEATMAP (SAFE ORDERING)
 # ─────────────────────────────────────────────
 
 st.markdown("#### Suppression Window Type × Month")
 
-pivot = heat_df.pivot_table(
+pivot = heat_df.pivot(
     index="suppression_window_type",
     columns="year_month",
-    values="days",
-    aggfunc="sum",
-    fill_value=0
-)
+    values="days"
+).fillna(0)
 
 order = [
     "Full Suppression Window",
@@ -213,7 +212,6 @@ fig = go.Figure(go.Heatmap(
     colorscale=[[0, "#16161A"], [0.5, "#993C1D"], [1, "#E8593C"]],
     text=[[str(int(v)) if v > 0 else "" for v in row] for row in pivot.values],
     texttemplate="%{text}",
-    showscale=True,
 ))
 
 fig.update_layout(
@@ -225,6 +223,7 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
+
 
 st.divider()
 
@@ -282,36 +281,32 @@ st.divider()
 
 
 # ─────────────────────────────────────────────
-# FULL WINDOWS
+# CARDS
 # ─────────────────────────────────────────────
 
 st.markdown("#### Full Suppression Windows")
 
 if full_suppress.empty:
     st.info("No full suppression windows detected.")
-
 else:
     for _, row in full_suppress.head(20).iterrows():
-
-        platforms = html.escape(str(row.platforms_blocked or "—"))
-        categories = html.escape(str(row.categories_blocked or "—"))
 
         st.markdown(f"""
         <div class="window-card">
             <div class="window-date">
-                📅 {row.measurement_date} · Intensity {safe(row.max_intensity, "{:.2f}")}
+                📅 {row.measurement_date.date()} · Intensity {row.max_intensity:.2f}
             </div>
 
             <div style="margin-top:0.4rem;color:#E8E6DF;">
-                🔴 {safe(row.protests)} protests |
-                💀 {safe(row.fatalities)} fatalities |
-                📋 {safe(row.takedowns)} takedowns
+                🔴 {int(row.protests)} protests |
+                💀 {int(row.fatalities)} fatalities |
+                📋 {int(row.takedowns)} takedowns
             </div>
 
             <div class="window-context">
-                Context: {html.escape(str(row.political_context_flag))} · {html.escape(str(row.protest_season_flag))}<br>
-                Platforms: {platforms}<br>
-                Categories: {categories}
+                Context: {row.political_context_flag} · {row.protest_season_flag}<br>
+                Platforms: {html.escape(str(row.platforms_blocked or "—"))}<br>
+                Categories: {html.escape(str(row.categories_blocked or "—"))}
             </div>
         </div>
         """, unsafe_allow_html=True)
