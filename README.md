@@ -1,8 +1,8 @@
-# 🇰🇪 Kenya Civil Liberties & Censorship Observatory
+# Kenya Civil Liberties & Censorship Observatory
 ---
 
-### Tracking Digital Repression & Real-World Impact (June 2023 → June 2025)  
-**Powered by Bruin | DuckDB | BigQuery | Streamlit**
+### Tracking Digital Repression & its Real-World Impact (June 2023 → June 2025)  
+**Powered by Bruin | DuckDB | BigQuery | Streamlit | 🇰🇪**
 ---
 
 
