@@ -1,14 +1,9 @@
-"""
-pages/6_Suppression_Windows.py
-Deep dive into full suppression windows — blocking + protests + takedowns.
-Hardened production version.
-"""
+# pages/6_Suppression_Windows.py
 
 import streamlit as st
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import pandas as pd
-import html
 
 from utils.bq_client import run_query, table, PALETTE, SUPPRESSION_COLORS
 
@@ -19,322 +14,183 @@ st.set_page_config(
     layout="wide"
 )
 
-
-# ─────────────────────────────────────────────
-# STYLES
-# ─────────────────────────────────────────────
-
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
-
-html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif;
-}
-
-h1,h2,h3 {
-    font-family: 'Space Mono', monospace;
-}
-
-.window-card {
-    background: rgba(232,89,60,0.07);
-    border: 1px solid rgba(232,89,60,0.25);
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    margin-bottom: 0.6rem;
-}
-
-.window-date {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.75rem;
-    color: #E8593C;
-    letter-spacing: 0.1em;
-}
-
-.window-context {
-    font-size: 0.8rem;
-    color: #6B6966;
-    margin-top: 0.2rem;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-st.markdown("## 🚨 Suppression Windows")
-st.caption("Days where blocking, protests, and takedowns overlap.")
+st.title("🚨 Suppression Windows")
+st.caption("System-generated regimes of censorship + conflict + legal pressure")
 
 
 # ─────────────────────────────────────────────
-# SAFE SQL (FIXED BIGQUERY COMPATIBILITY)
+# DATA LOAD (STRICT MART ONLY)
 # ─────────────────────────────────────────────
 
 @st.cache_data(ttl=3600)
-def load_windows():
+def load_data(start_date=None, end_date=None):
     return run_query(f"""
         SELECT
-            DATE(measurement_date) AS measurement_date,
-            political_context_flag,
-            protest_season_flag,
-            suppression_window_type,
-
-            COUNT(*) AS measurements,
-            COUNTIF(is_blocked) AS blocked,
-            COUNTIF(is_confirmed_block) AS confirmed_blocked,
-
-            MAX(censorship_intensity_score) AS max_intensity,
-            MAX(protest_events_on_day) AS protests,
-            MAX(fatalities_on_day) AS fatalities,
-            MAX(total_takedown_requests) AS takedowns,
-
-            STRING_AGG(DISTINCT test_category, ', ' LIMIT 5) AS categories_blocked,
-            STRING_AGG(DISTINCT platform, ', ' LIMIT 5) AS platforms_blocked,
-
-            MAX(counties_affected) AS counties_affected
-
+            measurement_date,
+            suppression_window,
+            block_rate,
+            blocked_tests,
+            conflict_events,
+            fatalities,
+            takedown_requests,
+            items_removed,
+            google_requests,
+            civil_liberties_pressure_index
         FROM {table('civil_liberties_mart')}
-        GROUP BY 1,2,3,4
-        ORDER BY max_intensity DESC
+        WHERE 1=1
+        ORDER BY measurement_date
     """)
 
+df = load_data()
 
-@st.cache_data(ttl=3600)
-def load_intensity_distribution():
-    return run_query(f"""
-        SELECT
-            suppression_window_type,
-            ROUND(censorship_intensity_score, 1) AS intensity_bucket,
-            COUNT(*) AS count
-        FROM {table('civil_liberties_mart')}
-        GROUP BY 1,2
-        ORDER BY 1,2
-    """)
-
-
-@st.cache_data(ttl=3600)
-def load_window_heatmap():
-    return run_query(f"""
-        SELECT
-            year_month,
-            suppression_window_type,
-            COUNT(DISTINCT measurement_date) AS days,
-            ROUND(AVG(censorship_intensity_score), 2) AS avg_intensity
-        FROM {table('civil_liberties_mart')}
-        GROUP BY 1,2
-        ORDER BY 1
-    """)
-
-
-# ─────────────────────────────────────────────
-# LOAD
-# ─────────────────────────────────────────────
-
-with st.spinner("Loading suppression window data…"):
-    windows_df = load_windows()
-    dist_df = load_intensity_distribution()
-    heat_df = load_window_heatmap()
-
-
-# ─────────────────────────────────────────────
-# SAFE NORMALIZATION
-# ─────────────────────────────────────────────
-
-if windows_df is None or windows_df.empty:
-    st.warning("No suppression window data available.")
+if df.empty:
+    st.warning("No suppression data available.")
     st.stop()
 
-windows_df["measurement_date"] = pd.to_datetime(windows_df["measurement_date"], errors="coerce")
 
-for col in ["max_intensity", "protests", "fatalities", "takedowns"]:
-    windows_df[col] = pd.to_numeric(windows_df[col], errors="coerce").fillna(0)
+df["measurement_date"] = pd.to_datetime(df["measurement_date"])
 
 
 # ─────────────────────────────────────────────
-# FILTERS
+# KPIs
 # ─────────────────────────────────────────────
 
-full_suppress = windows_df[
-    windows_df["suppression_window_type"] == "Full Suppression Window"
-]
-
-block_protest = windows_df[
-    windows_df["suppression_window_type"] == "Blocking + Protest Day"
-]
-
-
-# ─────────────────────────────────────────────
-# KPI
-# ─────────────────────────────────────────────
-
-full_mean = full_suppress["max_intensity"].mean() if not full_suppress.empty else None
+full_windows = df[df["suppression_window"] == "FINANCE_BILL_CRISIS"]
+active_suppression = df[df["suppression_window"] == "ACTIVE_SUPPRESSION"]
 
 c1, c2, c3, c4 = st.columns(4)
 
-c1.metric("Full Suppression Window days", len(full_suppress))
-c2.metric("Blocking + Protest days", len(block_protest))
-c3.metric(
-    "Peak intensity score",
-    f"{windows_df['max_intensity'].max():.2f}"
-)
-c4.metric(
-    "Avg intensity — full windows",
-    f"{full_mean:.2f}" if pd.notna(full_mean) else "—"
-)
+c1.metric("Finance Crisis Days", len(full_windows))
+c2.metric("Active Suppression Days", len(active_suppression))
+c3.metric("Peak Pressure Index", f"{df['civil_liberties_pressure_index'].max():.2f}")
+c4.metric("Avg Block Rate", f"{df['block_rate'].mean()*100:.2f}%")
 
 st.divider()
 
 
 # ─────────────────────────────────────────────
-# HEATMAP (SAFE ORDERING)
+# WINDOW DISTRIBUTION
 # ─────────────────────────────────────────────
 
-st.markdown("#### Suppression Window Type × Month")
+window_counts = (
+    df.groupby("suppression_window", as_index=False)
+    .size()
+    .sort_values("size", ascending=True)
+)
 
-pivot = heat_df.pivot(
-    index="suppression_window_type",
-    columns="year_month",
-    values="days"
-).fillna(0)
-
-order = [
-    "Full Suppression Window",
-    "Blocking + Protest Day",
-    "Blocking + Removal Activity",
-    "Blocking Only",
-    "No Suppression Signal",
-]
-
-pivot = pivot.reindex([x for x in order if x in pivot.index])
-
-fig = go.Figure(go.Heatmap(
-    z=pivot.values,
-    x=pivot.columns.astype(str),
-    y=pivot.index.astype(str),
-    colorscale=[[0, "#16161A"], [0.5, "#993C1D"], [1, "#E8593C"]],
-    text=[[str(int(v)) if v > 0 else "" for v in row] for row in pivot.values],
-    texttemplate="%{text}",
-))
+fig = px.bar(
+    window_counts,
+    x="size",
+    y="suppression_window",
+    orientation="h",
+    title="Suppression Window Frequency"
+)
 
 fig.update_layout(
     plot_bgcolor="#0D0D0F",
     paper_bgcolor="#0D0D0F",
     font_color="#E8E6DF",
-    height=300,
-    margin=dict(l=220, r=20, t=20, b=80),
+    showlegend=False
 )
 
 st.plotly_chart(fig, use_container_width=True)
 
+st.divider()
+
+
+# ─────────────────────────────────────────────
+# INTENSITY OVER TIME (FIXED METRIC)
+# ─────────────────────────────────────────────
+
+daily = df.groupby("measurement_date", as_index=False).agg({
+    "civil_liberties_pressure_index": "max",
+    "block_rate": "mean",
+    "conflict_events": "sum",
+    "takedown_requests": "sum"
+})
+
+fig2 = go.Figure()
+
+fig2.add_trace(go.Scatter(
+    x=daily["measurement_date"],
+    y=daily["civil_liberties_pressure_index"],
+    fill="tozeroy",
+    name="Pressure Index",
+    line=dict(color=PALETTE["coral"])
+))
+
+fig2.add_trace(go.Scatter(
+    x=daily["measurement_date"],
+    y=daily["block_rate"] * 100,
+    name="Block Rate %",
+    yaxis="y2",
+    line=dict(color=PALETTE["amber"])
+))
+
+fig2.update_layout(
+    title="Suppression Pressure Over Time",
+    plot_bgcolor="#0D0D0F",
+    paper_bgcolor="#0D0D0F",
+    font_color="#E8E6DF",
+    yaxis=dict(title="Pressure Index"),
+    yaxis2=dict(overlaying="y", side="right", title="Block Rate %"),
+    legend=dict(orientation="h")
+)
+
+st.plotly_chart(fig2, use_container_width=True)
 
 st.divider()
 
 
 # ─────────────────────────────────────────────
-# INTENSITY
+# REGIME BREAKDOWN
 # ─────────────────────────────────────────────
 
-c1, c2 = st.columns(2)
+regime = df.groupby("suppression_window", as_index=False).agg({
+    "civil_liberties_pressure_index": "mean",
+    "block_rate": "mean",
+    "conflict_events": "mean",
+    "takedown_requests": "sum"
+})
 
-with c1:
-    st.markdown("#### Intensity Distribution")
+fig3 = px.bar(
+    regime.sort_values("civil_liberties_pressure_index"),
+    x="civil_liberties_pressure_index",
+    y="suppression_window",
+    orientation="h",
+    color="civil_liberties_pressure_index",
+    color_continuous_scale="Reds"
+)
 
-    fig_dist = px.box(
-        windows_df,
-        x="suppression_window_type",
-        y="max_intensity",
-        color="suppression_window_type",
-        color_discrete_map=SUPPRESSION_COLORS
-    )
+fig3.update_layout(
+    plot_bgcolor="#0D0D0F",
+    paper_bgcolor="#0D0D0F",
+    font_color="#E8E6DF",
+    showlegend=False
+)
 
-    fig_dist.update_layout(
-        showlegend=False,
-        plot_bgcolor="#0D0D0F",
-        paper_bgcolor="#0D0D0F",
-        font_color="#E8E6DF",
-    )
-
-    st.plotly_chart(fig_dist, use_container_width=True)
-
-
-with c2:
-    st.markdown("#### Intensity Timeline")
-
-    daily = windows_df.groupby("measurement_date")["max_intensity"].max().reset_index()
-
-    fig_line = go.Figure(go.Scatter(
-        x=daily["measurement_date"],
-        y=daily["max_intensity"],
-        fill="tozeroy",
-        line=dict(color=PALETTE["coral"])
-    ))
-
-    fig_line.update_layout(
-        plot_bgcolor="#0D0D0F",
-        paper_bgcolor="#0D0D0F",
-        font_color="#E8E6DF",
-        height=340,
-    )
-
-    st.plotly_chart(fig_line, use_container_width=True)
-
-
-st.divider()
-
-
-# ─────────────────────────────────────────────
-# CARDS
-# ─────────────────────────────────────────────
-
-st.markdown("#### Full Suppression Windows")
-
-if full_suppress.empty:
-    st.info("No full suppression windows detected.")
-else:
-    for _, row in full_suppress.head(20).iterrows():
-
-        st.markdown(f"""
-        <div class="window-card">
-            <div class="window-date">
-                📅 {row.measurement_date.date()} · Intensity {row.max_intensity:.2f}
-            </div>
-
-            <div style="margin-top:0.4rem;color:#E8E6DF;">
-                🔴 {int(row.protests)} protests |
-                💀 {int(row.fatalities)} fatalities |
-                📋 {int(row.takedowns)} takedowns
-            </div>
-
-            <div class="window-context">
-                Context: {row.political_context_flag} · {row.protest_season_flag}<br>
-                Platforms: {html.escape(str(row.platforms_blocked or "—"))}<br>
-                Categories: {html.escape(str(row.categories_blocked or "—"))}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+st.plotly_chart(fig3, use_container_width=True)
 
 
 st.divider()
 
 
 # ─────────────────────────────────────────────
-# TABLE
+# FULL TABLE VIEW
 # ─────────────────────────────────────────────
 
-st.markdown("#### All Suppression Events")
+st.subheader("📊 Suppression Window Dataset")
 
 st.dataframe(
-    windows_df[
-        [
-            "measurement_date",
-            "suppression_window_type",
-            "max_intensity",
-            "blocked",
-            "protests",
-            "fatalities",
-            "takedowns",
-            "political_context_flag",
-            "categories_blocked"
-        ]
-    ],
+    df[[
+        "measurement_date",
+        "suppression_window",
+        "block_rate",
+        "conflict_events",
+        "fatalities",
+        "takedown_requests",
+        "civil_liberties_pressure_index"
+    ]],
     use_container_width=True,
     hide_index=True
 )
