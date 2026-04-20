@@ -39,7 +39,7 @@ Governments are increasingly intervening in digital spaces through:
 While sometimes justified, these actions may intensify during political instability — raising concerns about civil liberties erosion in moments of crisis.
 
 ### Why Kenya?
-**🇰🇪**
+**🇰🇪 Kenya as a Pilot Case**
 
 Kenya provides a high-signal environment where three forces intersect:
 
@@ -66,10 +66,31 @@ A one-of-its-kind observatory that connects:
 
 **street-level political instability → digital information control**
 
+
+## 🌍
+## Why It Matters (Beyond Kenya) 
+
+While Kenya provides a high-signal case study, this system is designed to be:
+
+  🌐 Globally applicable across countries with OONI, ACLED, and transparency data
+  🔁 Fully reproducible using standardized open datasets
+  📊 Comparable across regions and time periods
+  🧩 A foundation for a scalable global civil liberties measurement framework
+
+---
+
+## 👥 
+## Audience
+
+- Researchers (digital rights)
+- Journalists (investigations)
+- Civil society (accountability)
+- Data engineers (real-world pipelines)
+
+---
+
 ## Table of Contents
 
-- [Why It Matters](#why-it-matters)
-- [Audience](#audience)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
 - [Data Pipeline](#data-pipeline)
@@ -87,28 +108,7 @@ A one-of-its-kind observatory that connects:
 - [Contact](#contact)
 ---
 
-## 🌍
 
-## Why It Matters
-
-- Rising global censorship trends
-- Increasing digital authoritarianism
-- Lack of transparent reproducible pipelines
-- Need for auditable civil liberties monitoring systems
-
-Kenya is used as a case study, but architecture is globally reusable
-
----
-
-## 👥 
-## Audience
-
-- Researchers (digital rights)
-- Journalists (investigations)
-- Civil society (accountability)
-- Data engineers (real-world pipelines)
-
----
 
 ## ⚙️ 
 ## Tech Stack 
