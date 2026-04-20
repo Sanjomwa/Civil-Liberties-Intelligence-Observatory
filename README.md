@@ -714,6 +714,10 @@ resource "google_bigquery_dataset" "civil_liberties" {
     project     = "civil-liberties"
   }
 }
+
+<img width="952" height="475" alt="big-query" src="https://github.com/user-attachments/assets/bdfb26b7-a68e-4b98-af6d-5cb16c2c728c" />
+
+
 ```
 **infra/modules/bigquery/variables.tf**
 ```hcl
@@ -741,6 +745,9 @@ resource "google_storage_bucket" "data_lake" {
     }
   }
 }
+
+<img width="950" height="482" alt="gcs" src="https://github.com/user-attachments/assets/e1e9c557-f5e0-4e0a-95d2-6883ed6fcf25" />
+
 ```
 **infra/modules/gcs/variables.tf**
 ```hcl
