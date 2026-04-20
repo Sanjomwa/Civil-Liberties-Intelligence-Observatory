@@ -1,172 +1,144 @@
-/* @bruin
 name: reporting.civil_liberties_mart
-type: bq.sql
-connection: bigquery-default
-materialization:
-  type: table
-  strategy: create+replace
-@bruin */
+type: sql
+materialization: table
 
--- =========================
--- OONI (clean grain already OK)
--- =========================
-WITH ooni AS (
+description: >
+  Country × ASN civil liberties analytical spine combining OONI censorship,
+  ACLED conflict, and platform/Google takedown pressure signals.
+
+dependencies:
+  - marts.fact_ooni_censorship_signals
+  - marts.fact_network_blocking_daily
+  - marts.fact_conflict_events
+  - marts.fact_country_pressure_daily
+
+query: |
+  CREATE OR REPLACE TABLE reporting.civil_liberties_mart AS
+  WITH
+
+  ooni AS (
     SELECT
-        measurement_date,
-        LOWER(country) AS country,
-        asn,
-
-        SUM(ooni_tests) AS ooni_tests,
-        SUM(blocked_tests) AS blocked_tests,
-        SAFE_DIVIDE(SUM(blocked_tests), SUM(ooni_tests)) AS block_rate,
-        SUM(network_block_signals) AS network_block_signals
-
-    FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
+      DATE(measurement_id) AS measurement_date,
+      LOWER(country) AS country,
+      asn,
+      COUNT(1) AS ooni_tests,
+      SUM(CASE WHEN is_blocked THEN 1 ELSE 0 END) AS blocked_tests,
+      SAFE_DIVIDE(
+        SUM(CASE WHEN is_blocked THEN 1 ELSE 0 END),
+        COUNT(1)
+      ) AS block_rate,
+      SUM(blocking_confidence) AS network_block_signals
+    FROM marts.fact_ooni_censorship_signals
     GROUP BY 1,2,3
-),
+  ),
 
--- =========================
--- ACLED (FIXED DATE FIELD)
--- =========================
-acled AS (
+  network AS (
     SELECT
-        DATE(event_date) AS measurement_date,
-        LOWER(country) AS country,
-
-        SUM(event_count) AS conflict_events,
-        SUM(fatalities) AS fatalities
-
-    FROM `encoded-joy-485413-k5.marts.fact_conflict_events`
+      DATE(measurement_date) AS measurement_date,
+      asn,
+      SUM(ooni_tests) AS net_tests,
+      SUM(blocked_tests) AS net_blocked,
+      AVG(block_rate) AS net_block_rate
+    FROM marts.fact_network_blocking_daily
     GROUP BY 1,2
-),
+  ),
 
--- =========================
--- TAKEDOWNS (NORMALIZED DATE)
--- =========================
-takedowns AS (
+  conflict AS (
     SELECT
-        DATE(measurement_date) AS measurement_date,
-        LOWER(country) AS country,
-
-        SUM(total_requests) AS takedown_requests,
-        SUM(total_items_targeted) AS items_removed
-
-    FROM `encoded-joy-485413-k5.marts.fact_takedown_trends`
+      DATE(event_date) AS measurement_date,
+      LOWER(country) AS country,
+      SUM(event_count) AS conflict_events,
+      SUM(fatalities) AS fatalities
+    FROM marts.fact_conflict_events
     GROUP BY 1,2
-),
+  ),
 
--- =========================
--- COUNTRY PRESSURE (GOOGLE + LUMEN)
--- =========================
-pressure AS (
+  country_pressure AS (
     SELECT
-        DATE(measurement_date) AS measurement_date,
-        LOWER(country) AS country,
-
-        SUM(google_requests) AS google_requests
-
-    FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
+      DATE(measurement_date) AS measurement_date,
+      LOWER(country) AS country,
+      SUM(takedown_requests) AS takedown_requests,
+      SUM(takedown_items) AS items_removed,
+      SUM(google_requests) AS google_requests
+    FROM marts.fact_country_pressure_daily
     GROUP BY 1,2
-),
+  ),
 
--- =========================
--- MASTER SPINE (SAFE FULL JOIN)
--- =========================
-base AS (
+  spine AS (
     SELECT
-        COALESCE(o.measurement_date, a.measurement_date, t.measurement_date, p.measurement_date) AS measurement_date,
-        COALESCE(o.country, a.country, t.country, p.country) AS country,
-        o.asn,
-
-        -- OONI
-        COALESCE(o.ooni_tests,0) AS ooni_tests,
-        COALESCE(o.blocked_tests,0) AS blocked_tests,
-        COALESCE(o.block_rate,0) AS block_rate,
-        COALESCE(o.network_block_signals,0) AS network_block_signals,
-
-        -- ACLED
-        COALESCE(a.conflict_events,0) AS conflict_events,
-        COALESCE(a.fatalities,0) AS fatalities,
-
-        -- TAKEDOWNS
-        COALESCE(t.takedown_requests,0) AS takedown_requests,
-        COALESCE(t.items_removed,0) AS items_removed,
-
-        -- GOOGLE PRESSURE
-        COALESCE(p.google_requests,0) AS google_requests
-
+      o.measurement_date,
+      o.country,
+      o.asn,
+      o.ooni_tests,
+      o.blocked_tests,
+      o.block_rate,
+      o.network_block_signals,
+      n.net_tests,
+      n.net_blocked,
+      n.net_block_rate
     FROM ooni o
-    FULL OUTER JOIN acled a
-        ON o.measurement_date = a.measurement_date
-       AND o.country = a.country
+    LEFT JOIN network n
+      ON o.measurement_date = n.measurement_date
+     AND o.asn = n.asn
+  ),
 
-    FULL OUTER JOIN takedowns t
-        ON COALESCE(o.measurement_date, a.measurement_date) = t.measurement_date
-       AND COALESCE(o.country, a.country) = t.country
-
-    FULL OUTER JOIN pressure p
-        ON COALESCE(o.measurement_date, a.measurement_date, t.measurement_date) = p.measurement_date
-       AND COALESCE(o.country, a.country, t.country) = p.country
-),
-
--- =========================
--- FEATURES
--- =========================
-features AS (
+  enriched AS (
     SELECT
-        *,
+      s.*,
+      c.conflict_events,
+      c.fatalities,
+      cp.takedown_requests,
+      cp.items_removed,
+      cp.google_requests
+    FROM spine s
+    LEFT JOIN conflict c
+      ON s.measurement_date = c.measurement_date
+     AND s.country = c.country
+    LEFT JOIN country_pressure cp
+      ON s.measurement_date = cp.measurement_date
+     AND s.country = cp.country
+  ),
 
-        blocked_tests > 0 AS has_blocking,
-        conflict_events > 0 AS has_conflict,
-
-        (blocked_tests > 0 AND conflict_events > 0) AS conflict_block_overlap,
-
-        (
-            0.5 * SAFE_DIVIDE(blocked_tests, NULLIF(ooni_tests,0))
-          + 0.3 * LEAST(conflict_events / 10.0, 1.0)
-          + 0.2 * LEAST((takedown_requests + google_requests) / 100.0, 1.0)
-        ) AS civil_liberties_pressure_index
-
-    FROM base
-),
-
--- =========================
--- WINDOWS
--- =========================
-windows AS (
+  norm AS (
     SELECT
-        *,
+      *,
+      MAX(conflict_events) OVER () AS max_conflict,
+      MAX(takedown_requests) OVER () AS max_takedowns
+    FROM enriched
+  )
 
-        CASE
-            WHEN measurement_date BETWEEN DATE '2024-06-15' AND DATE '2024-07-15'
-                THEN 'FINANCE_BILL_CRISIS'
+  SELECT
+    measurement_date,
+    country,
+    asn,
 
-            WHEN conflict_events > 0 AND blocked_tests > 0
-                THEN 'ACTIVE_SUPPRESSION'
+    ooni_tests,
+    blocked_tests,
+    block_rate,
+    network_block_signals,
 
-            WHEN block_rate > 0.5
-                THEN 'HIGH_NETWORK_BLOCKING'
+    conflict_events,
+    fatalities,
 
-            WHEN takedown_requests > 0 OR google_requests > 0
-                THEN 'LEGAL_OR_PLATFORM_PRESSURE'
+    takedown_requests,
+    items_removed,
+    google_requests,
 
-            ELSE 'BASELINE'
-        END AS suppression_window
+    CASE WHEN block_rate > 0 THEN TRUE ELSE FALSE END AS has_blocking,
+    CASE WHEN conflict_events > 0 THEN TRUE ELSE FALSE END AS has_conflict,
 
-    FROM features
-)
+    CASE
+      WHEN block_rate > 0 AND conflict_events > 0 THEN TRUE
+      ELSE FALSE
+    END AS conflict_block_overlap,
 
-SELECT
-    w.*,
+    SAFE_DIVIDE(conflict_events, NULLIF(max_conflict, 0)) AS conflict_events_normalized,
+    SAFE_DIVIDE(takedown_requests, NULLIF(max_takedowns, 0)) AS takedown_pressure_normalized,
 
-    d.year,
-    d.month,
-    d.year_month,
-    d.day_name,
-    d.is_weekend,
-    d.political_context_flag
+    (
+      0.5 * block_rate +
+      0.3 * SAFE_DIVIDE(conflict_events, NULLIF(max_conflict, 0)) +
+      0.2 * SAFE_DIVIDE(takedown_requests, NULLIF(max_takedowns, 0))
+    ) AS civil_liberties_pressure_index
 
-FROM windows w
-
-LEFT JOIN `encoded-joy-485413-k5.marts.dim_dates` d
-    ON w.measurement_date = d.date_key;
+  FROM norm;
