@@ -5,8 +5,17 @@ tags:
 name: load.lumen_requests_to_gcs
 type: python
 image: python:3.12
+connection: duckdb-parquet
+description: |
+  Uploads canonical Lumen requests parquet to env-isolated GCS path and
+  refreshes BigQuery external table in staging/prod.
+
 depends:
   - raw.lumen_requests
+
+materialization:
+  type: table
+  strategy: create+replace
 @bruin"""
 
 import os
@@ -14,11 +23,30 @@ import pandas as pd
 from google.cloud import bigquery
 
 
+def resolve_env(fallback: str = "staging") -> str:
+    for k in ("BRUIN_ENV", "BRUIN_ENVIRONMENT", "BRUIN_PIPELINE_ENVIRONMENT"):
+        v = os.getenv(k)
+        if v and v.strip():
+            return v.strip().lower()
+    return fallback
+
+
+def require_cloud_env(env: str) -> None:
+    if env not in ("staging", "prod"):
+        raise ValueError(
+            f"This load asset supports only staging/prod. Got ENV={env!r}.")
+
+
 PROJECT_ID = "encoded-joy-485413-k5"
 GCS_BUCKET = "civil-liberties-data"
-
-LOCAL_FILE = "/workspaces/.../lumen_requests.parquet"
+LOCAL_FILE = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/lumen/lumen_requests.parquet"
 TABLE = "lumen_requests"
+
+ENV = resolve_env(fallback="staging")
+require_cloud_env(ENV)
+
+DATASET = "civil_liberties_prod" if ENV == "prod" else "civil_liberties_staging"
+GCS_OBJECT = f"{ENV}/lumen/lumen_requests.parquet"
 
 
 def validate(df: pd.DataFrame):
@@ -39,44 +67,67 @@ def validate(df: pd.DataFrame):
             raise TypeError(f"{col} not UTC")
 
         if df[col].min().year < 2000:
-            raise ValueError("Epoch corruption detected")
+            raise ValueError("Epoch corruption detected in SOURCE data")
 
     print("✅ Schema valid")
 
 
 def materialize():
+    print(f"🌍 Environment : {ENV}")
+    print(f"📦 BQ Dataset  : {DATASET}")
+
     df = pd.read_parquet(LOCAL_FILE)
+    print(f"📖 Rows read   : {len(df):,}")
 
     validate(df)
 
-    gcs_uri = f"gs://{GCS_BUCKET}/staging/lumen/lumen_requests.parquet"
-    df.to_parquet(gcs_uri, index=False, compression="snappy")
+    # ─────────────────────────────────────────────────────────────
+    # CRITICAL FIX: Force microsecond precision (BigQuery + Parquet)
+    # This prevents the 1970-01-01 epoch bug forever.
+    # ─────────────────────────────────────────────────────────────
+    for col in ["date_submitted", "extracted_at"]:
+        if pd.api.types.is_datetime64tz_dtype(df[col]):
+            df[col] = df[col].dt.tz_convert('UTC').dt.tz_localize(None)
+        df[col] = df[col].astype('datetime64[us]')
 
-    schema = [
-        bigquery.SchemaField("request_id", "STRING"),
-        bigquery.SchemaField("country", "STRING"),
-        bigquery.SchemaField("sender", "STRING"),
-        bigquery.SchemaField("recipient", "STRING"),
-        bigquery.SchemaField("date_submitted", "TIMESTAMP"),
-        bigquery.SchemaField("period", "STRING"),
-        bigquery.SchemaField("half_year_label", "STRING"),
-        bigquery.SchemaField("reason", "STRING"),
-        bigquery.SchemaField("request_count", "INTEGER"),
-        bigquery.SchemaField("item_count", "INTEGER"),
-        bigquery.SchemaField("extracted_at", "TIMESTAMP"),
-    ]
+    print(f"✅ Timestamps converted to microsecond precision")
+    print(f"   date_submitted range: {df['date_submitted'].min()} → {df['date_submitted'].max()}")
 
-    client = bigquery.Client(project=PROJECT_ID)
-    table_ref = f"{PROJECT_ID}.civil_liberties_staging.{TABLE}"
+    gcs_uri = f"gs://{GCS_BUCKET}/{GCS_OBJECT}"
+    print(f"☁️  Uploading  : {gcs_uri}")
 
-    ext = bigquery.ExternalConfig("PARQUET")
-    ext.source_uris = [gcs_uri]
-    ext.autodetect = False
+    # Write with pyarrow engine (more reliable timestamp handling)
+    df.to_parquet(
+        gcs_uri,
+        index=False,
+        compression="snappy",
+        engine="pyarrow"
+    )
+    print("✅ GCS upload complete")
 
-    table = bigquery.Table(table_ref, schema=schema)
-    table.external_data_configuration = ext
+    # Create external table (matches Google pattern exactly)
+    bq = bigquery.Client(project=PROJECT_ID)
+    external_config = bigquery.ExternalConfig(
+        bigquery.ExternalSourceFormat.PARQUET)
+    external_config.source_uris = [gcs_uri]
+    external_config.autodetect = True   # ← now safe because of the fix above
 
-    client.delete_table(table_ref, not_found_ok=True)
-    client.create_table(table)
+    table_ref = f"{PROJECT_ID}.{DATASET}.{TABLE}"
+    table_obj = bigquery.Table(table_ref)
+    table_obj.external_data_configuration = external_config
+    table_obj.description = (
+        f"External table [{ENV}] — Lumen transparency requests. "
+        f"Backed by {gcs_uri}."
+    )
 
-    print("✅ BQ external table ready")
+    try:
+        bq.delete_table(table_ref)
+    except Exception:
+        pass
+
+    bq.create_table(table_obj)
+    print(f"✅ BigQuery external table created: {table_ref}")
+
+    # Keep the original extracted_at from the source parquet
+    # (no need to overwrite like in the Google asset)
+    return df
