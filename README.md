@@ -904,6 +904,42 @@ This project includes an evolving set of Streamlit dashboards designed to make c
 
 <img width="715" height="419" alt="finace_bill_crisis_30_day" src="https://github.com/user-attachments/assets/53f398bb-fa63-438d-a183-c33176c6c281" />
 
+The Finance Bill Crisis dashboard focuses on the 2024 Kenya protest escalation period, where digital censorship, network interference, and mass protests converged into a single high-intensity political window.
+
+It combines:
+
+    📡 Block Rate (%) — from OONI network measurement data
+    ⚔️ Conflict Events — from ACLED protest and violence tracking
+    📄 Takedown Requests — from Google Transparency and Lumen
+    📊 Civil Liberties Pressure Index — a composite signal of systemic suppression intensity
+
+### 🧠 What this shows
+   - Sharp surges in censorship activity during protest escalation
+   - Interaction between:
+   - street-level mobilization (protests)
+   - network-level restrictions (blocking)
+   - institutional/legal enforcement (takedowns)
+   = Phase-based evolution of the crisis:
+   - early protest buildup
+   - peak confrontation period
+   - stabilization / suppression decay
+   - How digital control mechanisms intensify under political stress
+
+### 📈 Why it matters
+This view isolates one of the most important modern case studies in Kenya’s digital governance landscape:
+
+When does online censorship begin relative to protests?
+  - Is suppression primarily technical (blocking) or institutional (takedowns)?
+  - Do censorship tools scale in response to political instability—or preempt it?
+
+### 🧭 Key Insight Framing
+
+This dashboard answers:
+
+• Does digital censorship intensify during the Finance Bill protests?
+• Which mechanism dominates: blocking, takedowns, or coordinated suppression?
+• Can we detect a clear “crisis onset” in the data?
+
 ---      
 
 ### 🧭 Censorship Timeline
