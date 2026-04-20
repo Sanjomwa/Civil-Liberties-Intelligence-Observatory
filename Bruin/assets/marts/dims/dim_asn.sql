@@ -1,42 +1,54 @@
-/* @bruin
-tags:
-  - marts_bq
-name: marts.dim_asn
-type: bq.sql
-connection: bigquery-default
-description: Deterministic ASN dimension from OONI signals
-materialization:
-  type: table
-  strategy: create+replace
-@bruin */
+-- reporting.dim_asn
+-- @bruin
+-- type: bq.sql
+-- connection: bigquery-default
+-- description: ASN dimension table for censorship + network classification
 
-WITH ranked AS (
-  SELECT
-    CAST(asn AS STRING) AS asn_id,
-    country,
-    COUNT(*) AS freq
-  FROM `encoded-joy-485413-k5.int.ooni_signals`
-  WHERE asn IS NOT NULL
-  GROUP BY asn_id, country
-),
-
-dedup AS (
-  SELECT *,
-    ROW_NUMBER() OVER (PARTITION BY asn_id ORDER BY freq DESC) AS rn
-  FROM ranked
+WITH base AS (
+  SELECT DISTINCT
+    probe_asn AS asn
+  FROM `encoded-joy-485413-k5.stg.ooni_measurements`
+  WHERE probe_asn IS NOT NULL
 )
 
 SELECT
-  asn_id,
-  CASE
-    WHEN country IN ('KE','ke','Kenya','kenya') THEN 'Kenya'
-    ELSE INITCAP(country)
-  END AS country,
+  asn,
+
+  -- numeric extraction for sorting/analysis
+  SAFE_CAST(REGEXP_REPLACE(asn, r'AS', '') AS INT64) AS asn_numeric,
+
+  -- ─────────────────────────────────────────────
+  -- NETWORK TYPE CLASSIFICATION (heuristic layer)
+  -- ─────────────────────────────────────────────
 
   CASE
-    WHEN asn_id LIKE '32%' THEN 'mobile'
-    WHEN asn_id LIKE '3%' THEN 'fixed'
-    ELSE 'unknown'
-  END AS isp_type
-FROM dedup
-WHERE rn = 1;
+    WHEN asn IN ('AS36926','AS37061','AS33771') THEN 'ISP_CORE'
+    WHEN asn LIKE 'AS32%' OR asn LIKE 'AS33%' THEN 'MOBILE_OR_AGGREGATOR'
+    WHEN asn IN ('AS15169','AS8075') THEN 'GLOBAL_CDN'
+    WHEN asn LIKE 'AS3%' THEN 'REGIONAL_ISP'
+    ELSE 'OTHER'
+  END AS network_class,
+
+  -- ─────────────────────────────────────────────
+  -- ROLE IN OONI CONTEXT
+  -- ─────────────────────────────────────────────
+
+  CASE
+    WHEN asn IN ('AS36926','AS37061') THEN 'MAJOR_KENYA_ISP'
+    WHEN asn IN ('AS33771','AS15399') THEN 'SECONDARY_ISP'
+    ELSE 'UNCLASSIFIED'
+  END AS kenya_relevance,
+
+  -- ─────────────────────────────────────────────
+  -- INTERFERENCE RISK SCORE (0–1 heuristic)
+  -- ─────────────────────────────────────────────
+
+  CASE
+    WHEN asn IN ('AS36926','AS37061','AS33771') THEN 0.9
+    WHEN asn LIKE 'AS32%' THEN 0.6
+    ELSE 0.3
+  END AS censorship_sensitivity_score,
+
+  CURRENT_TIMESTAMP() AS created_at
+
+FROM base;
