@@ -1,5 +1,3 @@
-# pages/3_Protest_vs_Censorship.py
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
