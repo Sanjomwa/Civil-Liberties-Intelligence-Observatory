@@ -17,13 +17,13 @@ WITH base AS (
         LOWER(country) AS country,
         sender,
         recipient,
-        date_submitted,           -- now a real TIMESTAMP (no more corruption)
+        date_submitted,                    -- ← now a real TIMESTAMP
         period,
         half_year_label,
         reason,
         request_count,
         item_count,
-        extracted_at
+        extracted_at                       -- ← also real TIMESTAMP
     FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.lumen_requests`
     WHERE LOWER(country) IN ('ke', 'kenya')
       AND date_submitted IS NOT NULL
@@ -32,7 +32,7 @@ WITH base AS (
 final AS (
     SELECT
         *,
-        DATE(date_submitted)                          AS measurement_date,
+        DATE(date_submitted)                          AS measurement_date,   -- clean DATE for joining
         EXTRACT(YEAR FROM date_submitted)             AS year,
         FORMAT_DATE('%Y-%m', DATE(date_submitted))    AS year_month
     FROM base
