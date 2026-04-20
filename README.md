@@ -2,7 +2,9 @@
 ---
 
 ### Tracking Digital Repression & its Real-World Impact (June 2023 → June 2025)  
-**Powered by Bruin | DuckDB | BigQuery | Streamlit | 🇰🇪**
+**🇰🇪**
+
+**Powered by |** 
 ---
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
 ![BigQuery](https://img.shields.io/badge/BigQuery-4285F4?style=for-the-badge&logo=google-bigquery&logoColor=white)
