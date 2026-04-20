@@ -1,28 +1,29 @@
-"""
-utils/bq_client.py
-Shared BigQuery connection and query helpers used by all dashboard pages.
-Reads credentials from Streamlit secrets or environment variable.
-"""
+# streamlit/utils/bq_client.py
 
 import os
+from typing import List, Optional
 
 import pandas as pd
 import streamlit as st
 from google.cloud import bigquery
+from google.cloud.bigquery import ScalarQueryParameter
 from google.oauth2 import service_account
 from streamlit.errors import StreamlitSecretNotFoundError
 
 
 PROJECT_ID = "encoded-joy-485413-k5"
 
-# Dataset switches with environment variable fallback
 _env = os.getenv("BRUIN_ENVIRONMENT")
 DATASET = "reporting" if _env == "prod" else "marts"
+
+ALLOWED_TABLES = {
+    "civil_liberties_mart",
+    "platform_censorship_mart",
+}
 
 
 @st.cache_resource(show_spinner=False)
 def get_client() -> bigquery.Client:
-    """Return a cached BigQuery client."""
     try:
         if "gcp_service_account" in st.secrets:
             creds = service_account.Credentials.from_service_account_info(
@@ -33,21 +34,89 @@ def get_client() -> bigquery.Client:
     except StreamlitSecretNotFoundError:
         pass
 
-    # Fall back to ADC (works in Codespaces with gcloud auth application-default login)
     return bigquery.Client(project=PROJECT_ID)
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def run_query(sql: str) -> pd.DataFrame:
-    """Execute a BigQuery SQL string and return a DataFrame. Cached for 1 hour."""
-    client = get_client()
-    return client.query(sql).to_dataframe()
-
-
 def table(name: str) -> str:
-    """Return a fully qualified BigQuery table path."""
+    if name not in ALLOWED_TABLES:
+        raise ValueError(f"Table {name} is not allowed.")
     return f"`{PROJECT_ID}.{DATASET}.{name}`"
 
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def run_query(sql: str, params: Optional[List[ScalarQueryParameter]] = None) -> pd.DataFrame:
+    client = get_client()
+    job_config = bigquery.QueryJobConfig(query_parameters=params or [])
+    return client.query(sql, job_config=job_config).to_dataframe()
+
+
+# -----------------------------
+# MART-SPECIFIC HELPERS
+# -----------------------------
+
+def get_civil_liberties_data(start_date: str, end_date: str) -> pd.DataFrame:
+    sql = f"""
+        SELECT
+            date,
+            block_rate,
+            blocked_tests,
+            conflict_events,
+            takedown_requests,
+            items_removed,
+            civil_liberties_pressure_index,
+            suppression_window
+        FROM {table("civil_liberties_mart")}
+        WHERE date BETWEEN @start_date AND @end_date
+        ORDER BY date
+    """
+
+    params = [
+        ScalarQueryParameter("start_date", "DATE", start_date),
+        ScalarQueryParameter("end_date", "DATE", end_date),
+    ]
+
+    return run_query(sql, params)
+
+
+def get_platform_censorship_data(
+    start_date: str,
+    end_date: str,
+    platforms: Optional[List[str]] = None,
+) -> pd.DataFrame:
+
+    platform_filter = ""
+    params = [
+        ScalarQueryParameter("start_date", "DATE", start_date),
+        ScalarQueryParameter("end_date", "DATE", end_date),
+    ]
+
+    if platforms:
+        platform_filter = "AND platform IN UNNEST(@platforms)"
+        params.append(
+            bigquery.ArrayQueryParameter("platforms", "STRING", platforms)
+        )
+
+    sql = f"""
+        SELECT
+            date,
+            platform,
+            block_rate,
+            blocked_tests,
+            takedown_requests,
+            items_removed,
+            platform_pressure_score
+        FROM {table("platform_censorship_mart")}
+        WHERE date BETWEEN @start_date AND @end_date
+        {platform_filter}
+        ORDER BY date
+    """
+
+    return run_query(sql, params)
+
+
+# -----------------------------
+# UI CONSTANTS
+# -----------------------------
 
 PALETTE = {
     "coral": "#E8593C",
