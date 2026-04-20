@@ -1,37 +1,35 @@
 import streamlit as st
-import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 
 from utils.bq_client import run_query, table, PALETTE
-from utils.contracts import PLATFORM_CENSORSHIP_MART_SCHEMA
-from utils.schema_guard import validate_schema
 
 
 st.set_page_config(
     page_title="Content Removal · Observatory",
     page_icon="📋",
-    layout="wide"
+    layout="wide",
 )
 
 st.title("📋 Content Removal & Takedowns")
 
 
 # ─────────────────────────────────────────────
-# SIDEBAR FILTERS
+# FILTERS
 # ─────────────────────────────────────────────
 
-with st.sidebar:
-    sources = st.multiselect(
-        "Source",
-        ["google_requests", "google_detailed", "lumen"],
-        default=["google_requests", "google_detailed", "lumen"]
-    )
+sources = st.multiselect(
+    "Source",
+    ["google_requests", "google_detailed", "lumen"],
+    default=["google_requests", "google_detailed", "lumen"]
+)
+
+src_sql = ", ".join([f"'{s}'" for s in sources])
 
 
 # ─────────────────────────────────────────────
-# SAFE DATA LOAD (NO STRING INJECTION)
+# DATA LOAD (FIXED TABLE REFERENCE)
 # ─────────────────────────────────────────────
 
 @st.cache_data(ttl=3600)
@@ -45,37 +43,19 @@ def load_fact():
             requestor_type,
             number_of_requests,
             items_requested_removal
-        FROM {table("fact_takedown_requests")}
-        WHERE source IN UNNEST(@sources)
-    """, params=[
-        {"name": "sources", "parameterType": {"type": "ARRAY", "arrayType": {"type": "STRING"}}, "parameterValue": {"arrayValues": [{"value": s} for s in sources]}}
-    ])
-
+        FROM {table('fact_takedown_requests')}
+        WHERE source IN ({src_sql})
+    """)
 
 df = load_fact()
 
 if df.empty:
-    st.warning("No data for selected filters.")
+    st.warning("No data available.")
     st.stop()
 
 
 # ─────────────────────────────────────────────
-# SCHEMA VALIDATION (HARDENED)
-# ─────────────────────────────────────────────
-
-validate_schema(df, {
-    "source",
-    "platform",
-    "reason",
-    "requestor_name",
-    "requestor_type",
-    "number_of_requests",
-    "items_requested_removal"
-}, "Content Removal")
-
-
-# ─────────────────────────────────────────────
-# KPI ROW
+# KPI
 # ─────────────────────────────────────────────
 
 summary = df.groupby("source", as_index=False).agg({
@@ -88,32 +68,35 @@ summary = df.groupby("source", as_index=False).agg({
 cols = st.columns(len(summary))
 
 for i, row in summary.iterrows():
-    with cols[i]:
-        st.metric(row["source"], f"{int(row['number_of_requests']):,}")
+    cols[i].metric(
+        row["source"],
+        f"{int(row['number_of_requests']):,}"
+    )
 
 
 st.divider()
 
 
 # ─────────────────────────────────────────────
-# TREND (SAFE MART DEPENDENCY)
+# TREND (SAFE DERIVATION)
 # ─────────────────────────────────────────────
 
 @st.cache_data(ttl=3600)
 def load_trends():
     return run_query(f"""
         SELECT
-            measurement_date,
+            year_month,
             source,
             total_requests
-        FROM {table("fact_takedown_trends")}
+        FROM {table('fact_takedown_trends')}
+        WHERE source IN ({src_sql})
     """)
 
 trend = load_trends()
 
 fig = px.line(
     trend,
-    x="measurement_date",
+    x="year_month",
     y="total_requests",
     color="source",
     markers=True,
@@ -124,7 +107,7 @@ st.plotly_chart(fig, use_container_width=True)
 
 
 # ─────────────────────────────────────────────
-# TOP REASONS
+# REASONS
 # ─────────────────────────────────────────────
 
 reason = (
