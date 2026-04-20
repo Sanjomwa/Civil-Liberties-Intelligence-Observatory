@@ -5,7 +5,6 @@
 **Powered by Bruin | DuckDB | BigQuery | Streamlit | 🇰🇪**
 ---
 
-
 ## 🎯
 ## Problem Statement
 
@@ -1020,6 +1019,10 @@ Future enhancements may include:
 
 The system is designed to continuously evolve into a comprehensive censorship intelligence platform.
 
+## 📄 License
+
+This project is licensed under the MIT License.
+
 ## 🙏 
 
 ## Acknowledgements
@@ -1057,11 +1060,12 @@ This project would not exist without the tools, communities, and people below.
   
 ### 🤝 Final Note
 
-To everyone building in the open, sharing knowledge, and pushing the field forward — this project builds on your work.
+  - To everyone building in the open, sharing knowledge, and pushing the field forward — this project builds on your work.
 
 ## Contact
+
 Project Owner: Samwel Njogu
 
- Focus: Civil liberties, conflict & censorship analysis observatory as a reproducible pipeline.
+X: @sam_njogu9
 
- X: @sam_njogu9
+***Focus: A reproducible data pipeline and analytics observatory for understanding civil liberties, conflict dynamics, and censorship patterns.***
