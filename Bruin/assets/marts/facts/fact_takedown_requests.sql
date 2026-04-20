@@ -5,7 +5,7 @@ name: marts.fact_takedown_requests
 type: bq.sql
 connection: bigquery-default
 
-description: Row-level takedown requests (Google + Lumen) - normalized and schema-resilient.
+description: Row-level takedown requests (Google + Lumen), unified schema.
 
 owner: civil-liberties-pipeline
 
@@ -24,79 +24,78 @@ materialization:
 -- =========================
 SELECT
   'google_requests' AS source,
-  LOWER(COALESCE(country, cldr_territory)) AS country,
+  country AS country,
   product AS platform,
   requestor AS requestor_name,
-  reason,
-  time_period,
-  number_of_requests,
-  items_requested_removal,
-  items_removed_legal,
-  items_removed_policy,
+  reason AS reason,
+  time_period AS time_period,
+
+  CAST(number_of_requests AS INT64) AS number_of_requests,
+  CAST(items_requested_removal AS INT64) AS items_requested_removal,
+  CAST(items_removed_legal AS INT64) AS items_removed_legal,
+  CAST(items_removed_policy AS INT64) AS items_removed_policy,
+
   CAST(NULL AS INT64) AS item_count,
-  SAFE_CAST(extracted_at AS TIMESTAMP) AS extracted_at,
+
+  CAST(extracted_at AS TIMESTAMP) AS extracted_at,
   period_date AS measurement_date,
-  year
+  year AS year
+
 FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
-WHERE LOWER(COALESCE(country, cldr_territory)) IN ('kenya','ke')
+WHERE country = 'Kenya' OR cldr_territory = 'KE'
+
 
 UNION ALL
 
 -- =========================
--- GOOGLE DETAILED (AGGREGATED)
+-- GOOGLE DETAILED
 -- =========================
 SELECT
   'google_detailed' AS source,
-  LOWER(COALESCE(country_region, cldr_territory_code)) AS country,
+  country_region AS country,
   product AS platform,
   CAST(NULL AS STRING) AS requestor_name,
-  reason,
+  reason AS reason,
   CAST(NULL AS STRING) AS time_period,
-  total AS number_of_requests,
+
+  CAST(total AS INT64) AS number_of_requests,
   CAST(NULL AS INT64) AS items_requested_removal,
   CAST(NULL AS INT64) AS items_removed_legal,
   CAST(NULL AS INT64) AS items_removed_policy,
+
   CAST(NULL AS INT64) AS item_count,
-  SAFE_CAST(extracted_at AS TIMESTAMP) AS extracted_at,
+
+  CAST(extracted_at AS TIMESTAMP) AS extracted_at,
   period_date AS measurement_date,
-  year
+  year AS year
+
 FROM `encoded-joy-485413-k5.stg.google_transparency_detailed`
-WHERE LOWER(cldr_territory_code) IN ('ke','kenya')
+WHERE cldr_territory_code = 'KE'
+
 
 UNION ALL
 
 -- =========================
--- LUMEN (FIXED + SCHEMA SAFE)
+-- LUMEN
 -- =========================
 SELECT
   'lumen' AS source,
+  country AS country,
+  recipient AS platform,
+  sender AS requestor_name,
+  reason AS reason,
+  period AS time_period,
 
-  LOWER(COALESCE(country, 'unknown')) AS country,
-
-  COALESCE(recipient, platform, 'unknown') AS platform,
-  COALESCE(sender, requestor_name, 'unknown') AS requestor_name,
-
-  reason,
-
-  COALESCE(time_period, period, half_year_label) AS time_period,
-
-  request_count AS number_of_requests,
-  item_count AS items_requested_removal,
-
+  CAST(request_count AS INT64) AS number_of_requests,
+  CAST(NULL AS INT64) AS items_requested_removal,
   CAST(NULL AS INT64) AS items_removed_legal,
   CAST(NULL AS INT64) AS items_removed_policy,
 
-  item_count,
+  CAST(item_count AS INT64) AS item_count,
 
-  SAFE_CAST(extracted_at AS TIMESTAMP) AS extracted_at,
-
-  COALESCE(
-    measurement_date,
-    DATE(period),
-    DATE(date_submitted)
-  ) AS measurement_date,
-
-  COALESCE(year, EXTRACT(YEAR FROM DATE(date_submitted))) AS year
+  CAST(extracted_at AS TIMESTAMP) AS extracted_at,
+  measurement_date AS measurement_date,
+  year AS year
 
 FROM `encoded-joy-485413-k5.stg.lumen_requests`
-WHERE LOWER(COALESCE(country, '')) IN ('ke','kenya');
+WHERE country IN ('Kenya', 'KE', 'ke');

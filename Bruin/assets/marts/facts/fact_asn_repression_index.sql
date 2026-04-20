@@ -7,18 +7,10 @@ connection: bigquery-default
 
 description: |
   ASN-level repression index (v3 FIXED).
-  Built directly from atomic fact tables:
-    - fact_network_blocking_daily (OONI)
-    - fact_conflict_events (ACLED)
-    - fact_country_pressure_daily (Lumen/Google)
-
-  Grain: measurement_date × asn
-
-owner: civil-liberties-pipeline
+  Uses ONLY ASN-grain OONI + country-projected pressure signals.
 
 depends:
   - marts.fact_network_blocking_daily
-  - marts.fact_conflict_events
   - marts.fact_country_pressure_daily
   - marts.dim_measurement_quality
 
@@ -27,7 +19,9 @@ materialization:
   strategy: create+replace
 @bruin */
 
-
+-- =========================
+-- OONI (TRUE ASN GRAIN)
+-- =========================
 WITH ooni AS (
 
     SELECT
@@ -39,25 +33,34 @@ WITH ooni AS (
     FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
 ),
 
-acled AS (
+-- =========================
+-- COUNTRY PRESSURE (ACLED + LUMEN)
+-- =========================
+country_pressure AS (
 
     SELECT
         measurement_date,
         country,
         conflict_events,
-        fatalities
-    FROM `encoded-joy-485413-k5.marts.fact_conflict_events`
-),
-
-lumen AS (
-
-    SELECT
-        measurement_date,
-        country,
+        fatalities,
         takedown_requests
     FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
 ),
 
+-- =========================
+-- ASN ↔ COUNTRY MAPPING (FROM OONI)
+-- =========================
+asn_country AS (
+
+    SELECT DISTINCT
+        asn,
+        country
+    FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
+),
+
+-- =========================
+-- QUALITY WEIGHT
+-- =========================
 quality AS (
 
     SELECT
@@ -68,7 +71,7 @@ quality AS (
 ),
 
 -- =========================
--- ALIGN EVERYTHING TO ASN SPINE
+-- JOINED ASN CONTEXT
 -- =========================
 base AS (
 
@@ -80,24 +83,26 @@ base AS (
         o.blocked_tests,
         o.block_rate,
 
-        COALESCE(a.conflict_events, 0) AS conflict_events,
-        COALESCE(l.takedown_requests, 0) AS takedown_requests,
+        COALESCE(cp.conflict_events, 0) AS conflict_events,
+        COALESCE(cp.takedown_requests, 0) AS takedown_requests,
 
         q.quality_weight
 
     FROM ooni o
 
-    LEFT JOIN acled a
-        ON o.measurement_date = a.measurement_date
-        AND a.country = 'Kenya'
+    LEFT JOIN asn_country ac
+        ON o.asn = ac.asn
 
-    LEFT JOIN lumen l
-        ON o.measurement_date = l.measurement_date
-        AND l.country = 'Kenya'
+    LEFT JOIN country_pressure cp
+        ON cp.country = ac.country
+       AND cp.measurement_date = o.measurement_date
 
     CROSS JOIN quality q
 ),
 
+-- =========================
+-- NORMALIZATION
+-- =========================
 normalized AS (
 
     SELECT
@@ -108,6 +113,9 @@ normalized AS (
     FROM base
 )
 
+-- =========================
+-- FINAL INDEX
+-- =========================
 SELECT
     measurement_date,
     asn,
@@ -120,16 +128,10 @@ SELECT
     conflict_events,
     takedown_requests,
 
-    -- =========================
-    -- NORMALIZED COMPONENTS
-    -- =========================
     LEAST(q_block_rate, 1.0) AS block_norm,
     LEAST(conflict_events / 10.0, 1.0) AS conflict_norm,
     LEAST(takedown_requests / 100.0, 1.0) AS takedown_norm,
 
-    -- =========================
-    -- FINAL INDEX
-    -- =========================
     (
         0.60 * LEAST(q_block_rate, 1.0) +
         0.25 * LEAST(conflict_events / 10.0, 1.0) +
