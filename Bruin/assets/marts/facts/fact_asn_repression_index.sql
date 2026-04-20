@@ -18,7 +18,6 @@ description: |
 owner: civil-liberties-pipeline
 
 depends:
-  - marts.fact_cross_source_censorship_events
   - marts.dim_measurement_quality
 
 materialization:
