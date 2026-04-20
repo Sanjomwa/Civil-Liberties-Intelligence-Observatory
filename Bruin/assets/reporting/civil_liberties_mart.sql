@@ -1,5 +1,5 @@
 /* @bruin
-name: reporting.civil_liberties_mart_v2
+name: reporting.civil_liberties_mart
 type: bq.sql
 connection: bigquery-default
 materialization:
