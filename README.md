@@ -5,8 +5,18 @@
 **Powered by Bruin | DuckDB | BigQuery | Streamlit | 🇰🇪**
 ---
 ```
-![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
-
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white) — Dashboards & reporting 
+![BigQuery](https://img.shields.io/badge/BigQuery-4285F4?style=for-the-badge&logo=google-bigquery&logoColor=white) — Cloud data warehouse 
+![Google Cloud](https://img.shields.io/badge/Google%20Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white) — Infrastructure & services 
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white) — Core programming language 
+![Pandas](https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white) — Data wrangling & analysis 
+![Terraform](https://img.shields.io/badge/Terraform-623CE4?style=for-the-badge&logo=terraform&logoColor=white) — Infrastructure as Code 
+![Bruin](https://img.shields.io/badge/Bruin-FF9900?style=for-the-badge&logo=apache-airflow&logoColor=white) — DAG orchestration & observability 
+![DuckDB](https://img.shields.io/badge/DuckDB-FFF000?style=for-the-badge&logo=duckdb&logoColor=black) — Local analytical staging 
+![Parquet](https://img.shields.io/badge/Parquet-005571?style=for-the-badge&logo=apache&logoColor=white) — Columnar storage 
+![SQL](https://img.shields.io/badge/SQL-336791?style=for-the-badge&logo=postgresql&logoColor=white) — Modeling facts, dims, marts 
+![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white) — Version control & collaboration 
+![Codespaces](https://img.shields
 
 ```
 ---
