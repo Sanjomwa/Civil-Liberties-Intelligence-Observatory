@@ -1,5 +1,3 @@
-# Bruin/assets/load/lumen_requests.py
-
 """@bruin
 tags:
   - publish_cloud
