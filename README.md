@@ -4,56 +4,25 @@
 ### Tracking Digital Repression & its Real-World Impact (June 2023 → June 2025)  
 **Powered by Bruin | DuckDB | BigQuery | Streamlit | 🇰🇪**
 ---
-## 🧠 System Stack Overview
-
-### ☁️ Infrastructure & Cloud
-![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
 ![BigQuery](https://img.shields.io/badge/BigQuery-4285F4?style=for-the-badge&logo=google-bigquery&logoColor=white)
-![Terraform](https://img.shields.io/badge/Terraform-623CE4?style=for-the-badge&logo=terraform&logoColor=white)
-
-> Infrastructure provisioning, data warehouse, and scalable analytics layer
-
----
-
-### 🔄 Orchestration & Pipelines
-![Bruin](https://img.shields.io/badge/Bruin-Orchestration-F7931E?style=for-the-badge)
-![SQL](https://img.shields.io/badge/SQL-Modeling-336791?style=for-the-badge&logo=postgresql&logoColor=white)
-
-> DAG execution, dependency management, and transformation workflows
-
----
-
-### 🧪 Data Processing & Engineering
+![Google Cloud](https://img.shields.io/badge/Google%20Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Pandas](https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
+![Python Client](https://img.shields.io/badge/Python%20Client-306998?style=for-the-badge&logo=python&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-623CE4?style=for-the-badge&logo=terraform&logoColor=white)
+
+![Bruin](https://img.shields.io/badge/Bruin-FF9900?style=for-the-badge&logo=apache-airflow&logoColor=white)
 ![DuckDB](https://img.shields.io/badge/DuckDB-FFF000?style=for-the-badge&logo=duckdb&logoColor=black)
 ![Parquet](https://img.shields.io/badge/Parquet-005571?style=for-the-badge&logo=apache&logoColor=white)
-
-> ETL logic, local staging, analytical transformations, columnar storage
-
----
-
-### 📊 Analytics & Reporting Layer
-![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
-
-> Interactive dashboards for censorship, conflict, and platform pressure analysis
-
----
-
-### 🌐 Data Sources Layer
-- OONI (Network Interference & Censorship Measurements)
-- ACLED (Conflict & Political Violence Data)
-- Google Transparency Report (Content Removal Requests)
-- Lumen Database (Legal Takedown Requests)
-
----
-
-### 🧰 Development & Collaboration
+![SQL](https://img.shields.io/badge/SQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)
+![GCS](https://img.shields.io/badge/GCS-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)
+![IAM](https://img.shields.io/badge/IAM-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
-![Codespaces](https://img.shields.io/badge/Codespaces-181717?style=for-the-badge&logo=github&logoColor=white)
-
-> Version control, cloud development environment, reproducible workflows
-
+![Codespaces](https://img.shields.io/badge/Codespaces-000000?style=for-the-badge&logo=github&logoColor=white)
+![Markdown](https://img.shields.io/badge/Markdown-000000?style=for-the-badge&logo=markdown&logoColor=white)
+![Mermaid](https://img.shields.io/badge/Mermaid-1ABC9C?style=for-the-badge&logo=mermaid&logoColor=white)
+![Datetime](https://img.shields.io/badge/Python%20StdLib-datetime-555555?style=for-the-badge)
 ---
 ## 🎯
 ## Problem Statement
