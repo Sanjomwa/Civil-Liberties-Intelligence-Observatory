@@ -4,7 +4,24 @@
 ### Tracking Digital Repression & its Real-World Impact (June 2023 → June 2025)  
 **Powered by Bruin | DuckDB | BigQuery | Streamlit | 🇰🇪**
 ---
-
+https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white  
+https://img.shields.io/badge/BigQuery-4285F4?style=for-the-badge&logo=google-bigquery&logoColor=white  
+https://img.shields.io/badge/Google%20Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white  
+https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white  
+https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white  
+https://img.shields.io/badge/Python%20Stdlib%20(datetime)-3776AB?style=for-the-badge&logo=python&logoColor=white  
+https://img.shields.io/badge/Terraform-623CE4?style=for-the-badge&logo=terraform&logoColor=white  
+https://img.shields.io/badge/Bruin-FF9900?style=for-the-badge&logo=apache-airflow&logoColor=white  
+https://img.shields.io/badge/DuckDB-FFF000?style=for-the-badge&logo=duckdb&logoColor=black  
+https://img.shields.io/badge/Parquet-005571?style=for-the-badge&logo=apache&logoColor=white  
+https://img.shields.io/badge/SQL-336791?style=for-the-badge&logo=postgresql&logoColor=white  
+https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white  
+https://img.shields.io/badge/Codespaces-000000?style=for-the-badge&logo=github&logoColor=white  
+https://img.shields.io/badge/Google%20Cloud%20Storage-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white  
+https://img.shields.io/badge/IAM-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white  
+https://img.shields.io/badge/Markdown-000000?style=for-the-badge&logo=markdown&logoColor=white  
+https://img.shields.io/badge/Mermaid-1ABC9C?style=for-the-badge&logo=mermaid&logoColor=white
+---
 ## 🎯
 ## Problem Statement
 
