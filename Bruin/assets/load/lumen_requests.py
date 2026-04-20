@@ -82,22 +82,22 @@ def materialize():
     validate(df)
 
     # ─────────────────────────────────────────────────────────────
-    # CRITICAL FIX: Force microsecond precision (BigQuery + Parquet)
-    # This prevents the 1970-01-01 epoch bug forever.
+    # 1. Prepare clean dataframe for GCS + BigQuery (real TIMESTAMP)
     # ─────────────────────────────────────────────────────────────
+    gcs_df = df.copy()
     for col in ["date_submitted", "extracted_at"]:
-        if pd.api.types.is_datetime64tz_dtype(df[col]):
-            df[col] = df[col].dt.tz_convert('UTC').dt.tz_localize(None)
-        df[col] = df[col].astype('datetime64[us]')
+        if pd.api.types.is_datetime64tz_dtype(gcs_df[col]):
+            gcs_df[col] = gcs_df[col].dt.tz_convert('UTC').dt.tz_localize(None)
+        gcs_df[col] = gcs_df[col].astype('datetime64[us]')
 
-    print(f"✅ Timestamps converted to microsecond precision")
-    print(f"   date_submitted range: {df['date_submitted'].min()} → {df['date_submitted'].max()}")
+    print(f"✅ Timestamps prepared for BigQuery (microsecond precision)")
+    print(f"   date_submitted range: {gcs_df['date_submitted'].min()} → {gcs_df['date_submitted'].max()}")
 
+    # Write to GCS (BigQuery will see proper TIMESTAMP)
     gcs_uri = f"gs://{GCS_BUCKET}/{GCS_OBJECT}"
     print(f"☁️  Uploading  : {gcs_uri}")
 
-    # Write with pyarrow engine (more reliable timestamp handling)
-    df.to_parquet(
+    gcs_df.to_parquet(
         gcs_uri,
         index=False,
         compression="snappy",
@@ -105,12 +105,12 @@ def materialize():
     )
     print("✅ GCS upload complete")
 
-    # Create external table (matches Google pattern exactly)
+    # Create BigQuery external table
     bq = bigquery.Client(project=PROJECT_ID)
     external_config = bigquery.ExternalConfig(
         bigquery.ExternalSourceFormat.PARQUET)
     external_config.source_uris = [gcs_uri]
-    external_config.autodetect = True   # ← now safe because of the fix above
+    external_config.autodetect = True
 
     table_ref = f"{PROJECT_ID}.{DATASET}.{TABLE}"
     table_obj = bigquery.Table(table_ref)
@@ -128,6 +128,17 @@ def materialize():
     bq.create_table(table_obj)
     print(f"✅ BigQuery external table created: {table_ref}")
 
-    # Keep the original extracted_at from the source parquet
-    # (no need to overwrite like in the Google asset)
-    return df
+    # ─────────────────────────────────────────────────────────────
+    # 2. Prepare dataframe for DuckDB / dlt materialization
+    #    (convert back to int64 microseconds to avoid the cast error)
+    # ─────────────────────────────────────────────────────────────
+    return_df = df.copy()
+    for col in ["date_submitted", "extracted_at"]:
+        if pd.api.types.is_datetime64tz_dtype(return_df[col]):
+            return_df[col] = return_df[col].dt.tz_convert('UTC').dt.tz_localize(None)
+        # Convert to microseconds since epoch as INT64 (what DuckDB/dlt expects)
+        return_df[col] = return_df[col].astype('datetime64[us]').astype('int64')
+
+    print("✅ Return dataframe prepared for DuckDB (int64 microseconds)")
+
+    return return_df
