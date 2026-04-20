@@ -4,7 +4,6 @@
 ### Tracking Digital Repression & its Real-World Impact (June 2023 → June 2025)  
 **Powered by Bruin | DuckDB | BigQuery | Streamlit | 🇰🇪**
 ---
-```
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white) — Dashboards & reporting 
 ![BigQuery](https://img.shields.io/badge/BigQuery-4285F4?style=for-the-badge&logo=google-bigquery&logoColor=white) — Cloud data warehouse 
 ![Google Cloud](https://img.shields.io/badge/Google%20Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white) — Infrastructure & services 
@@ -18,7 +17,6 @@
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white) — Version control & collaboration 
 ![Codespaces](https://img.shields
 
-```
 ---
 ## 🎯
 ## Problem Statement
