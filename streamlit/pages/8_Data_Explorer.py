@@ -1,12 +1,10 @@
 """
 pages/8_Data_Explorer.py
-Raw data explorer for Observatory mart tables.
-Safe query execution, export, and auto visualization.
+Safe SQL explorer for Observatory mart tables.
 """
 
 import streamlit as st
 import plotly.express as px
-import pandas as pd
 
 from utils.bq_client import run_query, table, PALETTE
 
@@ -36,17 +34,17 @@ h1,h2,h3 {
 </style>
 """, unsafe_allow_html=True)
 
-
 st.markdown("## 🔍 Data Explorer")
-st.caption("Run SQL queries, explore mart tables, export results.")
+st.caption("Safe SQL execution over Observatory marts with export + auto-visualization.")
 
 
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 # PRESETS
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 
 PRESETS = {
     "— Choose a preset —": "",
+
     "Daily blocking rate (last 30 days)": f"""
 SELECT
     measurement_date,
@@ -56,7 +54,6 @@ SELECT
 FROM {table('civil_liberties_mart')}
 GROUP BY measurement_date
 ORDER BY measurement_date DESC
-LIMIT 30
 """.strip(),
 
     "Top 20 most-blocked platforms": f"""
@@ -70,7 +67,6 @@ FROM {table('civil_liberties_mart')}
 WHERE platform IS NOT NULL
 GROUP BY platform, test_category
 ORDER BY blocking_rate DESC
-LIMIT 20
 """.strip(),
 
     "Full Suppression Window incidents": f"""
@@ -112,9 +108,9 @@ ORDER BY year_month, blocking_rate DESC
 }
 
 
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 # SIDEBAR
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 
 with st.sidebar:
     st.markdown("### Available Tables")
@@ -140,15 +136,13 @@ with st.sidebar:
         st.markdown(f"`{t}`")
 
 
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 # QUERY INPUT
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 
-preset = st.selectbox("Load a preset query", list(PRESETS.keys()))
+preset = st.selectbox("Load preset query", list(PRESETS.keys()))
 
-base_sql = PRESETS.get(preset, "")
-
-default_sql = base_sql or f"""
+default_sql = PRESETS.get(preset, "") or f"""
 SELECT *
 FROM {table('civil_liberties_mart')}
 LIMIT 100
@@ -156,28 +150,26 @@ LIMIT 100
 
 query = st.text_area("SQL query", value=default_sql, height=180)
 
-row_limit = st.slider("Row limit fallback", 10, 5000, 500)
+row_limit = st.slider("Row limit", 10, 5000, 500)
 
 
-def inject_limit(sql: str, limit: int) -> str:
-    """Safely enforce LIMIT if not present."""
-    clean = sql.strip().rstrip(";")
-    if " limit " in clean.lower():
-        return clean
-    return f"{clean}\nLIMIT {limit}"
-
-
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
 # EXECUTION
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+
+def is_empty_sql(q: str) -> bool:
+    return not q or q.strip() == ""
+
 
 if st.button("▶ Run Query", type="primary"):
 
-    q = inject_limit(query, row_limit)
+    if is_empty_sql(query):
+        st.warning("Please enter a SQL query.")
+        st.stop()
 
     with st.spinner("Running query on BigQuery…"):
         try:
-            df = run_query(q)
+            df = run_query(query, limit=row_limit)
 
             if df is None or df.empty:
                 st.warning("Query returned no results.")
@@ -185,11 +177,14 @@ if st.button("▶ Run Query", type="primary"):
 
             st.success(f"✅ {len(df):,} rows returned")
 
+            # ── SHOW FINAL QUERY (debug transparency)
+            st.caption("Executed query:")
+            st.code(query, language="sql")
+
             # ── DOWNLOAD
-            csv = df.to_csv(index=False).encode("utf-8")
             st.download_button(
                 "⬇ Download CSV",
-                data=csv,
+                data=df.to_csv(index=False).encode("utf-8"),
                 file_name="observatory_export.csv",
                 mime="text/csv",
             )
@@ -197,23 +192,21 @@ if st.button("▶ Run Query", type="primary"):
             st.dataframe(df, use_container_width=True, hide_index=True)
 
             # ─────────────────────────────────────────────
-            # AUTO CHART (SAFE)
+            # SAFE AUTO VISUALIZATION
             # ─────────────────────────────────────────────
 
             num_cols = df.select_dtypes(include="number").columns.tolist()
-            str_cols = df.select_dtypes(include="object").columns.tolist()
+            cat_cols = df.select_dtypes(exclude="number").columns.tolist()
 
-            usable_x = list(df.columns)
-
-            if len(num_cols) > 0 and len(usable_x) > 0:
+            if num_cols and cat_cols:
 
                 st.divider()
                 st.markdown("#### Auto Visualization")
 
                 c1, c2, c3 = st.columns(3)
 
-                x_col = c1.selectbox("X axis", usable_x)
-                y_col = c2.selectbox("Y axis", num_cols)
+                x_col = c1.selectbox("X axis (categorical)", cat_cols)
+                y_col = c2.selectbox("Y axis (numeric)", num_cols)
                 chart_type = c3.selectbox("Chart type", ["Bar", "Line", "Scatter", "Area"])
 
                 chart_map = {
@@ -243,7 +236,7 @@ if st.button("▶ Run Query", type="primary"):
                 st.plotly_chart(fig, use_container_width=True)
 
         except Exception as e:
-            st.error(f"Query failed: {str(e)}")
+            st.error(f"Query failed: {e}")
 
 else:
     st.info("Select a preset or write SQL, then click ▶ Run Query.")
@@ -252,6 +245,5 @@ else:
 st.divider()
 
 st.caption(
-    "Queries run directly on BigQuery. "
-    "Use LIMIT to control scan cost. Results cached for 1 hour."
+    "Safe SQL explorer. LIMIT enforced via backend. Queries run on BigQuery with caching."
 )
