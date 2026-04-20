@@ -12,7 +12,7 @@ from google.oauth2 import service_account
 PROJECT_ID = "encoded-joy-485413-k5"
 
 _env = os.getenv("BRUIN_ENVIRONMENT")
-DATASET = "reporting" if _env == "prod" else "marts"
+DATASET = "reporting"
 
 
 # ─────────────────────────────────────────────
