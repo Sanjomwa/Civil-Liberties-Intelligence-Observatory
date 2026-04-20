@@ -1,11 +1,16 @@
-# pages/3_Protest_vs_Censorship.py
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
 from utils.bq_client import run_query, table, PALETTE
+from utils.schema import CIVIL_LIBERTIES_MART_SCHEMA
+from utils.validate import validate_schema
+
+
+# ─────────────────────────────────────────────────────────────
+# PAGE CONFIG
+# ─────────────────────────────────────────────────────────────
 
 st.set_page_config(
     page_title="Protest vs Censorship",
@@ -14,7 +19,8 @@ st.set_page_config(
 )
 
 st.title("⚡ Protest vs Censorship Correlation")
-st.caption("Do spikes in political unrest align with digital censorship pressure?")
+st.caption("Do political unrest periods align with digital censorship pressure in Kenya?")
+
 
 # ─────────────────────────────────────────────────────────────
 # GLOBAL FILTERS
@@ -25,7 +31,7 @@ end_date = st.session_state.get("end_date")
 
 
 # ─────────────────────────────────────────────────────────────
-# DATA LOAD (STRICT MART COMPLIANCE)
+# DATA LOAD
 # ─────────────────────────────────────────────────────────────
 
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -38,7 +44,6 @@ def load_data(start_date, end_date):
             fatalities,
             takedown_requests,
             civil_liberties_pressure_index,
-            political_context_flag,
             suppression_window
         FROM {table("civil_liberties_mart")}
         WHERE measurement_date BETWEEN '{start_date}' AND '{end_date}'
@@ -48,9 +53,39 @@ def load_data(start_date, end_date):
 
 df = load_data(start_date, end_date)
 
+# ─────────────────────────────────────────────────────────────
+# SCHEMA VALIDATION (GUARD RAIL)
+# ─────────────────────────────────────────────────────────────
+
+validate_schema(df, CIVIL_LIBERTIES_MART_SCHEMA, "Protest vs Censorship")
+
 
 # ─────────────────────────────────────────────────────────────
-# KPI LAYER (NO FAKE PROTEST FLAGS)
+# CLEANING
+# ─────────────────────────────────────────────────────────────
+
+df["conflict_events"] = df["conflict_events"].fillna(0)
+
+
+# ─────────────────────────────────────────────────────────────
+# SIDEBAR FILTER (SUPPRESSION WINDOWS)
+# ─────────────────────────────────────────────────────────────
+
+st.sidebar.subheader("🧠 Suppression Window Filter")
+
+windows = sorted(df["suppression_window"].dropna().unique().tolist())
+
+selected_windows = st.sidebar.multiselect(
+    "Select regimes",
+    windows,
+    default=windows
+)
+
+df = df[df["suppression_window"].isin(selected_windows)]
+
+
+# ─────────────────────────────────────────────────────────────
+# KPI LAYER
 # ─────────────────────────────────────────────────────────────
 
 protest_threshold = df["conflict_events"].quantile(0.75)
@@ -74,7 +109,7 @@ st.divider()
 
 
 # ─────────────────────────────────────────────────────────────
-# TIME SERIES (CORE STORY)
+# TIME SERIES VIEW
 # ─────────────────────────────────────────────────────────────
 
 fig = go.Figure()
@@ -109,23 +144,21 @@ st.divider()
 
 
 # ─────────────────────────────────────────────────────────────
-# SCATTER CORRELATION
+# CORRELATION VIEW
 # ─────────────────────────────────────────────────────────────
-
-df["conflict_events"] = df["conflict_events"].fillna(0)
 
 fig2 = px.scatter(
     df,
     x="conflict_events",
     y=df["block_rate"] * 100,
-    color="political_context_flag",
+    color="suppression_window",
     size="takedown_requests",
     trendline="ols",
     labels={
         "conflict_events": "Conflict events",
         "y": "Block rate %",
     },
-    height=420,
+    height=450,
 )
 
 fig2.update_layout(
@@ -139,12 +172,12 @@ st.plotly_chart(fig2, use_container_width=True)
 
 
 # ─────────────────────────────────────────────────────────────
-# CONTEXT BREAKDOWN
+# SUPPRESSION WINDOW ANALYSIS
 # ─────────────────────────────────────────────────────────────
 
-st.subheader("🧠 Political Context Impact")
+st.subheader("🧠 Suppression Window Impact Analysis")
 
-context = df.groupby("political_context_flag", as_index=False).agg({
+context = df.groupby("suppression_window", as_index=False).agg({
     "block_rate": "mean",
     "conflict_events": "mean",
     "takedown_requests": "sum"
@@ -153,7 +186,7 @@ context = df.groupby("political_context_flag", as_index=False).agg({
 fig3 = px.bar(
     context.sort_values("block_rate"),
     x="block_rate",
-    y="political_context_flag",
+    y="suppression_window",
     orientation="h",
 )
 
@@ -161,6 +194,7 @@ fig3.update_layout(
     plot_bgcolor="#0D0D0F",
     paper_bgcolor="#0D0D0F",
     font_color="#E8E6DF",
+    showlegend=False,
 )
 
 st.plotly_chart(fig3, use_container_width=True)
