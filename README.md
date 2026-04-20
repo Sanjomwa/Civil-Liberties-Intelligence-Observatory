@@ -38,7 +38,7 @@ Kenya offers a critical case:
 - [Datasets](#datasets)
 - [Data Modelling](#data-modelling)
 - [Setup Instructions](#setup-instructions)
-- [Infrastructure (Terraform)](#infrastructure-terraform)
+- [Infrastructure (Terraform + GCP)](#infrastructure-terraform)
 - [Dashboard](#dashboard)
 - [Ethics](#ethics)
 - [Roadmap](#roadmap)
@@ -514,6 +514,301 @@ workflow:
   - Run tests on push.
   - Lint + format with pre-commit.
   - Deploy infra + dashboard on tagged release.
+
+## 🏗️ 
+
+## Infrastructure (Terraform + GCP)
+
+This project uses Terraform to provision and manage all cloud infrastructure on Google Cloud Platform (GCP). The infrastructure is modularized into reusable components for BigQuery, GCS, and IAM.
+The goal is to ensure the entire data platform is:
+ - reproducible
+ - version-controlled
+ - environment-consistent
+ - easy to deploy or tear down
+   
+### 📦 Infrastructure Structure
+infra/
+│
+├── main.tf
+├── provider.tf
+├── variables.tf
+├── terraform.tfvars
+├── .gitignore
+├── setup-gcp.sh
+├── verify-gcp.sh
+│
+└── modules/
+    ├── bigquery/
+    ├── gcs/
+    └── iam/
+
+### ☁️ Provider Configuration
+**infra/provider.tf**
+Defines the Google Cloud provider and authentication context.
+```hcl
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "google" {
+  project = var.project_id
+  region  = var.region
+}
+```
+### ⚙️ Root Infrastructure Configuration
+**infra/main.tf**
+This is the orchestration layer that connects all modules.
+```hcl
+module "bigquery" {
+  source      = "./modules/bigquery"
+  project_id  = var.project_id
+  dataset_id  = var.bigquery_dataset
+}
+
+module "gcs" {
+  source      = "./modules/gcs"
+  project_id  = var.project_id
+  bucket_name = var.bucket_name
+}
+
+module "iam" {
+  source     = "./modules/iam"
+  project_id = var.project_id
+}
+```
+### 🔧 Variables
+**infra/variables.tf**
+Centralized configuration inputs.
+```hcl
+variable "project_id" {
+  type        = string
+  description = "GCP Project ID"
+}
+
+variable "region" {
+  type        = string
+  default     = "us-central1"
+}
+
+variable "bigquery_dataset" {
+  type        = string
+  default     = "civil_liberties"
+}
+
+variable "bucket_name" {
+  type        = string
+  description = "GCS bucket for raw and staged data"
+}
+```
+**infra/terraform.tfvars
+Environment-specific values.**
+```hcl
+project_id        = "encoded-joy-485413-k5"
+region            = "us-central1"
+bigquery_dataset  = "civil_liberties"
+bucket_name       = "civil-liberties-data"
+```
+### 🧠 BigQuery Module
+**infra/modules/bigquery/main.tf**
+Creates datasets for marts, staging, and reporting layers.
+```hcl
+resource "google_bigquery_dataset" "civil_liberties" {
+  dataset_id                  = var.dataset_id
+  project                     = var.project_id
+  location                    = "US"
+  delete_contents_on_destroy  = true
+
+  labels = {
+    environment = "dev"
+    project     = "civil-liberties"
+  }
+}
+```
+**infra/modules/bigquery/variables.tf**
+```hcl
+variable "project_id" {}
+variable "dataset_id" {}
+```
+
+### 🪣 GCS Data Lake Module
+**infra/modules/gcs/main.tf**
+Stores raw ingestion data (OONI, ACLED, Google, Lumen).
+```hcl
+resource "google_storage_bucket" "data_lake" {
+  name          = var.bucket_name
+  location      = "US"
+  force_destroy = true
+
+  uniform_bucket_level_access = true
+
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      age = 90
+    }
+  }
+}
+```
+**infra/modules/gcs/variables.tf**
+```hcl
+variable "project_id" {}
+variable "bucket_name" {}
+```
+
+### 🔐 IAM Module
+**infra/modules/iam/main.tf**
+Defines service accounts and permissions.
+```hcl
+resource "google_service_account" "pipeline_sa" {
+  account_id   = "civil-liberties-pipeline"
+  display_name = "Civil Liberties Pipeline Service Account"
+}
+
+resource "google_project_iam_member" "bq_access" {
+  project = var.project_id
+  role    = "roles/bigquery.dataEditor"
+  member  = "serviceAccount:${google_service_account.pipeline_sa.email}"
+}
+
+resource "google_project_iam_member" "gcs_access" {
+  project = var.project_id
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${google_service_account.pipeline_sa.email}"
+}
+```
+
+**infra/modules/iam/variables.tf**
+```hcl
+variable "project_id" {}
+```
+
+### 🚀 Setup Script
+**infra/setup-gcp.sh**
+Bootstraps Terraform environment.
+```hcl
+#!/bin/bash
+
+set -e
+
+echo "Initializing Terraform..."
+terraform init
+
+echo "Formatting Terraform files..."
+terraform fmt
+
+echo "Validating configuration..."
+terraform validate
+
+echo "Ready to apply infrastructure."
+```
+
+✅ Verification Script
+**infra/verify-gcp.sh**
+Checks deployed resources.
+```hcl
+#!/bin/bash
+
+echo "Checking BigQuery datasets..."
+bq ls
+
+echo "Checking GCS buckets..."
+gsutil ls
+
+echo "Verifying service accounts..."
+gcloud iam service-accounts list
+```
+
+### 🧩 Infrastructure Design Summary
+This infrastructure is designed as a modular data platform backbone:
+Layers:
+GCS → raw ingestion layer (data lake)
+BigQuery → analytical warehouse (marts + reporting)
+IAM → controlled pipeline access layer
+Key principles:
+modular Terraform design
+environment-safe variables
+reproducible deployments
+minimal manual cloud configuration
+
+### 📌 Resulting Architecture
+Raw Data (OONI / ACLED / Google / Lumen)
+                ↓
+            GCS Bucket
+                ↓
+         BigQuery Staging
+                ↓
+        marts + reporting layer
+                ↓
+        Streamlit dashboards
+
+## 📊 
+## Dashboards
+
+This project includes an evolving set of Streamlit dashboards designed to make censorship, conflict, and platform pressure intuitive, explorable, and actionable.
+
+      ⚠️ Note: These dashboards are early analytical surfaces, not final products.
+      The system is actively evolving — more views, breakdowns, and interactivity will be added over time.
+      
+### 🧭 Censorship Timeline
+
+<img width="553" height="428" alt="censorshiptimeline" src="https://github.com/user-attachments/assets/f8e2d7ae-31e0-4918-9a22-b5f77d0afaae" />
+
+The Censorship Timeline is the primary analytical view of the system.
+It tracks how censorship dynamics evolve over time by combining:
+
+📡 Block Rate (%) — derived from OONI network measurements
+⚔️ Conflict Events — sourced from ACLED
+📄 Takedown Requests — from Google Transparency + Lumen
+
+What this shows
+- Temporal spikes in censorship activity
+- Alignment (or divergence) between:
+- network-level blocking
+- real-world conflict
+- legal/platform pressure
+- Long-term structural trends (e.g. steady increases in takedown activity)
+- Why it matters
+
+This view answers:
+
+                          Does censorship increase during conflict?
+                          Are governments blocking networks or relying on legal takedowns?
+                          When do suppression events actually begin and end?
+
+### 🚨 Suppression Windows
+
+<img width="396" height="327" alt="supression_window" src="https://github.com/user-attachments/assets/84ab32ed-f560-4d3e-9a56-1d829fb3d527" />
+
+The Suppression Windows dashboard segments time into meaningful censorship regimes.
+
+Each record is classified into one of the following:
+  BASELINE → normal conditions
+  HIGH_NETWORK_BLOCKING → elevated blocking rates
+  ACTIVE_SUPPRESSION → conflict + blocking overlap
+  LEGAL_OR_PLATFORM_PRESSURE → takedown-driven control
+  FINANCE_BILL_CRISIS → predefined political shock window
+  
+What this shows
+  Distribution of time spent in each suppression state
+  Relative dominance of censorship strategies
+  Whether repression is:
+  structural (baseline-heavy)
+  reactive (event-driven spikes)
+  systemic (persistent high blocking)
+Why it matters
+- This transforms raw signals into interpretable political states, enabling:
+
+        Policy analysis
+        Narrative building
+        Crisis detection
+        Comparative studies over time
 
 ## Contact Information
 Project Owner: Samwel Njogu
