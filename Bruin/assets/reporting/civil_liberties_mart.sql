@@ -2,6 +2,9 @@
 name: reporting.civil_liberties_mart
 type: bq.sql
 connection: bigquery-default
+description: |
+  Cross-source civil liberties analytical spine for Kenya.
+  Built from curated fact tables only (no raw signals).
 materialization:
   type: table
   strategy: create+replace
@@ -12,15 +15,15 @@ WITH ooni AS (
     SELECT
         measurement_date,
         LOWER(country) AS country,
-        platform,
+        asn,
 
-        COUNT(*) AS total_measurements,
-        COUNTIF(is_blocked) AS blocked_count,
-        COUNTIF(blocking_confidence = 'HIGH') AS confirmed_blocks,
+        SUM(ooni_tests) AS ooni_tests,
+        SUM(blocked_tests) AS blocked_tests,
+        SAFE_DIVIDE(SUM(blocked_tests), SUM(ooni_tests)) AS block_rate,
 
-        SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) AS blocking_rate
+        SUM(network_block_signals) AS network_block_signals
 
-    FROM `encoded-joy-485413-k5.int.ooni_signals`
+    FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
     GROUP BY 1,2,3
 ),
 
@@ -30,9 +33,8 @@ acled AS (
         event_date AS measurement_date,
         LOWER(country) AS country,
 
-        SUM(event_count) AS conflict_events,
-        SUM(fatalities) AS fatalities,
-        COUNTIF(event_type = 'Protests') AS protest_events_on_day
+        SUM(events) AS conflict_events,
+        SUM(fatalities) AS fatalities
 
     FROM `encoded-joy-485413-k5.stg.acled_conflict_events`
     GROUP BY 1,2
@@ -43,44 +45,53 @@ takedowns AS (
     SELECT
         measurement_date,
         LOWER(country) AS country,
-        platform,
 
-        COUNT(*) AS total_takedown_requests,
-        SUM(COALESCE(item_count,1)) AS items_removed
+        SUM(total_requests) AS takedown_requests,
+        SUM(items_removed) AS items_removed
 
-    FROM `encoded-joy-485413-k5.marts.fact_takedown_requests`
-    GROUP BY 1,2,3
+    FROM `encoded-joy-485413-k5.marts.fact_takedown_trends`
+    GROUP BY 1,2
+),
+
+pressure AS (
+
+    SELECT
+        measurement_date,
+        LOWER(country) AS country,
+
+        SUM(takedown_requests) AS google_requests
+
+    FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
+    GROUP BY 1,2
 ),
 
 base AS (
 
     SELECT
-        o.measurement_date,
-        o.country,
-        o.platform,
+        COALESCE(o.measurement_date, a.measurement_date, t.measurement_date, p.measurement_date) AS measurement_date,
+        COALESCE(o.country, a.country, t.country, p.country) AS country,
 
-        o.total_measurements,
-        o.blocked_count,
-        o.confirmed_blocks,
-        o.blocking_rate,
+        -- OONI
+        COALESCE(o.ooni_tests,0) AS ooni_tests,
+        COALESCE(o.blocked_tests,0) AS blocked_tests,
+        COALESCE(o.block_rate,0) AS block_rate,
+        COALESCE(o.network_block_signals,0) AS network_block_signals,
 
+        -- ACLED
         COALESCE(a.conflict_events,0) AS conflict_events,
         COALESCE(a.fatalities,0) AS fatalities,
-        COALESCE(a.protest_events_on_day,0) AS protest_events_on_day,
 
-        COALESCE(t.total_takedown_requests,0) AS total_takedown_requests,
-        COALESCE(t.items_removed,0) AS items_removed
+        -- Lumen / takedown trends
+        COALESCE(t.takedown_requests,0) AS takedown_requests,
+        COALESCE(t.items_removed,0) AS items_removed,
+
+        -- Google / cross-source pressure
+        COALESCE(p.google_requests,0) AS google_requests
 
     FROM ooni o
-
-    LEFT JOIN acled a
-        ON o.measurement_date = a.measurement_date
-       AND o.country = a.country
-
-    LEFT JOIN takedowns t
-        ON o.measurement_date = t.measurement_date
-       AND o.country = t.country
-       AND o.platform = t.platform
+    FULL OUTER JOIN acled a USING (measurement_date, country)
+    FULL OUTER JOIN takedowns t USING (measurement_date, country)
+    FULL OUTER JOIN pressure p USING (measurement_date, country)
 ),
 
 features AS (
@@ -88,17 +99,18 @@ features AS (
     SELECT
         *,
 
-        -- flags
-        blocked_count > 0 AS is_blocked,
-        confirmed_blocks > 0 AS is_confirmed_block,
-        (blocked_count > 0 AND protest_events_on_day > 0) AS blocked_on_protest_day,
+        -- core flags
+        blocked_tests > 0 AS has_blocking,
+        conflict_events > 0 AS has_conflict,
 
-        -- intensity score
+        (blocked_tests > 0 AND conflict_events > 0) AS conflict_block_overlap,
+
+        -- intensity score (clean + stable)
         (
-            0.5 * COALESCE(blocking_rate,0)
-          + 0.3 * LEAST(conflict_events / 10.0,1.0)
-          + 0.2 * LEAST(total_takedown_requests / 50.0,1.0)
-        ) AS censorship_intensity_score
+            0.5 * SAFE_DIVIDE(blocked_tests, NULLIF(ooni_tests,0))
+          + 0.3 * LEAST(conflict_events / 10.0, 1.0)
+          + 0.2 * LEAST((takedown_requests + google_requests) / 100.0, 1.0)
+        ) AS civil_liberties_pressure_index
 
     FROM base
 ),
@@ -109,24 +121,20 @@ windows AS (
         *,
 
         CASE
-            -- 🔥 Finance Bill Crisis (Kenya June 2024)
             WHEN measurement_date BETWEEN '2024-06-15' AND '2024-07-15'
                 THEN 'FINANCE_BILL_CRISIS'
 
-            -- Protest aligned
-            WHEN protest_events_on_day > 0 AND is_blocked
-                THEN 'PROTEST_SUPPRESSION'
+            WHEN conflict_events > 0 AND blocked_tests > 0
+                THEN 'ACTIVE_SUPPRESSION'
 
-            -- High blocking spikes
-            WHEN blocking_rate > 0.5
-                THEN 'HIGH_BLOCKING'
+            WHEN block_rate > 0.5
+                THEN 'HIGH_NETWORK_BLOCKING'
 
-            -- Legal pressure only
-            WHEN total_takedown_requests > 0 AND blocking_rate < 0.1
-                THEN 'LEGAL_PRESSURE'
+            WHEN takedown_requests > 0 OR google_requests > 0
+                THEN 'LEGAL_OR_PLATFORM_PRESSURE'
 
             ELSE 'BASELINE'
-        END AS suppression_window_type
+        END AS suppression_window
 
     FROM features
 )
@@ -144,5 +152,4 @@ SELECT
 FROM windows w
 
 LEFT JOIN `encoded-joy-485413-k5.marts.dim_dates` d
-    ON w.measurement_date = d.date_key
-;
+    ON w.measurement_date = d.date_key;
