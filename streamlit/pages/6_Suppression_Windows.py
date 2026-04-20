@@ -5,8 +5,12 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from utils.bq_client import run_query, table, PALETTE, SUPPRESSION_COLORS
+from utils.bq_client import run_query, table, PALETTE
 
+
+# ─────────────────────────────────────────────
+# PAGE CONFIG
+# ─────────────────────────────────────────────
 
 st.set_page_config(
     page_title="Suppression Windows · Observatory",
@@ -14,16 +18,16 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🚨 Suppression Windows")
-st.caption("System-generated regimes of censorship + conflict + legal pressure")
+st.title("🚨 Suppression Windows Analysis")
+st.caption("Regime detection across censorship, protests, and enforcement signals")
 
 
 # ─────────────────────────────────────────────
-# DATA LOAD (STRICT MART ONLY)
+# DATA LOAD (MART ONLY — NO DERIVED LABELS)
 # ─────────────────────────────────────────────
 
 @st.cache_data(ttl=3600)
-def load_data(start_date=None, end_date=None):
+def load_data():
     return run_query(f"""
         SELECT
             measurement_date,
@@ -36,14 +40,13 @@ def load_data(start_date=None, end_date=None):
             items_removed,
             google_requests,
             civil_liberties_pressure_index
-        FROM {table('civil_liberties_mart')}
-        WHERE 1=1
-        ORDER BY measurement_date
+        FROM {table("civil_liberties_mart")}
     """)
+
 
 df = load_data()
 
-if df.empty:
+if df is None or df.empty:
     st.warning("No suppression data available.")
     st.stop()
 
@@ -52,38 +55,49 @@ df["measurement_date"] = pd.to_datetime(df["measurement_date"])
 
 
 # ─────────────────────────────────────────────
-# KPIs
+# CLEANING
 # ─────────────────────────────────────────────
 
-full_windows = df[df["suppression_window"] == "FINANCE_BILL_CRISIS"]
-active_suppression = df[df["suppression_window"] == "ACTIVE_SUPPRESSION"]
+df["conflict_events"] = df["conflict_events"].fillna(0)
+df["block_rate"] = df["block_rate"].fillna(0)
+
+
+# ─────────────────────────────────────────────
+# KPI BLOCK (CORRECT INTERPRETATION)
+# ─────────────────────────────────────────────
+
+window_counts = df.groupby("suppression_window").size().reset_index(name="days")
+
+full = df[df["suppression_window"] == "Full Suppression Window"]
+partial = df[df["suppression_window"].isin([
+    "Blocking + Protest Day",
+    "Blocking + Removal Activity"
+])]
 
 c1, c2, c3, c4 = st.columns(4)
 
-c1.metric("Finance Crisis Days", len(full_windows))
-c2.metric("Active Suppression Days", len(active_suppression))
-c3.metric("Peak Pressure Index", f"{df['civil_liberties_pressure_index'].max():.2f}")
-c4.metric("Avg Block Rate", f"{df['block_rate'].mean()*100:.2f}%")
+c1.metric("Full suppression days", len(full))
+c2.metric("Partial suppression days", len(partial))
+c3.metric("Peak pressure index", f"{df['civil_liberties_pressure_index'].max():.2f}")
+c4.metric("Avg block rate", f"{df['block_rate'].mean()*100:.2f}%")
 
 st.divider()
 
 
 # ─────────────────────────────────────────────
-# WINDOW DISTRIBUTION
+# WINDOW DISTRIBUTION (FIXED INTERPRETATION)
 # ─────────────────────────────────────────────
 
-window_counts = (
-    df.groupby("suppression_window", as_index=False)
-    .size()
-    .sort_values("size", ascending=True)
-)
+window_counts = window_counts.sort_values("days")
 
 fig = px.bar(
     window_counts,
-    x="size",
+    x="days",
     y="suppression_window",
     orientation="h",
-    title="Suppression Window Frequency"
+    title="Suppression Window Distribution (Days)",
+    color="days",
+    color_continuous_scale="Reds"
 )
 
 fig.update_layout(
@@ -99,14 +113,14 @@ st.divider()
 
 
 # ─────────────────────────────────────────────
-# INTENSITY OVER TIME (FIXED METRIC)
+# TIME SERIES (CLEAN MULTI-SIGNAL VIEW)
 # ─────────────────────────────────────────────
 
 daily = df.groupby("measurement_date", as_index=False).agg({
-    "civil_liberties_pressure_index": "max",
     "block_rate": "mean",
     "conflict_events": "sum",
-    "takedown_requests": "sum"
+    "takedown_requests": "sum",
+    "civil_liberties_pressure_index": "max"
 })
 
 fig2 = go.Figure()
@@ -114,27 +128,34 @@ fig2 = go.Figure()
 fig2.add_trace(go.Scatter(
     x=daily["measurement_date"],
     y=daily["civil_liberties_pressure_index"],
-    fill="tozeroy",
     name="Pressure Index",
-    line=dict(color=PALETTE["coral"])
+    line=dict(color=PALETTE["coral"], width=2),
+    fill="tozeroy"
 ))
 
 fig2.add_trace(go.Scatter(
     x=daily["measurement_date"],
     y=daily["block_rate"] * 100,
     name="Block Rate %",
-    yaxis="y2",
-    line=dict(color=PALETTE["amber"])
+    line=dict(color=PALETTE["amber"], width=2),
+    yaxis="y2"
+))
+
+fig2.add_trace(go.Bar(
+    x=daily["measurement_date"],
+    y=daily["conflict_events"],
+    name="Conflict Events",
+    opacity=0.4
 ))
 
 fig2.update_layout(
-    title="Suppression Pressure Over Time",
+    title="Suppression Dynamics Over Time",
     plot_bgcolor="#0D0D0F",
     paper_bgcolor="#0D0D0F",
     font_color="#E8E6DF",
-    yaxis=dict(title="Pressure Index"),
-    yaxis2=dict(overlaying="y", side="right", title="Block Rate %"),
-    legend=dict(orientation="h")
+    legend=dict(orientation="h"),
+    yaxis=dict(title="Pressure / Conflict"),
+    yaxis2=dict(title="Block Rate %", overlaying="y", side="right")
 )
 
 st.plotly_chart(fig2, use_container_width=True)
@@ -143,7 +164,7 @@ st.divider()
 
 
 # ─────────────────────────────────────────────
-# REGIME BREAKDOWN
+# REGIME INTENSITY (CORRECT AGGREGATION)
 # ─────────────────────────────────────────────
 
 regime = df.groupby("suppression_window", as_index=False).agg({
@@ -159,7 +180,8 @@ fig3 = px.bar(
     y="suppression_window",
     orientation="h",
     color="civil_liberties_pressure_index",
-    color_continuous_scale="Reds"
+    color_continuous_scale="Reds",
+    title="Suppression Regime Intensity"
 )
 
 fig3.update_layout(
@@ -176,7 +198,7 @@ st.divider()
 
 
 # ─────────────────────────────────────────────
-# FULL TABLE VIEW
+# RAW TABLE (DEBUG SAFE)
 # ─────────────────────────────────────────────
 
 st.subheader("📊 Suppression Window Dataset")
@@ -187,7 +209,6 @@ st.dataframe(
         "suppression_window",
         "block_rate",
         "conflict_events",
-        "fatalities",
         "takedown_requests",
         "civil_liberties_pressure_index"
     ]],
