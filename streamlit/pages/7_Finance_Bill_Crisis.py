@@ -12,10 +12,11 @@ import pandas as pd
 
 from utils.bq_client import run_query, table, PALETTE, STATUS_COLORS
 
+
 st.set_page_config(
     page_title="Finance Bill Crisis · Observatory",
     page_icon="🔥",
-    layout="wide"
+    layout="wide",
 )
 
 st.markdown("""
@@ -46,15 +47,20 @@ st.markdown("""
     🔥 KENYA FINANCE BILL CRISIS — 2024
   </h2>
   <p style="margin:0.4rem 0 0;color:#6B6966;font-size:0.85rem;">
-    Jun–Dec 2024: Gen Z protests triggered Kenya's most intense documented censorship period.
+    Jun–Dec 2024: Gen Z-led protests triggered Kenya's most significant
+    documented internet interference period.
   </p>
 </div>
 """, unsafe_allow_html=True)
 
+
 CRISIS_START = "2024-06-01"
 CRISIS_END = "2024-12-31"
 
-# ── DATA ─────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────
+# DATA LOADERS
+# ─────────────────────────────────────────────────────────────
 
 @st.cache_data(ttl=3600)
 def load_crisis_vs_baseline():
@@ -66,35 +72,32 @@ def load_crisis_vs_baseline():
                 ELSE 'Baseline'
             END AS period,
 
-            SUM(COUNTIF(is_blocked)) AS blocked,
-            SUM(COUNT(*)) AS total,
+            COUNT(*) AS measurements,
+            COUNTIF(is_blocked) AS blocked,
+            COUNTIF(is_confirmed_block) AS confirmed_blocked,
 
-            ROUND(
-                SAFE_DIVIDE(SUM(COUNTIF(is_blocked)), SUM(COUNT(*))) * 100,
-                1
-            ) AS blocking_rate,
+            ROUND(SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) * 100, 1)
+                AS blocking_rate,
 
+            COUNTIF(blocked_on_protest_day) AS blocked_protest_day,
             SUM(protest_events_on_day) AS total_protests,
-            SUM(total_takedown_requests) AS total_takedowns,
-            SUM(COUNTIF(is_confirmed_block)) AS confirmed_blocked
+            SUM(total_takedown_requests) AS total_takedowns
 
         FROM {table('civil_liberties_mart')}
         GROUP BY period
     """)
 
+
 @st.cache_data(ttl=3600)
 def load_crisis_daily():
     return run_query(f"""
         SELECT
-            DATE(measurement_date) AS measurement_date,
-
+            measurement_date,
             COUNTIF(is_blocked) AS blocked,
             COUNT(*) AS total,
 
-            ROUND(
-                SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) * 100,
-                1
-            ) AS blocking_rate,
+            ROUND(SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) * 100, 1)
+                AS blocking_rate,
 
             MAX(protest_events_on_day) AS protests,
             MAX(fatalities_on_day) AS fatalities,
@@ -107,31 +110,31 @@ def load_crisis_daily():
         ORDER BY measurement_date
     """)
 
+
 @st.cache_data(ttl=3600)
 def load_crisis_platforms():
     return run_query(f"""
         SELECT
             platform,
             test_category,
-
             COUNTIF(is_blocked) AS blocked,
             COUNT(*) AS total,
 
-            ROUND(
-                SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) * 100,
-                1
-            ) AS blocking_rate,
+            ROUND(SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) * 100, 1)
+                AS blocking_rate,
 
             COUNTIF(is_confirmed_block) AS confirmed
 
         FROM {table('civil_liberties_mart')}
         WHERE measurement_date BETWEEN '{CRISIS_START}' AND '{CRISIS_END}'
           AND platform IS NOT NULL
+
         GROUP BY platform, test_category
-        HAVING COUNT(*) > 0
+        HAVING COUNTIF(is_blocked) > 0
         ORDER BY blocking_rate DESC
         LIMIT 20
     """)
+
 
 @st.cache_data(ttl=3600)
 def load_crisis_weekly_heatmap():
@@ -140,18 +143,22 @@ def load_crisis_weekly_heatmap():
             FORMAT_DATE('%Y-W%V', measurement_date) AS iso_week,
             FORMAT_DATE('%a', measurement_date) AS dow_label,
 
-            ROUND(
-                SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) * 100,
-                1
-            ) AS blocking_rate
+            ROUND(SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) * 100, 1)
+                AS blocking_rate,
+
+            MAX(protest_events_on_day) AS protests
 
         FROM {table('civil_liberties_mart')}
         WHERE measurement_date BETWEEN '{CRISIS_START}' AND '{CRISIS_END}'
+
         GROUP BY iso_week, dow_label
-        ORDER BY iso_week
+        ORDER BY iso_week, dow_label
     """)
 
-# ── LOAD ─────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────
+# LOAD
+# ─────────────────────────────────────────────────────────────
 
 with st.spinner("Loading crisis analysis…"):
     compare_df = load_crisis_vs_baseline()
@@ -159,141 +166,161 @@ with st.spinner("Loading crisis analysis…"):
     platform_df = load_crisis_platforms()
     weekly_df = load_crisis_weekly_heatmap()
 
-# ── SAFE TYPES ───────────────────────────────────────────────────────
 
-if not daily_df.empty:
-    daily_df["measurement_date"] = pd.to_datetime(daily_df["measurement_date"])
-    daily_df["intensity"] = daily_df["intensity"].fillna(0)
+# ─────────────────────────────────────────────────────────────
+# SAFE KPI EXTRACTION
+# ─────────────────────────────────────────────────────────────
 
-# ── SPLIT DATA ───────────────────────────────────────────────────────
+def safe_row(df: pd.DataFrame, col: str, match: str):
+    if df.empty:
+        return None
+    match_df = df[df[col].str.contains(match, na=False)]
+    return match_df.iloc[0] if not match_df.empty else None
 
-crisis_df = compare_df[compare_df["period"].str.contains("Crisis", na=False)]
-baseline_df = compare_df[compare_df["period"] == "Baseline"]
 
-crisis_row = crisis_df.iloc[0] if not crisis_df.empty else None
-baseline_row = baseline_df.iloc[0] if not baseline_df.empty else None
+crisis_row = safe_row(compare_df, "period", "Crisis")
+baseline_row = safe_row(compare_df, "period", "Baseline")
 
-# ── KPI ──────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────
+# KPI SECTION
+# ─────────────────────────────────────────────────────────────
+
+st.markdown("#### Crisis vs Baseline Comparison")
 
 if crisis_row is not None and baseline_row is not None:
-    crisis_rate = float(crisis_row.blocking_rate or 0)
-    baseline_rate = float(baseline_row.blocking_rate or 0)
-    delta = round(crisis_rate - baseline_rate, 1)
+    delta = round(
+        float(crisis_row["blocking_rate"] or 0)
+        - float(baseline_row["blocking_rate"] or 0),
+        1,
+    )
 
     c1, c2, c3, c4 = st.columns(4)
 
     c1.metric(
         "Crisis blocking rate",
-        f"{crisis_rate}%",
+        f"{crisis_row['blocking_rate']}%",
         delta=f"{delta:+}pp vs baseline",
-        delta_color="inverse"
+        delta_color="inverse",
     )
-
-    c2.metric("Baseline blocking rate", f"{baseline_rate}%")
-    c3.metric("Crisis confirmed blocks", f"{int(crisis_row.confirmed_blocked or 0):,}")
-    c4.metric("Crisis protest events", f"{int(crisis_row.total_protests or 0):,}")
+    c2.metric("Baseline blocking rate", f"{baseline_row['blocking_rate']}%")
+    c3.metric("Crisis confirmed blocks", f"{int(crisis_row['confirmed_blocked'] or 0):,}")
+    c4.metric("Crisis protest events", f"{int(crisis_row['total_protests'] or 0):,}")
 
 st.divider()
 
-# ── DAILY TREND ──────────────────────────────────────────────────────
 
-st.markdown("#### Daily Blocking Rate + Protest Events — Crisis Period")
+# ─────────────────────────────────────────────────────────────
+# DAILY CHART
+# ─────────────────────────────────────────────────────────────
+
+st.markdown("#### Daily Blocking Rate + Protest Events")
 
 fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-fig.add_trace(go.Scatter(
-    x=daily_df["measurement_date"],
-    y=daily_df["blocking_rate"],
-    name="Blocking rate (%)",
-    fill="tozeroy",
-    line=dict(color=PALETTE["coral"], width=1.8),
-), secondary_y=False)
+fig.add_trace(
+    go.Scatter(
+        x=daily_df["measurement_date"],
+        y=daily_df["blocking_rate"],
+        name="Blocking rate (%)",
+        fill="tozeroy",
+        line=dict(color=PALETTE["coral"], width=1.8),
+    ),
+    secondary_y=False,
+)
 
-fig.add_trace(go.Bar(
-    x=daily_df["measurement_date"],
-    y=daily_df["protests"],
-    name="Protests",
-    marker_color="rgba(239,159,39,0.55)"
-), secondary_y=True)
+fig.add_trace(
+    go.Bar(
+        x=daily_df["measurement_date"],
+        y=daily_df["protests"],
+        name="Protest events",
+        marker_color="rgba(239,159,39,0.55)",
+    ),
+    secondary_y=True,
+)
 
-fig.add_trace(go.Scatter(
-    x=daily_df["measurement_date"],
-    y=daily_df["intensity"],
-    name="Intensity",
-    line=dict(color=PALETTE["purple"], width=1, dash="dot")
-), secondary_y=False)
+fig.add_trace(
+    go.Scatter(
+        x=daily_df["measurement_date"],
+        y=daily_df["intensity"],
+        name="Intensity score",
+        line=dict(color=PALETTE["purple"], width=1, dash="dot"),
+    ),
+    secondary_y=False,
+)
 
 fig.update_layout(
     plot_bgcolor="#0D0D0F",
     paper_bgcolor="#0D0D0F",
     font_color="#E8E6DF",
     height=380,
-    legend=dict(orientation="h", y=1.06)
+    margin=dict(l=0, r=0, t=20, b=0),
+    legend=dict(orientation="h", y=1.06),
 )
 
-fig.update_yaxes(title_text="Block rate / Intensity", secondary_y=False)
+fig.update_yaxes(title_text="Blocking / Intensity", secondary_y=False)
 fig.update_yaxes(title_text="Protests", secondary_y=True)
 
 st.plotly_chart(fig, use_container_width=True)
 
 st.divider()
 
-# ── WEEKLY HEATMAP ────────────────────────────────────────────────────
 
-st.markdown("#### Weekly Pattern — Blocking Rate")
+# ─────────────────────────────────────────────────────────────
+# WEEKLY HEATMAP
+# ─────────────────────────────────────────────────────────────
+
+st.markdown("#### Week × Day Blocking Heatmap")
 
 pivot = weekly_df.pivot(
     index="dow_label",
     columns="iso_week",
-    values="blocking_rate"
+    values="blocking_rate",
 ).fillna(0)
 
-fig_hm = go.Figure(go.Heatmap(
-    z=pivot.values,
-    x=pivot.columns,
-    y=pivot.index,
-    colorscale=[[0,"#16161A"],[0.4,"#993C1D"],[1,"#E8593C"]],
-    text=[[f"{v:.0f}%" if v > 0 else "" for v in row] for row in pivot.values],
-    texttemplate="%{text}",
-))
+fig_wh = go.Figure(
+    go.Heatmap(
+        z=pivot.values,
+        x=pivot.columns,
+        y=pivot.index,
+        colorscale=[[0, "#16161A"], [0.4, "#993C1D"], [1, "#E8593C"]],
+        text=[[f"{v:.0f}%" if v > 0 else "" for v in row] for row in pivot.values],
+        texttemplate="%{text}",
+    )
+)
 
-fig_hm.update_layout(
+fig_wh.update_layout(
     plot_bgcolor="#0D0D0F",
     paper_bgcolor="#0D0D0F",
     font_color="#E8E6DF",
-    height=240
+    height=240,
 )
 
-st.plotly_chart(fig_hm, use_container_width=True)
+st.plotly_chart(fig_wh, use_container_width=True)
 
-st.divider()
 
-# ── PLATFORM BREAKDOWN ───────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# PLATFORM BREAKDOWN
+# ─────────────────────────────────────────────────────────────
 
-st.markdown("#### Most Blocked Platforms During Crisis")
+st.markdown("#### Most Blocked Platforms")
 
-cat_colors = {
-    "Website/DNS Blocking": PALETTE["coral"],
-    "Messaging App Blocking": PALETTE["amber"],
-    "Circumvention Tool Blocking": PALETTE["purple"],
-    "Other": PALETTE["gray"],
-}
-
-fig_p = px.bar(
+fig_plat = px.bar(
     platform_df.sort_values("blocking_rate"),
     x="blocking_rate",
     y="platform",
-    color="test_category",
-    color_discrete_map=cat_colors,
     orientation="h",
-    text="blocking_rate"
+    color="test_category",
+    text="blocking_rate",
 )
 
-fig_p.update_layout(
+fig_plat.update_layout(
     plot_bgcolor="#0D0D0F",
     paper_bgcolor="#0D0D0F",
     font_color="#E8E6DF",
-    height=460
+    height=460,
 )
 
-st.plotly_chart(fig_p, use_container_width=True)
+fig_plat.update_traces(texttemplate="%{text}%")
+
+st.plotly_chart(fig_plat, use_container_width=True)
