@@ -18,7 +18,8 @@ st.set_page_config(
 )
 
 st.title("🗺️ Kenya Geo Pressure Map")
-st.caption("Spatial distribution of conflict + censorship intensity (country-level proxy view)")
+st.caption(
+    "Spatial distribution of conflict + censorship intensity (country-level proxy view)")
 
 
 # ─────────────────────────────────────────────
@@ -51,7 +52,7 @@ def load_data(start_date, end_date):
             civil_liberties_pressure_index,
             suppression_window
 
-        FROM {table("civil_liberties_mart_v2")}
+        FROM {table("civil_liberties_mart")}
         WHERE measurement_date BETWEEN '{start_date}' AND '{end_date}'
     """)
 
@@ -90,7 +91,8 @@ c1, c2, c3, c4 = st.columns(4)
 c1.metric("Total Conflict Events", f"{geo_df['conflict_events'].sum():,.0f}")
 c2.metric("Total Fatalities", f"{geo_df['fatalities'].sum():,.0f}")
 c3.metric("Avg Block Rate", f"{geo_df['block_rate'].mean()*100:.2f}%")
-c4.metric("Avg Pressure Index", f"{geo_df['civil_liberties_pressure_index'].mean():.2f}")
+c4.metric("Avg Pressure Index",
+          f"{geo_df['civil_liberties_pressure_index'].mean():.2f}")
 
 st.divider()
 
