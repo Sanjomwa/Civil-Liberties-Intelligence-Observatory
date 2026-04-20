@@ -1,3 +1,23 @@
+/* @bruin
+tags:
+  - marts_bq
+name: marts.dim_country
+type: bq.sql
+connection: bigquery-default
+description: |
+  Country dimension table derived from various OONI-related datasets.
+  Standardizes country names and ISO codes for consistent analysis across marts.
+materialization:
+  type: table
+  strategy: create+replace
+depends:
+  -  stg.lumen_requests
+  -  int.ooni_signals
+  -  stg.acled_conflict_events
+  -  stg.google_transparency_requests
+  -  stg.google_transparency_detailed
+
+@bruin */ 
 WITH raw AS (
   SELECT country AS raw_country FROM `stg.lumen_requests`
   UNION DISTINCT

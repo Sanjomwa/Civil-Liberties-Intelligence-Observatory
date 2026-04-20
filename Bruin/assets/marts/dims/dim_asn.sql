@@ -1,8 +1,16 @@
--- reporting.dim_asn
--- @bruin
--- type: bq.sql
--- connection: bigquery-default
--- description: ASN dimension table for censorship + network classification
+/* @bruin
+tags:
+  - marts_bq
+name: marts.dim_asn
+type: bq.sql
+connection: bigquery-default
+description: ASN dimension table for censorship + network classification
+materialization:
+  type: table
+  strategy: create+replace
+depends:
+  -  stg.ooni_measurements
+@bruin */
 
 WITH base AS (
   SELECT DISTINCT
