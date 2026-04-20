@@ -17,7 +17,7 @@ from google.oauth2 import service_account
 PROJECT_ID = "encoded-joy-485413-k5"
 
 # FIX: enforce correct default dataset (your main issue)
-DATASET = os.getenv("BQ_DATASET", "marts")
+DATASET = os.getenv("BQ_DATASET", "reporting")
 
 # optional safety clamp (fixes 1997–2026 bug)
 GLOBAL_MIN_DATE = os.getenv("GLOBAL_MIN_DATE", "2023-06-01")

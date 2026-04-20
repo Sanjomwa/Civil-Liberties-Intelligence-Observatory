@@ -5,12 +5,12 @@ connection: bigquery-default
 materialization:
   type: table
   strategy: create+replace
-*/
+@bruin */
 
 WITH
 
 -- =========================
--- OONI AGGREGATION
+-- OONI NETWORK BLOCKING
 -- =========================
 ooni AS (
   SELECT
@@ -19,7 +19,9 @@ ooni AS (
 
     SUM(ooni_tests) AS ooni_tests,
     SUM(blocked_tests) AS blocked_tests,
+
     SAFE_DIVIDE(SUM(blocked_tests), NULLIF(SUM(ooni_tests), 0)) AS block_rate,
+
     SUM(network_block_signals) AS network_block_signals
 
   FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
@@ -27,7 +29,7 @@ ooni AS (
 ),
 
 -- =========================
--- CONFLICTS
+-- CONFLICT EVENTS
 -- =========================
 conflict AS (
   SELECT
@@ -42,7 +44,7 @@ conflict AS (
 ),
 
 -- =========================
--- PRESSURE SIGNALS
+-- PRESSURE SIGNALS (FIXED)
 -- =========================
 pressure AS (
   SELECT
@@ -50,15 +52,14 @@ pressure AS (
     LOWER(country) AS country,
 
     SUM(takedown_requests) AS takedown_requests,
-    SUM(items_removed) AS items_removed,
-    SUM(google_requests) AS google_requests
+    SUM(COALESCE(google_requests, 0)) AS google_requests
 
   FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
   GROUP BY 1,2
 ),
 
 -- =========================
--- BASE JOINED SPINE
+-- BASE SPINE JOIN
 -- =========================
 base AS (
   SELECT
@@ -74,7 +75,6 @@ base AS (
     c.fatalities,
 
     p.takedown_requests,
-    p.items_removed,
     p.google_requests
 
   FROM ooni o
@@ -94,24 +94,29 @@ features AS (
   SELECT
     *,
 
-    COALESCE(blocked_tests > 0, FALSE) AS has_blocking,
-    COALESCE(conflict_events > 0, FALSE) AS has_conflict,
+    COALESCE(blocked_tests, 0) > 0 AS has_blocking,
+    COALESCE(conflict_events, 0) > 0 AS has_conflict,
 
-    (COALESCE(blocked_tests > 0, FALSE)
-     AND COALESCE(conflict_events > 0, FALSE)) AS conflict_block_overlap,
-
-    -- normalized pressure index (stable scaling)
     (
-      0.5 * SAFE_DIVIDE(blocked_tests, NULLIF(ooni_tests, 0)) +
-      0.3 * LEAST(conflict_events / 10.0, 1.0) +
-      0.2 * LEAST((takedown_requests + google_requests) / 100.0, 1.0)
+      COALESCE(blocked_tests, 0) > 0
+      AND COALESCE(conflict_events, 0) > 0
+    ) AS conflict_block_overlap,
+
+    -- normalized pressure index (stable + bounded)
+    (
+      0.5 * SAFE_DIVIDE(COALESCE(blocked_tests, 0), NULLIF(ooni_tests, 0)) +
+      0.3 * LEAST(COALESCE(conflict_events, 0) / 10.0, 1.0) +
+      0.2 * LEAST(
+        (COALESCE(takedown_requests, 0) + COALESCE(google_requests, 0)) / 100.0,
+        1.0
+      )
     ) AS civil_liberties_pressure_index
 
   FROM base
 ),
 
 -- =========================
--- SUPPRESSION WINDOWS (CLEAN LOGIC)
+-- SUPPRESSION WINDOWS
 -- =========================
 windows AS (
   SELECT
@@ -134,7 +139,7 @@ windows AS (
 ),
 
 -- =========================
--- COUNTRY DIMENSION JOIN (FOR GEO)
+-- GEO DIMENSION
 -- =========================
 geo AS (
   SELECT
@@ -143,14 +148,14 @@ geo AS (
     iso2,
 
     CASE
-      WHEN country_name = 'Kenya' THEN -0.0236
-      WHEN country_name = 'DRC' THEN -2.8797
+      WHEN country_name = 'Kenya' THEN -1.286389
+      WHEN country_name = 'DRC' THEN -4.0383
       ELSE NULL
     END AS latitude,
 
     CASE
-      WHEN country_name = 'Kenya' THEN 37.9062
-      WHEN country_name = 'DRC' THEN 23.6560
+      WHEN country_name = 'Kenya' THEN 36.817223
+      WHEN country_name = 'DRC' THEN 21.7587
       ELSE NULL
     END AS longitude
 
@@ -167,17 +172,16 @@ SELECT
   g.latitude,
   g.longitude,
 
-  w.ooni_tests,
-  w.blocked_tests,
+  COALESCE(w.ooni_tests, 0) AS ooni_tests,
+  COALESCE(w.blocked_tests, 0) AS blocked_tests,
   w.block_rate,
-  w.network_block_signals,
+  COALESCE(w.network_block_signals, 0) AS network_block_signals,
 
-  w.conflict_events,
-  w.fatalities,
+  COALESCE(w.conflict_events, 0) AS conflict_events,
+  COALESCE(w.fatalities, 0) AS fatalities,
 
-  w.takedown_requests,
-  w.items_removed,
-  w.google_requests,
+  COALESCE(w.takedown_requests, 0) AS takedown_requests,
+  COALESCE(w.google_requests, 0) AS google_requests,
 
   w.has_blocking,
   w.has_conflict,
@@ -188,4 +192,4 @@ SELECT
 
 FROM windows w
 LEFT JOIN geo g
-ON w.country = g.country
+ON w.country = g.country;

@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import numpy as np
 
 from utils.bq_client import run_query, table, PALETTE
-from utils.contracts import FACT_TAKEDOWN_REQUESTS_SCHEMA
+from streamlit.utils.schema import FACT_TAKEDOWN_REQUESTS_SCHEMA
 
 
 # ─────────────────────────────────────────────
@@ -181,7 +181,8 @@ st.divider()
 # ─────────────────────────────────────────────
 
 req = (
-    df.groupby(["requestor_name", "requestor_type"], as_index=False)["number_of_requests"]
+    df.groupby(["requestor_name", "requestor_type"],
+               as_index=False)["number_of_requests"]
     .sum()
     .sort_values("number_of_requests", ascending=True)
     .tail(15)
