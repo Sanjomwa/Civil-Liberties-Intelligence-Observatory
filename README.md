@@ -207,7 +207,10 @@ Targets: DuckDB (dev), BigQuery (prod)
 
 ---
 
-🧠 Data Model Overview
+## 🧠
+
+## Data Model Overview
+
 Layers
 | Layer   | Purpose                  |
 | ------- | ------------------------ |
