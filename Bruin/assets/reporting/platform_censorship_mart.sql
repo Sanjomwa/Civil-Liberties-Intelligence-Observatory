@@ -7,8 +7,10 @@ connection: bigquery-default
 
 description: |
   Platform-level censorship and blocking analytics combining:
-  - OONI network interference signals
+  - OONI network interference signals (platform-inferred)
   - platform-normalized takedown request intelligence (Google + Lumen)
+
+  Grain: platform × measurement_date
 
   Used for:
   - Platform Blocking dashboard
@@ -24,28 +26,27 @@ materialization:
   strategy: create+replace
 @bruin */
 
-CREATE OR REPLACE TABLE reporting.platform_censorship_mart AS
-
 WITH
 
 -- =========================
--- OONI PLATFORM NORMALIZATION
+-- OONI → PLATFORM INFERENCE
 -- =========================
 network AS (
   SELECT
     DATE(measurement_date) AS measurement_date,
 
-    CASE
-      WHEN LOWER(asn) IS NULL THEN 'unknown'
-      ELSE 'network'
-    END AS platform,
+    -- No real platform in OONI → keep as "network"
+    'network' AS platform,
 
     SUM(ooni_tests) AS tests,
     SUM(blocked_tests) AS blocked,
 
-    SAFE_DIVIDE(SUM(blocked_tests), NULLIF(SUM(ooni_tests), 0)) AS block_rate
+    SAFE_DIVIDE(
+      SUM(blocked_tests),
+      NULLIF(SUM(ooni_tests), 0)
+    ) AS block_rate
 
-  FROM marts.fact_network_blocking_daily
+  FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
   GROUP BY 1,2
 ),
 
@@ -76,12 +77,12 @@ takedowns AS (
       COALESCE(items_removed_policy, 0)
     ) AS items_removed
 
-  FROM marts.fact_takedown_requests
+  FROM `encoded-joy-485413-k5.marts.fact_takedown_requests`
   GROUP BY 1,2
 ),
 
 -- =========================
--- COMBINED SPINE
+-- COMBINED PLATFORM SPINE
 -- =========================
 combined AS (
   SELECT
@@ -96,7 +97,6 @@ combined AS (
     COALESCE(t.items_removed, 0) AS items_removed
 
   FROM network n
-
   FULL OUTER JOIN takedowns t
     ON n.measurement_date = t.measurement_date
    AND n.platform = t.platform
@@ -133,11 +133,11 @@ SELECT
   blocked > 0 AS has_blocking,
   takedown_requests > 0 AS has_takedown,
 
-  -- NORMALIZED COMPONENT
+  -- NORMALIZED METRIC
   SAFE_DIVIDE(takedown_requests, NULLIF(max_takedowns, 0))
     AS normalized_takedowns,
 
-  -- PLATFORM PRESSURE SCORE
+  -- FINAL SCORE
   (
     0.6 * IFNULL(block_rate, 0) +
     0.4 * SAFE_DIVIDE(takedown_requests, NULLIF(max_takedowns, 0))
