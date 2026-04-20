@@ -2,90 +2,87 @@
 name: reporting.civil_liberties_mart
 type: bq.sql
 connection: bigquery-default
-description: Cross-source civil liberties analytical spine for Kenya.
-
 materialization:
   type: table
   strategy: create+replace
 @bruin */
 
 -- =========================
--- OONI (SAFE BASE)
+-- OONI (clean grain already OK)
 -- =========================
 WITH ooni AS (
-
     SELECT
-        measurement_date AS measurement_date,
+        measurement_date,
         LOWER(country) AS country,
+        asn,
 
         SUM(ooni_tests) AS ooni_tests,
         SUM(blocked_tests) AS blocked_tests,
-        SAFE_DIVIDE(SUM(blocked_tests), NULLIF(SUM(ooni_tests),0)) AS block_rate
+        SAFE_DIVIDE(SUM(blocked_tests), SUM(ooni_tests)) AS block_rate,
+        SUM(network_block_signals) AS network_block_signals
 
     FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
-    GROUP BY measurement_date, country
+    GROUP BY 1,2,3
 ),
 
 -- =========================
--- ACLED (SAFE BASE)
+-- ACLED (FIXED DATE FIELD)
 -- =========================
 acled AS (
-
     SELECT
-        event_date AS measurement_date,
+        DATE(event_date) AS measurement_date,
         LOWER(country) AS country,
 
-        SUM(events) AS conflict_events,
+        SUM(event_count) AS conflict_events,
         SUM(fatalities) AS fatalities
 
-    FROM `encoded-joy-485413-k5.stg.acled_conflict_events`
-    GROUP BY event_date, country
+    FROM `encoded-joy-485413-k5.marts.fact_conflict_events`
+    GROUP BY 1,2
 ),
 
 -- =========================
--- TAKEDOWNS
+-- TAKEDOWNS (NORMALIZED DATE)
 -- =========================
 takedowns AS (
-
     SELECT
-        measurement_date,
+        DATE(measurement_date) AS measurement_date,
         LOWER(country) AS country,
 
-        SUM(number_of_requests) AS takedown_requests,
-        SUM(COALESCE(item_count,0)) AS items_removed
+        SUM(total_requests) AS takedown_requests,
+        SUM(total_items_targeted) AS items_removed
 
     FROM `encoded-joy-485413-k5.marts.fact_takedown_trends`
-    GROUP BY measurement_date, country
+    GROUP BY 1,2
 ),
 
 -- =========================
--- GOOGLE PRESSURE
+-- COUNTRY PRESSURE (GOOGLE + LUMEN)
 -- =========================
 pressure AS (
-
     SELECT
-        measurement_date,
+        DATE(measurement_date) AS measurement_date,
         LOWER(country) AS country,
 
-        SUM(number_of_requests) AS google_requests
+        SUM(google_requests) AS google_requests
 
     FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
-    GROUP BY measurement_date, country
+    GROUP BY 1,2
 ),
 
 -- =========================
--- SAFE JOIN BASE (NO USING)
+-- MASTER SPINE (SAFE FULL JOIN)
 -- =========================
 base AS (
-
     SELECT
         COALESCE(o.measurement_date, a.measurement_date, t.measurement_date, p.measurement_date) AS measurement_date,
         COALESCE(o.country, a.country, t.country, p.country) AS country,
+        o.asn,
 
         -- OONI
         COALESCE(o.ooni_tests,0) AS ooni_tests,
         COALESCE(o.blocked_tests,0) AS blocked_tests,
         COALESCE(o.block_rate,0) AS block_rate,
+        COALESCE(o.network_block_signals,0) AS network_block_signals,
 
         -- ACLED
         COALESCE(a.conflict_events,0) AS conflict_events,
@@ -95,11 +92,10 @@ base AS (
         COALESCE(t.takedown_requests,0) AS takedown_requests,
         COALESCE(t.items_removed,0) AS items_removed,
 
-        -- GOOGLE
+        -- GOOGLE PRESSURE
         COALESCE(p.google_requests,0) AS google_requests
 
     FROM ooni o
-
     FULL OUTER JOIN acled a
         ON o.measurement_date = a.measurement_date
        AND o.country = a.country
@@ -117,14 +113,13 @@ base AS (
 -- FEATURES
 -- =========================
 features AS (
-
     SELECT
         *,
 
-        SAFE_DIVIDE(blocked_tests, NULLIF(ooni_tests,0)) AS block_ratio,
+        blocked_tests > 0 AS has_blocking,
+        conflict_events > 0 AS has_conflict,
 
-        (blocked_tests > 0) AS has_blocking,
-        (conflict_events > 0) AS has_conflict,
+        (blocked_tests > 0 AND conflict_events > 0) AS conflict_block_overlap,
 
         (
             0.5 * SAFE_DIVIDE(blocked_tests, NULLIF(ooni_tests,0))
@@ -133,13 +128,36 @@ features AS (
         ) AS civil_liberties_pressure_index
 
     FROM base
-)
+),
 
 -- =========================
--- FINAL OUTPUT
+-- WINDOWS
 -- =========================
+windows AS (
+    SELECT
+        *,
+
+        CASE
+            WHEN measurement_date BETWEEN DATE '2024-06-15' AND DATE '2024-07-15'
+                THEN 'FINANCE_BILL_CRISIS'
+
+            WHEN conflict_events > 0 AND blocked_tests > 0
+                THEN 'ACTIVE_SUPPRESSION'
+
+            WHEN block_rate > 0.5
+                THEN 'HIGH_NETWORK_BLOCKING'
+
+            WHEN takedown_requests > 0 OR google_requests > 0
+                THEN 'LEGAL_OR_PLATFORM_PRESSURE'
+
+            ELSE 'BASELINE'
+        END AS suppression_window
+
+    FROM features
+)
+
 SELECT
-    f.*,
+    w.*,
 
     d.year,
     d.month,
@@ -148,7 +166,7 @@ SELECT
     d.is_weekend,
     d.political_context_flag
 
-FROM features f
+FROM windows w
 
 LEFT JOIN `encoded-joy-485413-k5.marts.dim_dates` d
-    ON f.measurement_date = d.date_key;
+    ON w.measurement_date = d.date_key;
