@@ -11,11 +11,13 @@ import html
 
 from utils.bq_client import run_query, table, PALETTE, SUPPRESSION_COLORS
 
+
 st.set_page_config(
     page_title="Suppression Windows · Observatory",
     page_icon="🚨",
     layout="wide"
 )
+
 
 st.markdown("""
 <style>
@@ -52,12 +54,14 @@ h1,h2,h3 {
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("## 🚨 Suppression Windows")
-st.caption(
-    "Days where blocking, protests, and takedowns overlap."
-)
 
-# ── DATA ─────────────────────────────────────────────────────────────
+st.markdown("## 🚨 Suppression Windows")
+st.caption("Days where blocking, protests, and takedowns overlap.")
+
+
+# ─────────────────────────────────────────────
+# DATA
+# ─────────────────────────────────────────────
 
 @st.cache_data(ttl=3600)
 def load_windows():
@@ -77,8 +81,8 @@ def load_windows():
             MAX(fatalities_on_day) AS fatalities,
             MAX(total_takedown_requests) AS takedowns,
 
-            ARRAY_TO_STRING(ARRAY_AGG(DISTINCT test_category LIMIT 5), ', ') AS categories_blocked,
-            ARRAY_TO_STRING(ARRAY_AGG(DISTINCT platform LIMIT 5), ', ') AS platforms_blocked,
+            STRING_AGG(DISTINCT test_category, ', ') AS categories_blocked,
+            STRING_AGG(DISTINCT platform, ', ') AS platforms_blocked,
 
             MAX(counties_affected) AS counties_affected
 
@@ -86,6 +90,7 @@ def load_windows():
         GROUP BY 1,2,3,4
         ORDER BY max_intensity DESC
     """)
+
 
 @st.cache_data(ttl=3600)
 def load_intensity_distribution():
@@ -98,6 +103,7 @@ def load_intensity_distribution():
         GROUP BY 1,2
         ORDER BY 1,2
     """)
+
 
 @st.cache_data(ttl=3600)
 def load_window_heatmap():
@@ -112,17 +118,36 @@ def load_window_heatmap():
         ORDER BY 1
     """)
 
+
 with st.spinner("Loading suppression window data…"):
     windows_df = load_windows()
     dist_df = load_intensity_distribution()
     heat_df = load_window_heatmap()
 
-# ── SAFE TYPES ───────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────
+# SAFETY NORMALIZATION
+# ─────────────────────────────────────────────
 
 if not windows_df.empty:
-    windows_df["measurement_date"] = pd.to_datetime(windows_df["measurement_date"])
+    windows_df["measurement_date"] = pd.to_datetime(
+        windows_df["measurement_date"], errors="coerce"
+    )
 
-# ── FILTERS ──────────────────────────────────────────────────────────
+    windows_df["max_intensity"] = pd.to_numeric(
+        windows_df["max_intensity"], errors="coerce"
+    )
+
+
+def safe(val, fmt=None):
+    if val is None or pd.isna(val):
+        return "—"
+    return fmt.format(val) if fmt else val
+
+
+# ─────────────────────────────────────────────
+# FILTERS
+# ─────────────────────────────────────────────
 
 full_suppress = windows_df[
     windows_df["suppression_window_type"] == "Full Suppression Window"
@@ -132,7 +157,10 @@ block_protest = windows_df[
     windows_df["suppression_window_type"] == "Blocking + Protest Day"
 ]
 
-# ── KPI ──────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────
+# KPI
+# ─────────────────────────────────────────────
 
 full_mean = full_suppress["max_intensity"].mean() if not full_suppress.empty else None
 
@@ -140,23 +168,33 @@ c1, c2, c3, c4 = st.columns(4)
 
 c1.metric("Full Suppression Window days", len(full_suppress))
 c2.metric("Blocking + Protest days", len(block_protest))
-c3.metric("Peak intensity score", f"{windows_df['max_intensity'].max():.2f}" if not windows_df.empty else "—")
+
+c3.metric(
+    "Peak intensity score",
+    safe(windows_df["max_intensity"].max(), "{:.2f}")
+)
+
 c4.metric(
     "Avg intensity — full windows",
-    f"{full_mean:.2f}" if pd.notna(full_mean) else "—"
+    safe(full_mean, "{:.2f}")
 )
 
 st.divider()
 
-# ── HEATMAP ──────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────
+# HEATMAP
+# ─────────────────────────────────────────────
 
 st.markdown("#### Suppression Window Type × Month")
 
-pivot = heat_df.pivot(
+pivot = heat_df.pivot_table(
     index="suppression_window_type",
     columns="year_month",
-    values="days"
-).fillna(0)
+    values="days",
+    aggfunc="sum",
+    fill_value=0
+)
 
 order = [
     "Full Suppression Window",
@@ -170,8 +208,8 @@ pivot = pivot.reindex([x for x in order if x in pivot.index])
 
 fig = go.Figure(go.Heatmap(
     z=pivot.values,
-    x=pivot.columns,
-    y=pivot.index,
+    x=pivot.columns.astype(str),
+    y=pivot.index.astype(str),
     colorscale=[[0, "#16161A"], [0.5, "#993C1D"], [1, "#E8593C"]],
     text=[[str(int(v)) if v > 0 else "" for v in row] for row in pivot.values],
     texttemplate="%{text}",
@@ -190,7 +228,10 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.divider()
 
-# ── INTENSITY ────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────
+# INTENSITY
+# ─────────────────────────────────────────────
 
 c1, c2 = st.columns(2)
 
@@ -214,6 +255,7 @@ with c1:
 
     st.plotly_chart(fig_dist, use_container_width=True)
 
+
 with c2:
     st.markdown("#### Intensity Timeline")
 
@@ -235,14 +277,19 @@ with c2:
 
     st.plotly_chart(fig_line, use_container_width=True)
 
+
 st.divider()
 
-# ── FULL WINDOWS ─────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────
+# FULL WINDOWS
+# ─────────────────────────────────────────────
 
 st.markdown("#### Full Suppression Windows")
 
 if full_suppress.empty:
     st.info("No full suppression windows detected.")
+
 else:
     for _, row in full_suppress.head(20).iterrows():
 
@@ -252,26 +299,30 @@ else:
         st.markdown(f"""
         <div class="window-card">
             <div class="window-date">
-                📅 {row.measurement_date} · Intensity {row.max_intensity:.2f}
+                📅 {row.measurement_date} · Intensity {safe(row.max_intensity, "{:.2f}")}
             </div>
 
             <div style="margin-top:0.4rem;color:#E8E6DF;">
-                🔴 {int(row.protests or 0)} protests |
-                💀 {int(row.fatalities or 0)} fatalities |
-                📋 {int(row.takedowns or 0)} takedowns
+                🔴 {safe(row.protests)} protests |
+                💀 {safe(row.fatalities)} fatalities |
+                📋 {safe(row.takedowns)} takedowns
             </div>
 
             <div class="window-context">
-                Context: {row.political_context_flag} · {row.protest_season_flag}<br>
+                Context: {html.escape(str(row.political_context_flag))} · {html.escape(str(row.protest_season_flag))}<br>
                 Platforms: {platforms}<br>
                 Categories: {categories}
             </div>
         </div>
         """, unsafe_allow_html=True)
 
+
 st.divider()
 
-# ── TABLE ────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────
+# TABLE
+# ─────────────────────────────────────────────
 
 st.markdown("#### All Suppression Events")
 
