@@ -1,28 +1,26 @@
-# pages/5_Content_Removal.py
-
 import streamlit as st
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
+
 from utils.bq_client import run_query, table, PALETTE
+from utils.contracts import PLATFORM_CENSORSHIP_MART_SCHEMA
+from utils.schema_guard import validate_schema
 
-st.set_page_config(page_title="Content Removal · Observatory", page_icon="📋", layout="wide")
 
-st.markdown("""
-<style>
-html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
-h1,h2,h3 { font-family: 'Space Mono', monospace; }
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(
+    page_title="Content Removal · Observatory",
+    page_icon="📋",
+    layout="wide"
+)
 
 st.title("📋 Content Removal & Takedowns")
 
-# ─────────────────────────────────────────────
-# SAFE SQL BUILDER
-# ─────────────────────────────────────────────
-def sql_in(values):
-    return ", ".join([f"'{v}'" for v in values]) if values else "''"
 
+# ─────────────────────────────────────────────
+# SIDEBAR FILTERS
+# ─────────────────────────────────────────────
 
 with st.sidebar:
     sources = st.multiselect(
@@ -31,14 +29,13 @@ with st.sidebar:
         default=["google_requests", "google_detailed", "lumen"]
     )
 
-src_sql = sql_in(sources)
-
 
 # ─────────────────────────────────────────────
-# DATA LOAD (ONLY FACT TABLE = TRUTH SOURCE)
+# SAFE DATA LOAD (NO STRING INJECTION)
 # ─────────────────────────────────────────────
+
 @st.cache_data(ttl=3600)
-def load_fact(src_sql):
+def load_fact():
     return run_query(f"""
         SELECT
             source,
@@ -48,12 +45,14 @@ def load_fact(src_sql):
             requestor_type,
             number_of_requests,
             items_requested_removal
-        FROM {table('fact_takedown_requests')}
-        WHERE source IN ({src_sql})
-    """)
+        FROM {table("fact_takedown_requests")}
+        WHERE source IN UNNEST(@sources)
+    """, params=[
+        {"name": "sources", "parameterType": {"type": "ARRAY", "arrayType": {"type": "STRING"}}, "parameterValue": {"arrayValues": [{"value": s} for s in sources]}}
+    ])
 
 
-df = load_fact(src_sql)
+df = load_fact()
 
 if df.empty:
     st.warning("No data for selected filters.")
@@ -61,55 +60,64 @@ if df.empty:
 
 
 # ─────────────────────────────────────────────
-# KPI ROW (SAFE)
+# SCHEMA VALIDATION (HARDENED)
 # ─────────────────────────────────────────────
-summary = df.groupby("source").agg({
+
+validate_schema(df, {
+    "source",
+    "platform",
+    "reason",
+    "requestor_name",
+    "requestor_type",
+    "number_of_requests",
+    "items_requested_removal"
+}, "Content Removal")
+
+
+# ─────────────────────────────────────────────
+# KPI ROW
+# ─────────────────────────────────────────────
+
+summary = df.groupby("source", as_index=False).agg({
     "number_of_requests": "sum",
     "items_requested_removal": "sum",
     "platform": "nunique",
     "requestor_name": "nunique"
-}).reset_index()
+})
 
 cols = st.columns(len(summary))
 
 for i, row in summary.iterrows():
     with cols[i]:
-        st.metric(
-            row["source"],
-            f"{int(row['number_of_requests']):,}",
-            help="Total takedown requests"
-        )
+        st.metric(row["source"], f"{int(row['number_of_requests']):,}")
 
 
 st.divider()
 
 
 # ─────────────────────────────────────────────
-# TREND (NO EXTRA GROUPBY IN PYTHON)
+# TREND (SAFE MART DEPENDENCY)
 # ─────────────────────────────────────────────
+
 @st.cache_data(ttl=3600)
-def load_trends(src_sql):
+def load_trends():
     return run_query(f"""
-        SELECT year_month, source, total_requests
-        FROM {table('fact_takedown_trends')}
-        WHERE source IN ({src_sql})
+        SELECT
+            measurement_date,
+            source,
+            total_requests
+        FROM {table("fact_takedown_trends")}
     """)
 
-trend = load_trends(src_sql)
+trend = load_trends()
 
 fig = px.line(
     trend,
-    x="year_month",
+    x="measurement_date",
     y="total_requests",
     color="source",
     markers=True,
     title="Monthly Takedown Volume"
-)
-
-fig.update_layout(
-    plot_bgcolor="#0D0D0F",
-    paper_bgcolor="#0D0D0F",
-    font_color="#E8E6DF"
 )
 
 st.plotly_chart(fig, use_container_width=True)
@@ -118,12 +126,12 @@ st.plotly_chart(fig, use_container_width=True)
 # ─────────────────────────────────────────────
 # TOP REASONS
 # ─────────────────────────────────────────────
+
 reason = (
-    df.groupby("reason")["number_of_requests"]
+    df.groupby("reason", as_index=False)["number_of_requests"]
     .sum()
-    .sort_values()
+    .sort_values("number_of_requests")
     .tail(15)
-    .reset_index()
 )
 
 fig_r = px.bar(
@@ -140,12 +148,12 @@ st.plotly_chart(fig_r, use_container_width=True)
 # ─────────────────────────────────────────────
 # REQUESTORS
 # ─────────────────────────────────────────────
+
 req = (
-    df.groupby(["requestor_name", "requestor_type"])["number_of_requests"]
+    df.groupby(["requestor_name", "requestor_type"], as_index=False)["number_of_requests"]
     .sum()
-    .sort_values()
+    .sort_values("number_of_requests")
     .tail(15)
-    .reset_index()
 )
 
 fig_req = px.bar(
@@ -163,10 +171,10 @@ st.plotly_chart(fig_req, use_container_width=True)
 # ─────────────────────────────────────────────
 # HEATMAP
 # ─────────────────────────────────────────────
+
 heat = (
-    df.groupby(["reason", "platform"])["number_of_requests"]
+    df.groupby(["reason", "platform"], as_index=False)["number_of_requests"]
     .sum()
-    .reset_index()
 )
 
 pivot = heat.pivot(index="reason", columns="platform", values="number_of_requests").fillna(0)
