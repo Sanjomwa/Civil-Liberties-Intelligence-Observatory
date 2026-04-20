@@ -26,24 +26,50 @@
 ![Mermaid](https://img.shields.io/badge/Mermaid-1ABC9C?style=for-the-badge&logo=mermaid&logoColor=white)
 ![Datetime](https://img.shields.io/badge/Python%20StdLib-datetime-555555?style=for-the-badge)
 ---
-## 🎯
+
 ## Problem Statement
 
-Governments increasingly request online content removal. While sometimes justified, these actions can undermine **freedom of expression and civil liberties**.
+Governments are increasingly intervening in digital spaces through:
 
-Kenya offers a critical case:
-- Rising **takedown requests** (Google Transparency)
-- Increasing **conflict & protests** (ACLED)
-- Detected **network interference** (OONI)
+  - Content takedown requests
+  - Platform-level restrictions
+  - Network interference and blocking
 
-👉 Core Question:
-```yaml
-> How political unrest correlates with digital censorship in Kenya
+While sometimes justified, these actions may intensify during political instability — raising concerns about civil liberties erosion in moments of crisis.
+
+### Why Kenya?
+**🇰🇪**
+
+Kenya provides a high-signal environment where three forces intersect:
+
+**📌 Political unrest**
+
+Protests and conflict events (ACLED)
+
+**📌 Digital censorship pressure**
+
+Google / Lumen takedown requests
+
+**📌 Network-level interference**
+
+Blocking signals and access disruptions (OONI)
+
+🔍 Core Insight Question
+```
+Do spikes in political conflict correspond to measurable increases in digital censorship and network interference in Kenya?
 ```
 
+### 📊 What this system enables
+  - Detect censorship spikes during unrest windows
+  - Compare platform vs network-level suppression
+  - Identify regional and temporal suppression patterns
+  - Quantify a unified Civil Liberties Pressure Index
+    
+### 🧭 Outcome
 
+A one-of-its-kind observatory that connects:
 
----
+**street-level political instability → digital information control**
 
 ## Table of Contents
 
