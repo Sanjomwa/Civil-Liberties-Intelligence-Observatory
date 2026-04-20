@@ -1,8 +1,7 @@
 # streamlit/utils/bq_client.py
 
 import os
-import re
-from typing import List, Optional, Sequence
+from typing import List, Optional
 
 import pandas as pd
 import streamlit as st
@@ -15,58 +14,23 @@ from streamlit.errors import StreamlitSecretNotFoundError
 PROJECT_ID = "encoded-joy-485413-k5"
 
 _env = os.getenv("BRUIN_ENVIRONMENT")
+
+# safer fallback
+if _env is None:
+    _env = "dev"
+
 DATASET = "reporting" if _env == "prod" else "marts"
+
 
 ALLOWED_TABLES = {
     "civil_liberties_mart",
     "platform_censorship_mart",
 }
 
-# -----------------------------
-# SAFETY LAYER
-# -----------------------------
 
-FORBIDDEN_SQL_PATTERNS = [
-    r"\bdrop\b",
-    r"\bdelete\b",
-    r"\binsert\b",
-    r"\bupdate\b",
-    r"\balter\b",
-    r"\btruncate\b",
-    r"\bcreate\b",
-]
-
-
-def validate_sql(sql: str) -> None:
-    """Ensures only safe SELECT queries are executed."""
-    sql_lower = sql.strip().lower()
-
-    if not sql_lower.startswith("select"):
-        raise ValueError("Only SELECT queries are allowed.")
-
-    for pattern in FORBIDDEN_SQL_PATTERNS:
-        if re.search(pattern, sql_lower):
-            raise ValueError(f"Unsafe SQL detected: {pattern}")
-
-
-def enforce_limit(sql: str, limit: int = 1000) -> str:
-    """Adds LIMIT if missing (prevents accidental full scans)."""
-    if "limit" not in sql.lower():
-        return sql.rstrip(";") + f"\nLIMIT {limit}"
-    return sql
-
-
-def sql_in(values: Sequence[str]) -> str:
-    """Safe SQL IN clause builder."""
-    cleaned = [v.replace("'", "''") for v in values if v is not None]
-    if not cleaned:
-        return "('')"
-    return "(" + ",".join(f"'{v}'" for v in cleaned) + ")"
-
-
-# -----------------------------
+# ─────────────────────────────────────────────
 # CLIENT
-# -----------------------------
+# ─────────────────────────────────────────────
 
 @st.cache_resource(show_spinner=False)
 def get_client() -> bigquery.Client:
@@ -77,15 +41,16 @@ def get_client() -> bigquery.Client:
                 scopes=["https://www.googleapis.com/auth/cloud-platform"],
             )
             return bigquery.Client(project=PROJECT_ID, credentials=creds)
+
     except StreamlitSecretNotFoundError:
         pass
 
     return bigquery.Client(project=PROJECT_ID)
 
 
-# -----------------------------
+# ─────────────────────────────────────────────
 # TABLE SAFETY
-# -----------------------------
+# ─────────────────────────────────────────────
 
 def table(name: str) -> str:
     if name not in ALLOWED_TABLES:
@@ -93,31 +58,75 @@ def table(name: str) -> str:
     return f"`{PROJECT_ID}.{DATASET}.{name}`"
 
 
-# -----------------------------
-# QUERY ENGINE
-# -----------------------------
+# ─────────────────────────────────────────────
+# QUERY SAFETY
+# ─────────────────────────────────────────────
+
+def ensure_limit(sql: str, limit: int = 1000) -> str:
+    clean = sql.strip().rstrip(";")
+    if " limit " in clean.lower():
+        return clean
+    return f"{clean}\nLIMIT {limit}"
+
+
+def sanitize_df(df: pd.DataFrame) -> pd.DataFrame:
+    if df is None:
+        return pd.DataFrame()
+
+    df = df.copy()
+
+    # normalize column names
+    df.columns = [c.lower() for c in df.columns]
+
+    # safe date parsing
+    for col in df.columns:
+        if "date" in col:
+            try:
+                df[col] = pd.to_datetime(df[col], errors="ignore")
+            except Exception:
+                pass
+
+    return df
+
+
+def safe_metric(val):
+    if val is None:
+        return "—"
+    try:
+        if pd.isna(val):
+            return "—"
+    except Exception:
+        pass
+    return val
+
+
+# ─────────────────────────────────────────────
+# CORE QUERY ENGINE
+# ─────────────────────────────────────────────
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def run_query(
     sql: str,
     params: Optional[List] = None,
-    limit: Optional[int] = None,
+    limit_fallback: int = 1000,
 ) -> pd.DataFrame:
 
-    validate_sql(sql)
-
-    if limit is not None:
-        sql = enforce_limit(sql, limit)
-
     client = get_client()
-    job_config = bigquery.QueryJobConfig(query_parameters=params or [])
 
-    return client.query(sql, job_config=job_config).to_dataframe()
+    sql = ensure_limit(sql, limit_fallback)
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=params or []
+    )
+
+    df = client.query(sql, job_config=job_config).to_dataframe()
+
+    return sanitize_df(df)
 
 
-# -----------------------------
-# MART HELPERS (SAFE)
-# -----------------------------
+# ─────────────────────────────────────────────
+# MART HELPERS
+# ─────────────────────────────────────────────
 
 def get_civil_liberties_data(start_date: str, end_date: str) -> pd.DataFrame:
     sql = f"""
@@ -149,6 +158,18 @@ def get_platform_censorship_data(
     platforms: Optional[List[str]] = None,
 ) -> pd.DataFrame:
 
+    platform_filter = ""
+    params = [
+        ScalarQueryParameter("start_date", "DATE", start_date),
+        ScalarQueryParameter("end_date", "DATE", end_date),
+    ]
+
+    if platforms:
+        platform_filter = "AND platform IN UNNEST(@platforms)"
+        params.append(
+            ArrayQueryParameter("platforms", "STRING", platforms)
+        )
+
     sql = f"""
         SELECT
             measurement_date,
@@ -161,27 +182,16 @@ def get_platform_censorship_data(
             platform_pressure_score
         FROM {table("platform_censorship_mart")}
         WHERE measurement_date BETWEEN @start_date AND @end_date
+        {platform_filter}
+        ORDER BY measurement_date
     """
-
-    params = [
-        ScalarQueryParameter("start_date", "DATE", start_date),
-        ScalarQueryParameter("end_date", "DATE", end_date),
-    ]
-
-    if platforms:
-        sql += " AND platform IN UNNEST(@platforms)"
-        params.append(
-            ArrayQueryParameter("platforms", "STRING", platforms)
-        )
-
-    sql += "\nORDER BY measurement_date"
 
     return run_query(sql, params)
 
 
-# -----------------------------
+# ─────────────────────────────────────────────
 # UI CONSTANTS
-# -----------------------------
+# ─────────────────────────────────────────────
 
 PALETTE = {
     "coral": "#E8593C",
