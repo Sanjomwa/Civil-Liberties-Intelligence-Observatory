@@ -1,30 +1,30 @@
 # utils/contracts.py
 
 CIVIL_LIBERTIES_MART_SCHEMA = {
-    "measurement_date",
-    "block_rate",
-    "blocked_tests",
-    "conflict_events",
-    "fatalities",
-    "takedown_requests",
-    "items_removed",
-    "google_requests",
-    "civil_liberties_pressure_index",
-    "suppression_window",
-    "has_blocking",
-    "has_conflict",
-    "conflict_block_overlap",
-    "ooni_tests",
-    "network_block_signals",
-}
+    "measurement_date": "datetime",
+    "country": "string",
 
-PLATFORM_CENSORSHIP_MART_SCHEMA = {
-    "measurement_date",
-    "platform",
-    "block_rate",
-    "blocked",
-    "tests",
-    "takedown_requests",
-    "items_removed",
-    "platform_pressure_score",
+    # OONI
+    "ooni_tests": "int",
+    "blocked_tests": "int",
+    "block_rate": "float",
+    "network_block_signals": "int",
+
+    # Conflict
+    "conflict_events": "int",
+    "fatalities": "int",
+
+    # Pressure
+    "takedown_requests": "int",
+    "items_removed": "int",
+    "google_requests": "int",
+
+    # Derived
+    "civil_liberties_pressure_index": "float",
+    "suppression_window": "string",
+
+    # Features (important for pages 3/4)
+    "has_blocking": "bool",
+    "has_conflict": "bool",
+    "conflict_block_overlap": "bool",
 }
