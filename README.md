@@ -5,7 +5,8 @@
 **Powered by Bruin | DuckDB | BigQuery | Streamlit | 🇰🇪**
 ---
 ```
-![Streamlit](...) ![BigQuery](...) ![Google Cloud](...) ![Python](...) ![Pandas](...) ![Terraform](...) ![Bruin](...) ![DuckDB](...) ![Parquet](...) ![SQL](...) ![GitHub](...) ![Codespaces](...) ![Google Cloud Storage](...) ![IAM](...) ![Markdown](...) ![Mermaid](...)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
+
 
 ```
 ---
