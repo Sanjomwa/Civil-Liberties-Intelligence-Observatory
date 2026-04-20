@@ -38,10 +38,9 @@ Kenya offers a critical case:
 - [Datasets](#datasets)
 - [Data Modelling](#data-modelling)
 - [Setup Instructions](#setup-instructions)
-- [Infrastructure (Terraform + GCP)](#infrastructure-terraform)
-- [Dashboard](#dashboard)
+- [Infrastructure](#infrastructure)
+- [Dashboards](#dashboards)
 - [Ethics](#ethics)
-- [Roadmap](#roadmap)
 - [Contact](#contact)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
@@ -515,9 +514,13 @@ workflow:
   - Lint + format with pre-commit.
   - Deploy infra + dashboard on tagged release.
 
+---    
+
 ## 🏗️ 
 
-## Infrastructure (Terraform + GCP)
+## Infrastructure 
+
+###(Terraform + GCP)
 
 This project uses Terraform to provision and manage all cloud infrastructure on Google Cloud Platform (GCP). The infrastructure is modularized into reusable components for BigQuery, GCS, and IAM.
 The goal is to ensure the entire data platform is:
@@ -747,6 +750,8 @@ Raw Data (OONI / ACLED / Google / Lumen)
         marts + reporting layer
                 ↓
         Streamlit dashboards
+
+---        
 
 ## 📊 
 
