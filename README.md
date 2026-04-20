@@ -281,7 +281,7 @@ fact_cross_source_censorship_events }o--|| dim_dates : ""
 ```
 ---
 
-##📂
+## 📂
 
 ## Project Structure
 
@@ -380,6 +380,7 @@ If Lumen access remains unavailable, similar transparency datasets can be substi
 
 
 ## 📊
+
 ## Dataset Lineage
 ```mermaid
 flowchart TD
