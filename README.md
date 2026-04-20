@@ -1006,6 +1006,7 @@ It enables:
                 Hypothesis testing
                 Custom storytelling from the data
   
+  
 ### 🧪 Evolving System 
 
 These dashboards are part of a growing observability system.
@@ -1019,9 +1020,15 @@ Future enhancements may include:
 
 The system is designed to continuously evolve into a comprehensive censorship intelligence platform.
 
-## 📄 License
+---
+
+## 📄 
+
+## License
 
 This project is licensed under the MIT License.
+
+---
 
 ## 🙏 
 
