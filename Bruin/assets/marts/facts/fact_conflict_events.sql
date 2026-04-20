@@ -14,8 +14,7 @@ materialization:
 @bruin */
 
 SELECT
-  event_id,
-  measurement_date,
+  event_date ,
   country,
   region,
   admin1 AS county,
