@@ -1,75 +1,32 @@
 # utils/contracts.py
 
-# ─────────────────────────────────────────────
-# CORE MART (PRIMARY SPINE)
-# ─────────────────────────────────────────────
-
 CIVIL_LIBERTIES_MART_SCHEMA = {
-    "measurement_date": "date",
-    "country": "string",
-
-    # OONI
-    "ooni_tests": "int",
-    "blocked_tests": "int",
-    "block_rate": "float",
-    "network_block_signals": "int",
-
-    # Conflict
-    "conflict_events": "int",
-    "fatalities": "int",
-
-    # Pressure
-    "takedown_requests": "int",
-    "items_removed": "int",
-    "google_requests": "int",
-
-    # Derived features
-    "civil_liberties_pressure_index": "float",
-    "suppression_window": "string",
-
-    # Stability flags (IMPORTANT FOR ALL PAGES)
-    "has_blocking": "bool",
-    "has_conflict": "bool",
-    "conflict_block_overlap": "bool",
+    "measurement_date",
+    "country",
+    "block_rate",
+    "blocked_tests",
+    "conflict_events",
+    "fatalities",
+    "takedown_requests",
+    "items_removed",
+    "google_requests",
+    "civil_liberties_pressure_index",
+    "suppression_window",
+    "political_context_flag",
+    "conflict_block_overlap",
+    "has_blocking",
+    "has_conflict",
 }
 
-
-# ─────────────────────────────────────────────
-# PLATFORM MART (SECONDARY SPINE)
-# ─────────────────────────────────────────────
-
-PLATFORM_CENSORSHIP_MART_SCHEMA = {
-    "measurement_date": "date",
-    "platform": "string",
-
-    "block_rate": "float",
-    "blocked": "int",
-    "tests": "int",
-
-    "takedown_requests": "int",
-    "items_removed": "int",
-
-    "platform_pressure_score": "float",
+# strict alias map (fixes schema drift across pages)
+COLUMN_ALIASES = {
+    "suppression_window_type": "suppression_window",
+    "year_month": "measurement_date",
 }
 
-
-# ─────────────────────────────────────────────
-# FACT TABLE CONTRACTS (EXPLORATION ONLY)
-# ─────────────────────────────────────────────
-
-FACT_CONTRACTS = {
-    "fact_takedown_requests": [
-        "source",
-        "platform",
-        "reason",
-        "requestor_name",
-        "number_of_requests"
-    ],
-
-    "fact_conflict_events": [
-        "event_date",
-        "country",
-        "event_count",
-        "fatalities"
-    ]
-}
+def normalize_columns(df):
+    """Standardise mart output across pages"""
+    for old, new in COLUMN_ALIASES.items():
+        if old in df.columns and new not in df.columns:
+            df = df.rename(columns={old: new})
+    return df
