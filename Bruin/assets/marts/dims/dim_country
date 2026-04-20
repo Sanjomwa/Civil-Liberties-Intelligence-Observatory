@@ -1,0 +1,27 @@
+WITH raw AS (
+  SELECT country AS raw_country FROM `stg.lumen_requests`
+  UNION DISTINCT
+  SELECT country FROM `int.ooni_signals`
+  UNION DISTINCT
+  SELECT country FROM `stg.acled_conflict_events`
+  UNION DISTINCT
+  SELECT country FROM `stg.google_transparency_requests`
+  UNION DISTINCT
+  SELECT country_region FROM `stg.google_transparency_detailed`
+)
+
+SELECT
+  raw_country,
+
+  CASE
+    WHEN raw_country IN ('KE','ke','Kenya','kenya','KENYA') THEN 'Kenya'
+    WHEN raw_country = 'Democratic Republic of Congo' THEN 'DRC'
+    ELSE INITCAP(raw_country)
+  END AS country_name,
+
+  CASE
+    WHEN raw_country IN ('KE','ke') THEN 'KE'
+    ELSE NULL
+  END AS iso2
+
+FROM raw;
