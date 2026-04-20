@@ -40,10 +40,10 @@ Kenya offers a critical case:
 - [Setup Instructions](#setup-instructions)
 - [Infrastructure](#infrastructure)
 - [Dashboards](#dashboards)
-- [Ethics](#ethics)
-- [Contact](#contact)
+- [Ethics and Responsible Use](#ethics-and-responsible-use)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
+- [Contact](#contact)
 ---
 
 ## 🌍
@@ -93,7 +93,8 @@ Kenya is used as a case study, but architecture is globally reusable
 
 ---
 
-🏗️
+## 🏗️
+
 ##  Architecture
   DUCKDB does: 
     •	raw validation 
@@ -179,6 +180,7 @@ Layers
 
 ## 📐
 ## ERD & Lineage
+
 ```mermaid
 erDiagram
 google_transparency_detailed ||--o{ stg_google_transparency_detailed : ""
@@ -235,10 +237,9 @@ fact_cross_source_censorship_events }o--|| dim_dates : ""
 ```
 ---
 
-📂
-## Project Structure
+##📂
 
-# Project Structure
+## Project Structure
 
 This repository follows a **modern data engineering + analytics** layout optimized for:
 
@@ -278,9 +279,12 @@ This repository follows a **modern data engineering + analytics** layout optimiz
 └── LICENSE                           # License file
 ---
 ```
-## 📌 
-## Data Access
 
+---
+
+## 📌 
+
+## Data Access
 ### Lumen Database Access
 The Lumen Database aggregates takedown requests across multiple platforms. However, access requires approval and is not guaranteed for all researchers. Since direct access was not available during this project, we generated mock Lumen‑style data via a Python script to ensure pipeline completeness and reproducibility.
 
@@ -444,6 +448,7 @@ Interpretation:
                             × Conflict Event Intensity
                             × Censorship Signal Weight )
                             ÷ Time Normalization Factor
+                            
 Interpretation:
 High score → strong correlation between unrest & censorship
 Used for:
@@ -477,14 +482,92 @@ event_type NOT NULL
 measurement_id UNIQUE
 test_name NOT NULL
 ```
+---
+
 ## ⚖️ 
+
 ## Ethics and Responsible Use
 
-- Only aggregated public datasets used
-- No personal data processing
-- No attribution of individuals
-- Neutral analytical framing only
-- Designed for transparency research
+This project operates at the intersection of technology, governance, and civil liberties.
+As such, ethical considerations are not optional — they are foundational.
+
+### 🔒 Data Privacy & Protection
+ - Only aggregated, publicly available datasets are used
+ - No ingestion, storage, or processing of personally identifiable information (PII)
+ - No attempt is made to de-anonymize or infer identities
+ - All analysis is conducted at country, network, or platform level only
+ - No Individual Attribution
+   
+This system does not identify, track, or profile individuals
+No outputs should be interpreted as targeting:
+  specific users
+  activists
+  journalists
+  or any identifiable group
+
+The focus is strictly on system-level patterns, not people.
+
+### ⚖️ Neutral & Analytical Framing
+
+  The models are designed to measure signals, not assign blame
+  No political stance, endorsement, or accusation is embedded in the system
+  Outputs should be interpreted as:
+  indicators of patterns
+  not definitive proof of intent or causality
+
+### 🧠 Context Matters
+
+  Censorship, conflict, and platform moderation are complex, multi-causal phenomena
+  Observed correlations (e.g. conflict + blocking) do not imply direct causation
+  Results should always be interpreted alongside:
+  political context
+  legal frameworks
+  infrastructure limitations
+  
+### 🌍 Responsible Interpretation
+
+Users of this project are expected to:
+  
+  Avoid misrepresentation of findings
+  Avoid drawing unsupported conclusions
+  Avoid using outputs to justify harm, discrimination, or misinformation
+
+This project is intended for:
+  Research
+  Transparency advocacy
+  Policy analysis
+  Public understanding
+  
+###🛡️ Harm Minimization
+  No real-time surveillance or alerting is implemented
+  No tooling is provided that could be used to:
+  exploit vulnerabilities
+  target infrastructure
+  enable censorship
+
+**The system is observational, not operational.**
+
+### 🔍 Transparency & Reproducibility
+  All transformations are fully auditable via SQL models
+  Data lineage is explicit and reproducible
+  Assumptions (e.g. index weighting) are clearly encoded in the models
+### 📊 Limitations
+  Data coverage is incomplete and uneven over time
+  Some signals (e.g. ASN-level granularity) may be missing or degraded
+  Platform attribution may involve heuristics and approximations
+  Data access is limited to many
+
+**This is an analytical model, not ground truth**
+
+### 🤝 Intended Impact
+
+This project exists to:
+
+ - Promote transparency in digital governance
+ - Enable data-driven conversations about censorship
+ - Support researchers, journalists, and policymakers
+ - Contribute to a more open and accountable internet ecosystem
+
 
 ## 🚀 
 ## Setup Instructions
@@ -520,7 +603,8 @@ workflow:
 
 ## Infrastructure 
 
-###(Terraform + GCP)
+
+### (Terraform + GCP)
 
 This project uses Terraform to provision and manage all cloud infrastructure on Google Cloud Platform (GCP). The infrastructure is modularized into reusable components for BigQuery, GCS, and IAM.
 The goal is to ensure the entire data platform is:
@@ -936,7 +1020,46 @@ Future enhancements may include:
 
 The system is designed to continuously evolve into a comprehensive censorship intelligence platform.
 
-## Contact Information
+## 🙏 
+
+## Acknowledgements
+
+This project would not exist without the tools, communities, and people below.
+
+### 🧠 Learning & Community
+
+- Data Engineering Zoomcamp — for providing a world-class, hands-on data engineering curriculum
+- 2026 Cohort — for the energy, collaboration, and shared learning journey
+- The broader data engineering community — for open knowledge, discussions, and inspiration
+  
+### ☁️ Tools & Platforms
+- GitHub — for version control and collaboration
+- GitHub Codespaces — for enabling a seamless, cloud-based development environment
+- Google Cloud Platform (GCP) — for scalable data infrastructure
+- BigQuery (data warehouse)
+- Cloud Storage (data lake)
+- Bruin — for orchestrating and managing the data pipeline
+  
+### 📊 Data Sources
+  - OONI (Open Observatory of Network Interference)
+  - For global network censorship measurements
+  - ACLED (Armed Conflict Location & Event Data Project)
+  - For structured conflict and political violence data
+  - Google Transparency Report
+  - For government takedown and data request insights
+  - Lumen Database (MOCK)
+
+
+### 💡 Inspiration
+  **Open data and transparency movements
+  Digital rights and civil liberties advocacy work
+  The need to better understand censorship dynamics in Kenya and beyond**
+  
+### 🤝 Final Note
+
+To everyone building in the open, sharing knowledge, and pushing the field forward — this project builds on your work.
+
+## Contact
 Project Owner: Samwel Njogu
 
  Focus: Civil liberties, conflict & censorship analysis observatory as a reproducible pipeline.
