@@ -51,13 +51,13 @@ def run_query(sql: str, params: Optional[List[ScalarQueryParameter]] = None) -> 
 
 
 # -----------------------------
-# MART-SPECIFIC HELPERS
+# MART HELPERS
 # -----------------------------
 
 def get_civil_liberties_data(start_date: str, end_date: str) -> pd.DataFrame:
     sql = f"""
         SELECT
-            date,
+            measurement_date,
             block_rate,
             blocked_tests,
             conflict_events,
@@ -66,8 +66,8 @@ def get_civil_liberties_data(start_date: str, end_date: str) -> pd.DataFrame:
             civil_liberties_pressure_index,
             suppression_window
         FROM {table("civil_liberties_mart")}
-        WHERE date BETWEEN @start_date AND @end_date
-        ORDER BY date
+        WHERE measurement_date BETWEEN @start_date AND @end_date
+        ORDER BY measurement_date
     """
 
     params = [
@@ -98,17 +98,18 @@ def get_platform_censorship_data(
 
     sql = f"""
         SELECT
-            date,
+            measurement_date,
             platform,
             block_rate,
-            blocked_tests,
+            blocked,
+            tests,
             takedown_requests,
             items_removed,
             platform_pressure_score
         FROM {table("platform_censorship_mart")}
-        WHERE date BETWEEN @start_date AND @end_date
+        WHERE measurement_date BETWEEN @start_date AND @end_date
         {platform_filter}
-        ORDER BY date
+        ORDER BY measurement_date
     """
 
     return run_query(sql, params)
