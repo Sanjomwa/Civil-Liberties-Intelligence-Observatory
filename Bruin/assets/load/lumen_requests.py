@@ -82,7 +82,7 @@ def materialize():
     validate(df)
 
     # ─────────────────────────────────────────────────────────────
-    # 1. Prepare clean dataframe for GCS + BigQuery (real TIMESTAMP)
+    # 1. Clean copy for GCS + BigQuery (real TIMESTAMP)
     # ─────────────────────────────────────────────────────────────
     gcs_df = df.copy()
     for col in ["date_submitted", "extracted_at"]:
@@ -90,10 +90,10 @@ def materialize():
             gcs_df[col] = gcs_df[col].dt.tz_convert('UTC').dt.tz_localize(None)
         gcs_df[col] = gcs_df[col].astype('datetime64[us]')
 
-    print(f"✅ Timestamps prepared for BigQuery (microsecond precision)")
-    print(f"   date_submitted range: {gcs_df['date_submitted'].min()} → {gcs_df['date_submitted'].max()}")
+    print(f"✅ Timestamps prepared for BigQuery")
+    print(
+        f"   date_submitted range: {gcs_df['date_submitted'].min()} → {gcs_df['date_submitted'].max()}")
 
-    # Write to GCS (BigQuery will see proper TIMESTAMP)
     gcs_uri = f"gs://{GCS_BUCKET}/{GCS_OBJECT}"
     print(f"☁️  Uploading  : {gcs_uri}")
 
@@ -129,15 +129,16 @@ def materialize():
     print(f"✅ BigQuery external table created: {table_ref}")
 
     # ─────────────────────────────────────────────────────────────
-    # 2. Prepare dataframe for DuckDB / dlt materialization
-    #    (convert back to int64 microseconds to avoid the cast error)
+    # 2. Return dataframe for DuckDB / dlt (INT64 microseconds)
+    #    This matches the current DuckDB column type → no cast error
     # ─────────────────────────────────────────────────────────────
     return_df = df.copy()
     for col in ["date_submitted", "extracted_at"]:
         if pd.api.types.is_datetime64tz_dtype(return_df[col]):
-            return_df[col] = return_df[col].dt.tz_convert('UTC').dt.tz_localize(None)
-        # Convert to microseconds since epoch as INT64 (what DuckDB/dlt expects)
-        return_df[col] = return_df[col].astype('datetime64[us]').astype('int64')
+            return_df[col] = return_df[col].dt.tz_convert(
+                'UTC').dt.tz_localize(None)
+        return_df[col] = return_df[col].astype(
+            'datetime64[us]').astype('int64')
 
     print("✅ Return dataframe prepared for DuckDB (int64 microseconds)")
 
