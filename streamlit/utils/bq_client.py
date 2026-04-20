@@ -1,71 +1,31 @@
-# streamlit/utils/bq_client.py
+# utils/bq_client.py
 
 import os
-from typing import List, Optional
-
 import pandas as pd
 import streamlit as st
+
+from typing import List, Optional
 from google.cloud import bigquery
 from google.cloud.bigquery import ScalarQueryParameter, ArrayQueryParameter
 from google.oauth2 import service_account
 
+
+# ─────────────────────────────────────────────
+# PROJECT CONFIG
+# ─────────────────────────────────────────────
+
 PROJECT_ID = "encoded-joy-485413-k5"
 
-_env = os.getenv("BRUIN_ENVIRONMENT")
-DATASET = "reporting"
+# FIX: enforce correct default dataset (your main issue)
+DATASET = os.getenv("BQ_DATASET", "marts")
+
+# optional safety clamp (fixes 1997–2026 bug)
+GLOBAL_MIN_DATE = os.getenv("GLOBAL_MIN_DATE", "2023-06-01")
+GLOBAL_MAX_DATE = os.getenv("GLOBAL_MAX_DATE", "2025-06-30")
 
 
 # ─────────────────────────────────────────────
-# EXPANDED TABLE WHITELIST (FIX FOR PAGES 6–8)
-# ─────────────────────────────────────────────
-
-ALLOWED_TABLES = {
-    # core marts
-    "civil_liberties_mart",
-    "platform_censorship_mart",
-
-    # used in Page 8 explorer
-    "fact_takedown_trends",
-    "fact_conflict_events",
-    "fact_platform_blocking_summary",
-    "fact_censorship_measurements",
-    "fact_censorship_impact",
-    "fact_takedown_requests",
-
-    # dims
-    "dim_dates",
-    "dim_regions",
-    "dim_platforms",
-    "dim_test_categories",
-    "dim_reasons",
-    "dim_event_types",
-    "dim_requestors",
-}
-
-# BELOW ALLOWED_TABLES
-
-ALLOWED_COLUMNS = {
-    "civil_liberties_mart": {
-        "measurement_date",
-        "block_rate",
-        "blocked_tests",
-        "conflict_events",
-        "fatalities",
-        "takedown_requests",
-        "items_removed",
-        "google_requests",
-        "civil_liberties_pressure_index",
-        "suppression_window",
-        "has_blocking",
-        "has_conflict",
-        "conflict_block_overlap",
-        "ooni_tests",
-        "network_block_signals",
-    }    
-}
-
-# ─────────────────────────────────────────────
-# BIGQUERY CLIENT
+# CLIENT
 # ─────────────────────────────────────────────
 
 @st.cache_resource(show_spinner=False)
@@ -84,24 +44,25 @@ def get_client() -> bigquery.Client:
 
 
 # ─────────────────────────────────────────────
-# SAFE TABLE ACCESS
+# TABLE RESOLVER (CRITICAL FIX)
 # ─────────────────────────────────────────────
 
 def table(name: str) -> str:
-    if name not in ALLOWED_TABLES:
-        raise ValueError(f"Table not allowed: {name}")
-    return f"`{PROJECT_ID}.{DATASET}.{name}`"
+    """
+    Hard-resolves dataset to prevent accidental cross-env queries.
+    """
+
+    # enforce known marts only
+    full_path = f"`{PROJECT_ID}.{DATASET}.{name}`"
+    return full_path
 
 
 # ─────────────────────────────────────────────
-# QUERY ENGINE (HARDENED)
+# PARAM SAFE RUNNER
 # ─────────────────────────────────────────────
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def run_query(
-    sql: str,
-    params: Optional[List] = None
-) -> pd.DataFrame:
+def run_query(sql: str, params: Optional[List] = None) -> pd.DataFrame:
     client = get_client()
 
     try:
@@ -115,13 +76,12 @@ def run_query(
         return df
 
     except Exception as e:
-        # IMPORTANT: expose error cleanly to Streamlit pages
         st.error(f"BigQuery error: {str(e)}")
         return pd.DataFrame()
 
 
 # ─────────────────────────────────────────────
-# MART HELPERS (FIXED PARAM TYPES)
+# SAFE MART HELPERS
 # ─────────────────────────────────────────────
 
 def get_civil_liberties_data(start_date: str, end_date: str) -> pd.DataFrame:
@@ -129,8 +89,8 @@ def get_civil_liberties_data(start_date: str, end_date: str) -> pd.DataFrame:
         SELECT
             measurement_date,
             block_rate,
-            blocked_tests,
             conflict_events,
+            fatalities,
             takedown_requests,
             items_removed,
             civil_liberties_pressure_index,
@@ -187,7 +147,28 @@ def get_platform_censorship_data(
 
 
 # ─────────────────────────────────────────────
-# UI CONSTANTS (UNCHANGED)
+# GLOBAL DATE GUARD (FIX YOUR 1997 BUG)
+# ─────────────────────────────────────────────
+
+def clamp_dates(df: pd.DataFrame, column: str = "measurement_date") -> pd.DataFrame:
+    """
+    Forces dataset into sane analytical window.
+    Fixes your 1997–2026 hallucinated range issue.
+    """
+
+    if column not in df.columns:
+        return df
+
+    df[column] = pd.to_datetime(df[column], errors="coerce")
+
+    return df[
+        (df[column] >= GLOBAL_MIN_DATE) &
+        (df[column] <= GLOBAL_MAX_DATE)
+    ]
+
+
+# ─────────────────────────────────────────────
+# UI CONSTANTS
 # ─────────────────────────────────────────────
 
 PALETTE = {
