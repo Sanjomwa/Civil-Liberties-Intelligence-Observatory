@@ -749,6 +749,7 @@ Raw Data (OONI / ACLED / Google / Lumen)
         Streamlit dashboards
 
 ## 📊 
+
 ## Dashboards
 
 This project includes an evolving set of Streamlit dashboards designed to make censorship, conflict, and platform pressure intuitive, explorable, and actionable.
@@ -787,13 +788,12 @@ This view answers:
 <img width="396" height="327" alt="supression_window" src="https://github.com/user-attachments/assets/84ab32ed-f560-4d3e-9a56-1d829fb3d527" />
 
 The Suppression Windows dashboard segments time into meaningful censorship regimes.
-
 Each record is classified into one of the following:
-  BASELINE → normal conditions
-  HIGH_NETWORK_BLOCKING → elevated blocking rates
-  ACTIVE_SUPPRESSION → conflict + blocking overlap
-  LEGAL_OR_PLATFORM_PRESSURE → takedown-driven control
-  FINANCE_BILL_CRISIS → predefined political shock window
+ - BASELINE → normal conditions
+ - HIGH_NETWORK_BLOCKING → elevated blocking rates
+ - ACTIVE_SUPPRESSION → conflict + blocking overlap
+ - LEGAL_OR_PLATFORM_PRESSURE → takedown-driven control
+ - FINANCE_BILL_CRISIS → predefined political shock window
   
 What this shows
   Distribution of time spent in each suppression state
@@ -809,6 +809,127 @@ Why it matters
         Narrative building
         Crisis detection
         Comparative studies over time
+
+---
+
+### 📈 Monthly Trends
+
+<img width="623" height="317" alt="monthly_trends" src="https://github.com/user-attachments/assets/5d1e2ab6-06ef-4e85-8097-868eb7c3b0f5" />
+
+The Monthly Trends dashboard aggregates censorship and pressure signals into a time-normalized monthly view.
+
+What this shows
+Long-term evolution of:
+
+                    📡 Network blocking activity
+                    ⚔️ Conflict intensity
+                    📄 Takedown request volume
+                    
+Smoothing of daily volatility into clear macro patterns
+
+Why it matters
+- Daily data is noisy. This view helps you:
+
+                    Identify structural shifts in censorship behavior
+                    Detect policy-era changes (e.g. pre/post legislation)
+                    Understand whether repression is increasing, stabilizing, or declining
+  
+### 📱 Platform Blocking Intelligence
+
+<img width="716" height="292" alt="platform_blocking_inteligence" src="https://github.com/user-attachments/assets/ec3af58c-8393-4416-aaf6-e54941004e7f" />
+
+This dashboard focuses on how different platforms are affected by censorship mechanisms.
+
+What this shows
+
+                Blocking intensity by platform (e.g. Twitter, Facebook, WhatsApp)
+                Relative exposure of platforms to:
+                network-level blocking
+                legal/takedown pressure
+                Cross-platform comparison of censorship patterns
+
+Why it matters
+Not all platforms are treated equally.
+
+This helps answer:
+
+                Which platforms are most targeted?
+                Are governments blocking access or removing content?
+                Do messaging platforms behave differently from social media?
+                
+### 🌐 Network Blocks
+
+<img width="614" height="383" alt="network_blocks" src="https://github.com/user-attachments/assets/f8e340d1-1c3a-4a1a-af83-0c84557e4b70" />
+
+The Network Blocks dashboard isolates infrastructure-level censorship signals.
+
+What this shows:
+
+                Volume of blocked tests across time
+                Block rate fluctuations at the network level
+                Detection of high-intensity blocking periods
+                
+Why it matters
+- This is the closest signal to real internet interference.
+
+It helps distinguish:
+
+                Technical censorship (DNS tampering, TCP blocking)
+                From legal/platform moderation
+                ⏳ Platform Blocking Over Time
+
+This view tracks how platform-specific censorship evolves across time.
+
+What this shows:
+
+                Trends in blocking rates per platform
+                Emergence of platform-specific suppression events
+                Persistence or decay of blocking behavior
+Why it matters
+- This allows you to:
+
+                Track targeted censorship campaigns
+                Identify whether blocking is:
+                temporary (event-driven)
+                sustained (policy-driven)
+                Compare platform resilience over time
+  
+  ---
+  
+### 🔍 Platform Trend Explorer
+
+<img width="721" height="471" alt="platform_trend_explorer" src="https://github.com/user-attachments/assets/0586f60c-ea30-4902-89e9-08f29ca19c49" />
+
+The Platform Trend Explorer is an interactive analytical surface for deep dives into platform behavior.
+
+What this shows:
+
+                Flexible filtering across:
+                platforms
+                time ranges
+                censorship signals
+                Drill-down into specific platform events
+                
+Why it matters
+- This is the exploration layer of the system.
+It enables:
+
+                Investigative analysis
+                Hypothesis testing
+                Custom storytelling from the data
+  
+### 🧪 Evolving System 
+
+These dashboards are part of a growing observability system.
+
+Future enhancements may include:
+
+  **🔗 Cross-platform correlation analysis
+   🧠 Predictive censorship modeling
+   📍 Geo-spatial suppression tracking
+   ⚡ Real-time alerting for censorship spikes**
+
+The system is designed to continuously evolve into a comprehensive censorship intelligence platform.
 
 ## Contact Information
 Project Owner: Samwel Njogu
