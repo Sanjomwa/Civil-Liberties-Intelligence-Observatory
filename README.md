@@ -899,7 +899,13 @@ This project includes an evolving set of Streamlit dashboards designed to make c
 
       ⚠️ Note: These dashboards are early analytical surfaces, not final products.
       The system is actively evolving — more views, breakdowns, and interactivity will be added over time.
-      
+
+### Finance Bill Crisis
+
+<img width="715" height="419" alt="finace_bill_crisis_30_day" src="https://github.com/user-attachments/assets/53f398bb-fa63-438d-a183-c33176c6c281" />
+
+---      
+
 ### 🧭 Censorship Timeline
 
 <img width="553" height="428" alt="censorshiptimeline" src="https://github.com/user-attachments/assets/f8e2d7ae-31e0-4918-9a22-b5f77d0afaae" />
