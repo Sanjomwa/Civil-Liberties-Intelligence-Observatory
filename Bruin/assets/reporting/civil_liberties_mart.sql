@@ -1,33 +1,16 @@
 /* @bruin
-tags:
-  - marts_bq
-name: reporting.civil_liberties_mart
+name: reporting.civil_liberties_mart_v2
 type: bq.sql
 connection: bigquery-default
-
-description: |
-  Country-level civil liberties analytical spine combining:
-  - OONI censorship + network blocking
-  - ACLED conflict intensity
-  - Google + Lumen takedown pressure
-
-  Designed for Streamlit dashboards:
-  Timeline, Suppression Windows, Crisis detection, and Country maps.
-
-depends:
-  - marts.fact_network_blocking_daily
-  - marts.fact_conflict_events
-  - marts.fact_country_pressure_daily
-
 materialization:
   type: table
   strategy: create+replace
-@bruin */
+*/
 
 WITH
 
 -- =========================
--- OONI (COUNTRY × DATE)
+-- OONI AGGREGATION
 -- =========================
 ooni AS (
   SELECT
@@ -36,12 +19,7 @@ ooni AS (
 
     SUM(ooni_tests) AS ooni_tests,
     SUM(blocked_tests) AS blocked_tests,
-
-    SAFE_DIVIDE(
-      SUM(blocked_tests),
-      NULLIF(SUM(ooni_tests), 0)
-    ) AS block_rate,
-
+    SAFE_DIVIDE(SUM(blocked_tests), NULLIF(SUM(ooni_tests), 0)) AS block_rate,
     SUM(network_block_signals) AS network_block_signals
 
   FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
@@ -49,7 +27,7 @@ ooni AS (
 ),
 
 -- =========================
--- ACLED (COUNTRY × DATE)
+-- CONFLICTS
 -- =========================
 conflict AS (
   SELECT
@@ -64,7 +42,7 @@ conflict AS (
 ),
 
 -- =========================
--- PRESSURE (COUNTRY × DATE)
+-- PRESSURE SIGNALS
 -- =========================
 pressure AS (
   SELECT
@@ -72,7 +50,7 @@ pressure AS (
     LOWER(country) AS country,
 
     SUM(takedown_requests) AS takedown_requests,
-    SUM(takedown_items) AS items_removed,
+    SUM(items_removed) AS items_removed,
     SUM(google_requests) AS google_requests
 
   FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
@@ -80,27 +58,24 @@ pressure AS (
 ),
 
 -- =========================
--- BASE SPINE (FULL ALIGNMENT)
+-- BASE JOINED SPINE
 -- =========================
 base AS (
   SELECT
     COALESCE(o.measurement_date, c.measurement_date, p.measurement_date) AS measurement_date,
     COALESCE(o.country, c.country, p.country) AS country,
 
-    -- OONI
-    COALESCE(o.ooni_tests, 0) AS ooni_tests,
-    COALESCE(o.blocked_tests, 0) AS blocked_tests,
-    COALESCE(o.block_rate, 0) AS block_rate,
-    COALESCE(o.network_block_signals, 0) AS network_block_signals,
+    o.ooni_tests,
+    o.blocked_tests,
+    o.block_rate,
+    o.network_block_signals,
 
-    -- ACLED
-    COALESCE(c.conflict_events, 0) AS conflict_events,
-    COALESCE(c.fatalities, 0) AS fatalities,
+    c.conflict_events,
+    c.fatalities,
 
-    -- PRESSURE
-    COALESCE(p.takedown_requests, 0) AS takedown_requests,
-    COALESCE(p.items_removed, 0) AS items_removed,
-    COALESCE(p.google_requests, 0) AS google_requests
+    p.takedown_requests,
+    p.items_removed,
+    p.google_requests
 
   FROM ooni o
   FULL OUTER JOIN conflict c
@@ -113,17 +88,19 @@ base AS (
 ),
 
 -- =========================
--- FEATURES
+-- FEATURE ENGINEERING
 -- =========================
 features AS (
   SELECT
     *,
 
-    blocked_tests > 0 AS has_blocking,
-    conflict_events > 0 AS has_conflict,
+    COALESCE(blocked_tests > 0, FALSE) AS has_blocking,
+    COALESCE(conflict_events > 0, FALSE) AS has_conflict,
 
-    (blocked_tests > 0 AND conflict_events > 0) AS conflict_block_overlap,
+    (COALESCE(blocked_tests > 0, FALSE)
+     AND COALESCE(conflict_events > 0, FALSE)) AS conflict_block_overlap,
 
+    -- normalized pressure index (stable scaling)
     (
       0.5 * SAFE_DIVIDE(blocked_tests, NULLIF(ooni_tests, 0)) +
       0.3 * LEAST(conflict_events / 10.0, 1.0) +
@@ -134,16 +111,13 @@ features AS (
 ),
 
 -- =========================
--- WINDOWS (EVENT REGIMES)
+-- SUPPRESSION WINDOWS (CLEAN LOGIC)
 -- =========================
 windows AS (
   SELECT
     *,
 
     CASE
-      WHEN measurement_date BETWEEN DATE '2024-06-15' AND DATE '2024-07-15'
-        THEN 'FINANCE_BILL_CRISIS'
-
       WHEN conflict_events > 0 AND blocked_tests > 0
         THEN 'ACTIVE_SUPPRESSION'
 
@@ -157,7 +131,61 @@ windows AS (
     END AS suppression_window
 
   FROM features
+),
+
+-- =========================
+-- COUNTRY DIMENSION JOIN (FOR GEO)
+-- =========================
+geo AS (
+  SELECT
+    LOWER(raw_country) AS country,
+    country_name,
+    iso2,
+
+    CASE
+      WHEN country_name = 'Kenya' THEN -0.0236
+      WHEN country_name = 'DRC' THEN -2.8797
+      ELSE NULL
+    END AS latitude,
+
+    CASE
+      WHEN country_name = 'Kenya' THEN 37.9062
+      WHEN country_name = 'DRC' THEN 23.6560
+      ELSE NULL
+    END AS longitude
+
+  FROM `encoded-joy-485413-k5.marts.dim_country`
 )
 
-SELECT *
-FROM windows;
+-- =========================
+-- FINAL OUTPUT
+-- =========================
+SELECT
+  w.measurement_date,
+  g.country_name,
+  g.iso2,
+  g.latitude,
+  g.longitude,
+
+  w.ooni_tests,
+  w.blocked_tests,
+  w.block_rate,
+  w.network_block_signals,
+
+  w.conflict_events,
+  w.fatalities,
+
+  w.takedown_requests,
+  w.items_removed,
+  w.google_requests,
+
+  w.has_blocking,
+  w.has_conflict,
+  w.conflict_block_overlap,
+
+  w.civil_liberties_pressure_index,
+  w.suppression_window
+
+FROM windows w
+LEFT JOIN geo g
+ON w.country = g.country
