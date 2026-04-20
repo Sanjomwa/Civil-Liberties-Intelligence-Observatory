@@ -4,7 +4,7 @@ tags:
 name: marts.fact_network_blocking_daily
 type: bq.sql
 connection: bigquery-default
-description: OONI network blocking aggregated at country-ASN-day grain
+description: OONI network blocking aggregated at country ASN day grain
 depends:
   - int.ooni_signals
 materialization:

@@ -4,7 +4,7 @@ tags:
 name: marts.fact_country_pressure_daily
 type: bq.sql
 connection: bigquery-default
-description: ACLED + LUMEN + Google combined country pressure signal
+description: ACLED  LUMEN  Google combined country pressure signal
 depends:
   - stg.acled_conflict_events
   - stg.lumen_requests
@@ -14,6 +14,7 @@ materialization:
   type: table
   strategy: create+replace
 @bruin */
+
 
 WITH acled AS (
   SELECT
@@ -33,7 +34,7 @@ lumen AS (
     SUM(request_count) AS takedown_requests,
     SUM(item_count) AS takedown_items
   FROM `encoded-joy-485413-k5.stg.lumen_requests`
-  WHERE country IN ('KE','ke')
+  WHERE country IN ('KE','ke','Kenya')
   GROUP BY measurement_date
 ),
 
@@ -43,7 +44,8 @@ google AS (
     'Kenya' AS country,
     SUM(number_of_requests) AS google_requests
   FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
-  WHERE country = 'Kenya' OR cldr_territory = 'KE'
+  WHERE country = 'Kenya'
+     OR cldr_territory = 'KE'
   GROUP BY period_date
 )
 
