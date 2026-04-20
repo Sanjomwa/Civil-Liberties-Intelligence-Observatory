@@ -6,7 +6,6 @@ import pandas as pd
 import plotly.express as px
 
 from utils.bq_client import run_query, table, PALETTE
-from utils.contracts import CIVIL_LIBERTIES_MART_SCHEMA
 
 
 # ─────────────────────────────────────────────
@@ -32,20 +31,20 @@ DANGEROUS_SQL = re.compile(
     re.IGNORECASE,
 )
 
+
 def validate_sql(sql: str):
     if DANGEROUS_SQL.search(sql):
-        raise ValueError("Only SELECT queries allowed")
+        raise ValueError("Only SELECT queries are allowed")
 
-def enforce_limit(sql: str, limit: int):
+
+def enforce_limit(sql: str, limit: int) -> str:
     sql = sql.strip().rstrip(";")
-    if re.search(r"\blimit\b", sql, re.IGNORECASE):
+
+    if re.search(r"\blimit\s+\d+", sql, re.IGNORECASE):
         return sql
+
     return f"{sql}\nLIMIT {limit}"
 
-
-# ─────────────────────────────────────────────
-# SAFE QUERY RUNNER
-# ─────────────────────────────────────────────
 
 def safe_run(sql: str) -> pd.DataFrame:
     validate_sql(sql)
@@ -53,7 +52,7 @@ def safe_run(sql: str) -> pd.DataFrame:
 
 
 # ─────────────────────────────────────────────
-# TABLE WHITELIST
+# TABLE WHITELIST (MART-ALIGNED)
 # ─────────────────────────────────────────────
 
 TABLES = [
@@ -65,8 +64,9 @@ TABLES = [
     "fact_censorship_measurements",
 ]
 
+
 # ─────────────────────────────────────────────
-# PRESETS (SCHEMA SAFE)
+# PRESETS
 # ─────────────────────────────────────────────
 
 PRESETS = {
@@ -146,7 +146,7 @@ if st.button("▶ Run Query"):
         final_sql = enforce_limit(sql, limit)
         df = safe_run(final_sql)
 
-        if df.empty:
+        if df is None or df.empty:
             st.warning("No results returned")
             st.stop()
 
@@ -154,9 +154,9 @@ if st.button("▶ Run Query"):
 
         st.dataframe(df, use_container_width=True)
 
-        # ─────────────────────────────
+        # ─────────────────────────────────────────
         # AUTO VISUALIZATION (SAFE)
-        # ─────────────────────────────
+        # ─────────────────────────────────────────
 
         num_cols = df.select_dtypes(include="number").columns.tolist()
         all_cols = df.columns.tolist()
@@ -174,7 +174,8 @@ if st.button("▶ Run Query"):
             fig.update_layout(
                 plot_bgcolor="#0D0D0F",
                 paper_bgcolor="#0D0D0F",
-                font_color="#E8E6DF"
+                font_color="#E8E6DF",
+                margin=dict(l=10, r=10, t=20, b=10),
             )
 
             st.plotly_chart(fig, use_container_width=True)
