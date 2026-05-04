@@ -8,17 +8,25 @@ tags:
   - raw_dev
   - dataset_ooni
 
+description: |
+  Lands raw OONI measurements as reprocessable Parquet.
+  This asset preserves raw test_keys and raw measurement JSON. It does not
+  derive final censorship flags during ingestion.
+
 materialization:
   type: table
   strategy: create+replace
 @bruin"""
 
-import pandas as pd
-from typing import Any, Dict, List
-from pathlib import Path
-from datetime import datetime
+from __future__ import annotations
+
 import gzip
 import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -35,147 +43,107 @@ OUT_FILE = OUT_DIR / "ooni_measurements.parquet"
 START_DATE = "2023-06-01"
 END_DATE = "2025-06-30"
 
-CHUNK_SIZE = 10_000   # 🔥 LOWERED
+CHUNK_SIZE = 10_000   # LOWERED
+
+PROBE_CC = "KE"
 
 
-# ---------------------------------------------------------------------------
-# HELPERS
-# ---------------------------------------------------------------------------
-def resolve_time(obj: Dict[str, Any]) -> pd.Timestamp:
-    ts = (
+SCHEMA = pa.schema(
+    [
+        ("measurement_id", pa.string()),
+        ("report_id", pa.string()),
+        ("input", pa.string()),
+        ("probe_cc", pa.string()),
+        ("probe_asn", pa.int64()),
+        ("probe_network_name", pa.string()),
+        ("test_name", pa.string()),
+        ("test_version", pa.string()),
+        ("measurement_start_time", pa.timestamp("us", tz="UTC")),
+        ("test_start_time", pa.timestamp("us", tz="UTC")),
+        ("measurement_date", pa.date32()),
+        ("failure", pa.string()),
+        ("raw_test_keys", pa.string()),
+        ("raw_measurement", pa.string()),
+        ("source_file", pa.string()),
+        ("extracted_at", pa.timestamp("us", tz="UTC")),
+    ]
+)
+
+
+def parse_time(value: Any) -> pd.Timestamp:
+    return pd.to_datetime(value, utc=True, errors="coerce")
+
+
+def safe_int(value: Any) -> int | None:
+    try:
+        if value in (None, ""):
+            return None
+        return int(str(value).replace("AS", "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def measurement_time(obj: dict[str, Any]) -> pd.Timestamp:
+    return parse_time(
         obj.get("measurement_start_time")
         or obj.get("test_start_time")
         or obj.get("started_at")
     )
-    return pd.to_datetime(ts, utc=True, errors="coerce")
 
 
-def safe_bool(x):
-    if x is None:
-        return False
-    if isinstance(x, bool):
-        return x
-    if isinstance(x, str):
-        return x.lower() in ("true", "1", "yes")
-    return bool(x)
+def extract_row(obj: dict[str, Any], source_file: Path) -> dict[str, Any] | None:
+    ts = measurement_time(obj)
+    if pd.isna(ts):
+        return None
 
+    if obj.get("probe_cc") != PROBE_CC:
+        return None
 
-def safe_int(x):
-    try:
-        return int(x or 0)
-    except:
-        return 0
-
-
-def extract_row(obj, t):
-    tk = obj.get("test_keys") or {}
+    test_start_time = parse_time(obj.get("test_start_time"))
+    test_keys = obj.get("test_keys") or {}
 
     return {
         "measurement_id": obj.get("measurement_uid") or obj.get("id"),
-        "country": obj.get("probe_cc"),
-        "asn": obj.get("asn"),
-        "probe_cc": obj.get("probe_cc"),
-        "probe_asn": obj.get("probe_asn"),
-        "test_name": obj.get("test_name"),
+        "report_id": obj.get("report_id"),
         "input": obj.get("input"),
-
-        "start_time": t,
-        "part": t.strftime("%Y-%m-%d"),
-        "extracted_at": datetime.utcnow(),
-
-        "raw_test_keys": json.dumps(tk, default=str),
-
-        "telegram_http_blocking": safe_bool(tk.get("telegram_http_blocking")),
-        "telegram_tcp_blocking": safe_bool(tk.get("telegram_tcp_blocking")),
-
-        "whatsapp_endpoints_blocked": tk.get("endpoints_status") == "blocked",
-        "whatsapp_dns_inconsistent": tk.get("dns_consistent") is False,
-        "whatsapp_web_failure": tk.get("web_failure"),
-
-        "signal_backend_failure": tk.get("signal_backend_failure"),
-
-        "tor_or_port_accessible": safe_int(tk.get("or_port_accessible")),
-        "tor_obfs4_accessible": safe_int(tk.get("obfs4_accessible")),
-        "tor_dir_port_accessible": safe_int(tk.get("dir_port_accessible")),
-
-        "psiphon_failure": tk.get("failure"),
-
-        "has_failure": obj.get("failure") is not None,
+        "probe_cc": obj.get("probe_cc"),
+        "probe_asn": safe_int(obj.get("probe_asn") or obj.get("asn")),
+        "probe_network_name": obj.get("probe_network_name"),
+        "test_name": obj.get("test_name"),
+        "test_version": obj.get("test_version"),
+        "measurement_start_time": ts.to_pydatetime(),
+        "test_start_time": None
+        if pd.isna(test_start_time)
+        else test_start_time.to_pydatetime(),
+        "measurement_date": ts.date(),
+        "failure": obj.get("failure"),
+        "raw_test_keys": json.dumps(test_keys, default=str, separators=(",", ":")),
+        "raw_measurement": json.dumps(obj, default=str, separators=(",", ":")),
+        "source_file": str(source_file.relative_to(ROOT))
+        if source_file.is_relative_to(ROOT)
+        else str(source_file),
+        "extracted_at": datetime.now(timezone.utc),
     }
 
 
-# ---------------------------------------------------------------------------
-# MAIN
-# ---------------------------------------------------------------------------
+def write_chunk(writer: pq.ParquetWriter | None, rows: list[dict[str, Any]]) -> pq.ParquetWriter:
+    frame = pd.DataFrame(rows)
+    table = pa.Table.from_pandas(frame, schema=SCHEMA, preserve_index=False)
+
+    if writer is None:
+        writer = pq.ParquetWriter(
+            OUT_FILE,
+            SCHEMA,
+            compression="snappy",
+            use_dictionary=True,
+            write_statistics=True,
+        )
+
+    writer.write_table(table)
+    return writer
+
+
 def materialize() -> pd.DataFrame:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-
-    start = pd.to_datetime(START_DATE, utc=True)
-    end = pd.to_datetime(END_DATE, utc=True)
-
-    files = sorted(ROOT.rglob("*.jsonl.gz"))
-    print(f"Found {len(files)} files")
-
-    writer = None
-    buffer: List[Dict[str, Any]] = []
-    total_rows = 0
-
-    for i, f in enumerate(files, 1):
-        if i % 1000 == 0:
-            print(f"Processing {i}/{len(files)} | rows: {total_rows}")
-
-        try:
-            with gzip.open(f, "rt", encoding="utf-8") as fh:
-                for line in fh:
-                    try:
-                        obj = json.loads(line)
-                    except:
-                        continue
-
-                    t = resolve_time(obj)
-                    if pd.isna(t) or t < start or t > end:
-                        continue
-
-                    if obj.get("probe_cc") != "KE":
-                        continue
-
-                    buffer.append(extract_row(obj, t))
-
-                    if len(buffer) >= CHUNK_SIZE:
-                        df_chunk = pd.DataFrame(buffer)
-                        table = pa.Table.from_pandas(df_chunk)
-
-                        if writer is None:
-                            writer = pq.ParquetWriter(
-                                OUT_FILE,
-                                table.schema,
-                                compression="snappy",
-                                use_dictionary=True,
-                                write_statistics=False,
-                            )
-
-                        writer.write_table(table)
-
-                        total_rows += len(buffer)
-                        buffer.clear()
-
-        except Exception:
-            continue
-
-    if buffer:
-        df_chunk = pd.DataFrame(buffer)
-        table = pa.Table.from_pandas(df_chunk)
-
-        if writer is None:
-            writer = pq.ParquetWriter(OUT_FILE, table.schema)
-
-        writer.write_table(table)
-        total_rows += len(buffer)
-
-    if writer:
-        writer.close()
-
-    print(f"✅ Finished. Total rows: {total_rows:,}")
-
-    # 🔥 DO NOT LOAD FILE AGAIN
-    return pd.DataFrame()
+    if OUT_FILE.exists():
+        OUT_FILE.unlink()
