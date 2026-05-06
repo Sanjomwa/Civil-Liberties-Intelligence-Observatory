@@ -1,77 +1,52 @@
 /* @bruin
-tags:
-  - marts_bq
 name: marts.fact_ooni_censorship_signals
 type: bq.sql
 connection: bigquery-default
 
-description: |
-  OONI censorship signals at measurement × test grain.
-  Preserves per-test blocking behavior for cross-platform analysis.
+tags:
+  - marts_bq
+  - dataset_ooni
 
-owner: civil-liberties-pipeline
+description: |
+  OONI censorship signal fact.
+  Grain: one protocol-level experiment result.
 
 depends:
-  - int.ooni_signals
+  - int.ooni_experiment_results
 
 materialization:
   type: table
   strategy: create+replace
+
+columns:
+  - name: experiment_result_id
+    type: string
+    checks:
+      - name: not_null
+      - name: unique
 @bruin */
 
 SELECT
-    -- =========================
-    -- PRIMARY GRAIN
-    -- =========================
-    measurement_id,
-    test_name,
+  experiment_result_id,
+  observation_id,
+  measurement_id,
+  country,
+  probe_asn,
+  probe_network_name,
+  test_name,
+  test_version,
+  target,
+  protocol,
+  observation_target,
+  endpoint_ip,
+  endpoint_port,
+  measurement_start_time,
+  measurement_date,
+  result_state,
+  is_blocking_signal,
+  blocking_detail,
+  failure_reason,
+  confidence_score,
+  int_extracted_at
+FROM `encoded-joy-485413-k5.int.ooni_experiment_results`;
 
-    -- =========================
-    -- ENTITY DIMENSIONS
-    -- =========================
-    country,
-    asn,
-    probe_asn,
-    input,
-
-    -- =========================
-    -- TIME
-    -- =========================
-    start_time,
-    measurement_date,
-    year,
-    month,
-    day,
-    extracted_at,
-    int_extracted_at,
-
-    -- =========================
-    -- CLASSIFICATION
-    -- =========================
-    test_category,
-    blocking_signal_type,
-    blocking_confidence,
-
-    -- =========================
-    -- SIGNAL FLAGS
-    -- =========================
-    telegram_http_blocking,
-    telegram_tcp_blocking,
-
-    whatsapp_endpoints_blocked,
-    whatsapp_web_failure,
-
-    signal_backend_failure,
-
-    tor_or_port_accessible,
-    tor_obfs4_accessible,
-
-    psiphon_failure,
-
-    -- =========================
-    -- CORE OUTCOMES
-    -- =========================
-    is_blocked,
-    has_measurement_failure
-
-FROM `encoded-joy-485413-k5.int.ooni_signals`;
