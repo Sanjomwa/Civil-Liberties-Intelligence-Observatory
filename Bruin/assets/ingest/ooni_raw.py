@@ -21,6 +21,7 @@ materialization:
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -91,6 +92,32 @@ def measurement_time(obj: dict[str, Any]) -> pd.Timestamp:
     )
 
 
+def stable_measurement_id(obj: dict[str, Any], source_file: Path) -> str:
+    existing_id = obj.get("measurement_uid") or obj.get("id")
+    if existing_id:
+        return str(existing_id)
+
+    source = (
+        str(source_file.relative_to(ROOT))
+        if source_file.is_relative_to(ROOT)
+        else str(source_file)
+    )
+    identity = {
+        "source_file": source,
+        "report_id": obj.get("report_id"),
+        "input": obj.get("input"),
+        "probe_cc": obj.get("probe_cc"),
+        "probe_asn": obj.get("probe_asn") or obj.get("asn"),
+        "test_name": obj.get("test_name"),
+        "test_start_time": obj.get("test_start_time"),
+        "measurement_start_time": obj.get("measurement_start_time"),
+        "raw": obj,
+    }
+    payload = json.dumps(identity, default=str,
+                         sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
 def extract_row(obj: dict[str, Any], source_file: Path) -> dict[str, Any] | None:
     ts = measurement_time(obj)
     if pd.isna(ts):
@@ -103,7 +130,7 @@ def extract_row(obj: dict[str, Any], source_file: Path) -> dict[str, Any] | None
     test_keys = obj.get("test_keys") or {}
 
     return {
-        "measurement_id": obj.get("measurement_uid") or obj.get("id"),
+        "measurement_id": stable_measurement_id(obj, source_file),
         "report_id": obj.get("report_id"),
         "input": obj.get("input"),
         "probe_cc": obj.get("probe_cc"),
@@ -147,3 +174,56 @@ def materialize() -> pd.DataFrame:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     if OUT_FILE.exists():
         OUT_FILE.unlink()
+
+    start = pd.Timestamp(START_DATE, tz="UTC")
+    end = pd.Timestamp(END_DATE, tz="UTC")
+
+    files = sorted(ROOT.rglob("*.jsonl.gz"))
+    writer: pq.ParquetWriter | None = None
+    buffer: list[dict[str, Any]] = []
+    total_rows = 0
+
+    for source_file in files:
+        try:
+            with gzip.open(source_file, "rt", encoding="utf-8") as handle:
+                for line in handle:
+                    try:
+                        obj = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+
+                    ts = measurement_time(obj)
+                    if pd.isna(ts) or ts < start or ts > end:
+                        continue
+
+                    row = extract_row(obj, source_file)
+                    if row is None:
+                        continue
+
+                    buffer.append(row)
+                    if len(buffer) >= CHUNK_SIZE:
+                        writer = write_chunk(writer, buffer)
+                        total_rows += len(buffer)
+                        buffer.clear()
+        except OSError:
+            continue
+
+    if buffer:
+        writer = write_chunk(writer, buffer)
+        total_rows += len(buffer)
+
+    if writer is not None:
+        writer.close()
+
+    return pd.DataFrame(
+        [
+            {
+                "status": "success",
+                "probe_cc": PROBE_CC,
+                "source_dir": str(ROOT),
+                "output_file": str(OUT_FILE),
+                "rows_written": total_rows,
+                "extracted_at": datetime.now(timezone.utc),
+            }
+        ]
+    )
