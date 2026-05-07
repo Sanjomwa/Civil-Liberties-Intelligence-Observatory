@@ -6,9 +6,8 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  One row per OONI measurement (Kenya).
-  Clean projection from int.ooni_signals.
-  Optimized for joins with dims + Streamlit.
+  One row per OONI signal measurement (Kenya).
+  Clean projection from int.ooni_signals, aligned to the current OONI schema.
 
 owner: civil-liberties-pipeline
 
@@ -18,57 +17,71 @@ depends:
 materialization:
   type: table
   strategy: create+replace
+
+columns:
+  - name: signal_id
+    type: string
+    checks:
+      - name: not_null
+      - name: unique
+  - name: observation_id
+    type: string
+    checks:
+      - name: not_null
+  - name: measurement_id
+    type: string
+    checks:
+      - name: not_null
+  - name: country
+    type: string
+    checks:
+      - name: not_null
+  - name: asn
+    type: string
+    checks:
+      - name: not_null
+  - name: measurement_date
+    type: date
+    checks:
+      - name: not_null
 @bruin */
 
 SELECT
-    measurement_id,
+  signal_id,
+  observation_id,
+  measurement_id,
 
-    country,
-    COALESCE(asn, 'UNKNOWN') AS asn,
-    probe_asn,
+  country,
+  COALESCE(CAST(probe_asn AS STRING), 'UNKNOWN') AS asn,
+  probe_asn,
+  probe_network_name,
 
-    test_name,
-    input AS tested_entity,
+  test_name,
+  test_version,
+  input AS tested_entity,
+  protocol,
+  observation_target,
 
-    start_time,
-    extracted_at,
+  endpoint_ip,
+  endpoint_port,
 
-    measurement_date,
-    DATE_TRUNC(measurement_date, MONTH) AS month_date,
-    FORMAT_DATE('%Y-%m', measurement_date) AS year_month,
+  start_time,
+  measurement_date,
+  DATE_TRUNC(measurement_date, MONTH) AS month_date,
+  FORMAT_DATE('%Y-%m', measurement_date) AS year_month,
 
-    year,
-    month,
-    day,
+  year,
+  month,
+  day,
 
-    test_category,
+  result_state,
+  is_blocked,
+  blocking_signal_type,
+  blocking_confidence,
+  failure_reason,
+  confidence_score,
 
-    -- canonical signals
-    is_blocked,
-    has_measurement_failure,
-    blocking_confidence,
-    blocking_signal_type,
-
-    -- derived flags (useful in dashboards)
-    CASE WHEN blocking_confidence = 'HIGH' THEN TRUE ELSE FALSE END AS is_high_confidence,
-    CASE WHEN is_blocked AND blocking_confidence = 'HIGH' THEN TRUE ELSE FALSE END AS is_confirmed_block,
-
-    -- test-specific signals
-    telegram_http_blocking,
-    telegram_tcp_blocking,
-
-    signal_backend_failure,
-
-    whatsapp_endpoints_blocked,
-    whatsapp_web_failure,
-
-    tor_or_port_accessible,
-    tor_obfs4_accessible,
-
-    psiphon_failure,
-
-    -- lineage
-    int_extracted_at
+  int_extracted_at
 
 FROM `encoded-joy-485413-k5.int.ooni_signals`
 WHERE country = 'KE';
