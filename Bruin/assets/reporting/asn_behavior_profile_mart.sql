@@ -20,7 +20,7 @@ WITH base AS (
     SELECT
         asn,
 
-        COUNT(*) AS observation_days,
+        COUNT(*) observation_days,
 
         AVG(blocking_rate)
             AS avg_blocking_rate,
@@ -43,7 +43,6 @@ WITH base AS (
 
 SELECT
     a.asn,
-
     d.asn_name,
     d.provider_class,
 
@@ -58,23 +57,24 @@ SELECT
         avg_weighted_blocking
         * LOG(1+total_blocked_events),
         4
-    ) AS anomaly_score,
+    ) anomaly_score,
 
     CASE
-        WHEN avg_weighted_blocking >= 0.80
+        WHEN avg_weighted_blocking>=0.80
             THEN 'HIGH_OBSERVABILITY_PROVIDER'
 
-        WHEN avg_weighted_blocking >= 0.50
+        WHEN avg_weighted_blocking>=0.50
             THEN 'ELEVATED_SIGNAL_PROVIDER'
 
-        WHEN avg_weighted_blocking >= 0.20
+        WHEN avg_weighted_blocking>=0.20
             THEN 'VARIABLE'
 
         ELSE 'STABLE'
-    END AS behavioral_class
+    END
+        AS behavioral_class
 
 FROM base a
 
 LEFT JOIN
     `encoded-joy-485413-k5.marts.dim_asn` d
-    ON a.asn = d.asn
+    ON a.asn=d.probe_asn
