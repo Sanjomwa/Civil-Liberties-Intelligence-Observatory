@@ -1,13 +1,13 @@
 /* @bruin
 tags:
   - marts_bq
+
 name: marts.fact_takedown_requests
 type: bq.sql
 connection: bigquery-default
 
-description: Row-level takedown requests (Google + Lumen), unified schema.
-
-owner: civil-liberties-pipeline
+description: |
+  Unified takedown request fact across Google + Lumen.
 
 depends:
   - stg.google_transparency_requests
@@ -19,83 +19,78 @@ materialization:
   strategy: create+replace
 @bruin */
 
--- =========================
--- GOOGLE REQUESTS (RAW)
--- =========================
 SELECT
-  'google_requests' AS source,
-  country AS country,
-  product AS platform,
-  requestor AS requestor_name,
-  reason AS reason,
-  time_period AS time_period,
+    source,
+    'Kenya' AS country,
+    'KE' AS iso2,
 
-  CAST(number_of_requests AS INT64) AS number_of_requests,
-  CAST(items_requested_removal AS INT64) AS items_requested_removal,
-  CAST(items_removed_legal AS INT64) AS items_removed_legal,
-  CAST(items_removed_policy AS INT64) AS items_removed_policy,
+    platform,
+    requestor_name,
+    reason,
+    time_period,
 
-  CAST(NULL AS INT64) AS item_count,
+    number_of_requests,
+    items_requested_removal,
+    items_removed_legal,
+    items_removed_policy,
+    item_count,
 
-  CAST(extracted_at AS TIMESTAMP) AS extracted_at,
-  period_date AS measurement_date,
-  year AS year
+    extracted_at,
+    measurement_date,
+    year
 
-FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
-WHERE country = 'Kenya' OR cldr_territory = 'KE'
+FROM (
 
+    SELECT
+        'google_requests' AS source,
+        product AS platform,
+        requestor AS requestor_name,
+        reason,
+        time_period,
+        number_of_requests,
+        items_requested_removal,
+        items_removed_legal,
+        items_removed_policy,
+        NULL AS item_count,
+        extracted_at,
+        period_date AS measurement_date,
+        year
+    FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
 
-UNION ALL
+    UNION ALL
 
--- =========================
--- GOOGLE DETAILED
--- =========================
-SELECT
-  'google_detailed' AS source,
-  country_region AS country,
-  product AS platform,
-  CAST(NULL AS STRING) AS requestor_name,
-  reason AS reason,
-  CAST(NULL AS STRING) AS time_period,
+    SELECT
+        'google_detailed',
+        product,
+        NULL,
+        reason,
+        NULL,
+        total,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        extracted_at,
+        period_date,
+        year
+    FROM `encoded-joy-485413-k5.stg.google_transparency_detailed`
 
-  CAST(total AS INT64) AS number_of_requests,
-  CAST(NULL AS INT64) AS items_requested_removal,
-  CAST(NULL AS INT64) AS items_removed_legal,
-  CAST(NULL AS INT64) AS items_removed_policy,
+    UNION ALL
 
-  CAST(NULL AS INT64) AS item_count,
+    SELECT
+        'lumen',
+        recipient,
+        sender,
+        reason,
+        period,
+        request_count,
+        NULL,
+        NULL,
+        NULL,
+        item_count,
+        extracted_at,
+        measurement_date,
+        year
+    FROM `encoded-joy-485413-k5.stg.lumen_requests`
 
-  CAST(extracted_at AS TIMESTAMP) AS extracted_at,
-  period_date AS measurement_date,
-  year AS year
-
-FROM `encoded-joy-485413-k5.stg.google_transparency_detailed`
-WHERE cldr_territory_code = 'KE'
-
-
-UNION ALL
-
--- =========================
--- LUMEN
--- =========================
-SELECT
-  'lumen' AS source,
-  country AS country,
-  recipient AS platform,
-  sender AS requestor_name,
-  reason AS reason,
-  period AS time_period,
-
-  CAST(request_count AS INT64) AS number_of_requests,
-  CAST(NULL AS INT64) AS items_requested_removal,
-  CAST(NULL AS INT64) AS items_removed_legal,
-  CAST(NULL AS INT64) AS items_removed_policy,
-
-  CAST(item_count AS INT64) AS item_count,
-
-  CAST(extracted_at AS TIMESTAMP) AS extracted_at,
-  measurement_date AS measurement_date,
-  year AS year
-
-FROM `encoded-joy-485413-k5.stg.lumen_requests`
-WHERE country IN ('Kenya', 'KE', 'ke');
+)
