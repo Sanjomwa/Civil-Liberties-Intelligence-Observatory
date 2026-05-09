@@ -7,9 +7,6 @@ tags:
   - marts_bq
   - dataset_ooni
 
-description: |
-  Daily OONI blocking aggregate at country × ASN × protocol grain.
-
 depends:
   - marts.fact_ooni_censorship_signals
 
@@ -21,27 +18,32 @@ materialization:
 SELECT
     measurement_date,
     country,
-
     probe_asn AS asn,
     protocol,
 
     COUNT(DISTINCT measurement_id) AS measurement_count,
     COUNT(*) AS observation_count,
 
-    COUNTIF(result_state='BLOCKED') AS blocked_events,
-    COUNTIF(result_state='OK') AS ok_events,
-    COUNTIF(result_state='DOWN') AS down_events,
-    COUNTIF(result_state='UNKNOWN') AS unknown_events,
+    COUNTIF(is_blocking_signal) AS blocked_events,
+    COUNTIF(NOT is_blocking_signal) AS clear_events,
 
     SAFE_DIVIDE(
-        COUNTIF(result_state='BLOCKED'),
+        COUNTIF(is_blocking_signal),
         COUNT(*)
     ) AS blocking_rate,
 
     AVG(confidence_score) AS avg_confidence_score,
 
-    SUM(confidence_score) / COUNT(*)
-        AS confidence_weighted_blocking,
+    SAFE_DIVIDE(
+        SUM(
+            CASE
+                WHEN is_blocking_signal
+                THEN confidence_score
+                ELSE 0
+            END
+        ),
+        COUNT(*)
+    ) AS confidence_weighted_blocking,
 
     COUNTIF(blocking_detail='dns.bogon') AS dns_bogon_events,
     COUNTIF(blocking_detail='tcp.rst') AS tcp_reset_events,
