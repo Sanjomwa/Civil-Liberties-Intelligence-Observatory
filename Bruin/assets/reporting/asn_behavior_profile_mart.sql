@@ -7,8 +7,8 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Behavioral observability profile for Kenyan ASNs based on
-  OONI-derived blocking signal distributions.
+  Behavioral observability profile for Kenyan ASNs
+  using OONI-derived blocking signal distributions.
 
 depends:
   - marts.fact_network_blocking_daily
@@ -40,7 +40,7 @@ WITH base AS (
 
     FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
 
-    WHERE country = 'Kenya'
+    WHERE country IN ('Kenya','KE','ke')
 
     GROUP BY asn
 )
@@ -88,6 +88,6 @@ FROM base b
 
 LEFT JOIN
     `encoded-joy-485413-k5.marts.dim_asn` d
-ON b.asn = d.asn_numeric
+ON CAST(b.asn AS STRING) = CAST(d.asn_numeric AS STRING)
 
 ORDER BY anomaly_score DESC

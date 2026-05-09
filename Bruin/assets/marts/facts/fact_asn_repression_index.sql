@@ -26,14 +26,13 @@ materialization:
 @bruin */
 
 -- ============================================
--- ASN-GRAIN NETWORK OBSERVABILITY
+-- ASN NETWORK SIGNALS
 -- ============================================
 WITH ooni AS (
 
     SELECT
         measurement_date,
         asn,
-
         measurement_count,
         blocked_events,
         blocking_rate,
@@ -43,14 +42,13 @@ WITH ooni AS (
 ),
 
 -- ============================================
--- COUNTRY PRESSURE CONTEXT
+-- COUNTRY PRESSURE
 -- ============================================
 country_pressure AS (
 
     SELECT
         measurement_date,
         country,
-
         conflict_events,
         fatalities,
         takedown_requests,
@@ -60,13 +58,18 @@ country_pressure AS (
 ),
 
 -- ============================================
--- ASN ↔ COUNTRY MAP
+-- ASN COUNTRY NORMALIZATION
 -- ============================================
 asn_country AS (
 
     SELECT DISTINCT
         asn,
-        country
+
+        CASE
+            WHEN country IN ('KE','ke')
+                THEN 'Kenya'
+            ELSE country
+        END AS country
 
     FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
 ),
@@ -99,16 +102,16 @@ base AS (
         o.blocking_rate,
         o.confidence_weighted_blocking,
 
-        COALESCE(cp.conflict_events,0)
+        COALESCE(cp.conflict_events, 0)
             AS conflict_events,
 
-        COALESCE(cp.fatalities,0)
+        COALESCE(cp.fatalities, 0)
             AS fatalities,
 
-        COALESCE(cp.takedown_requests,0)
+        COALESCE(cp.takedown_requests, 0)
             AS takedown_requests,
 
-        COALESCE(cp.composite_pressure_score,0)
+        COALESCE(cp.composite_pressure_score, 0)
             AS country_pressure_score,
 
         q.quality_weight
@@ -187,6 +190,4 @@ SELECT
 
 FROM normalized
 
-ORDER BY
-    measurement_date,
-    asn
+ORDER BY measurement_date, asn
