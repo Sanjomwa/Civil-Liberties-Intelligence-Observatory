@@ -1,12 +1,21 @@
 /* @bruin
 tags:
   - marts_bq
+  - canonical_dimensions
+
 name: marts.dim_requestors
 type: bq.sql
 connection: bigquery-default
+
 description: |
-  Unified requestor dimension with cross-source identity normalization.
-  Supports Google Transparency + Lumen takedown ecosystems.
+  Canonical requestor identity dimension.
+
+  Normalizes requesting entities across
+  Google Transparency and Lumen legal ecosystems.
+
+  Scope:
+  Kenya civil-liberties analysis
+  June 2023 → June 2025
 
 owner: civil-liberties-pipeline
 
@@ -23,34 +32,38 @@ WITH all_requestors AS (
 
     SELECT
         TRIM(requestor) AS requestor_name,
-        'Google' AS source
+        'GOOGLE_TRANSPARENCY' AS source
     FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
-    WHERE (country = 'Kenya' OR cldr_territory = 'KE')
-      AND requestor IS NOT NULL
+    WHERE requestor IS NOT NULL
 
     UNION DISTINCT
 
     SELECT
         TRIM(sender) AS requestor_name,
-        'Lumen' AS source
+        'LUMEN' AS source
     FROM `encoded-joy-485413-k5.stg.lumen_requests`
-    WHERE (country = 'Kenya' OR country = 'KE')
-      AND sender IS NOT NULL
+    WHERE sender IS NOT NULL
 ),
 
-cleaned AS (
+normalized AS (
 
     SELECT
         requestor_name,
         source,
 
-        LOWER(requestor_name) AS requestor_name_norm,
+        LOWER(TRIM(requestor_name)) AS requestor_norm,
 
-        -- cross-source identity (future merge anchor)
-        FARM_FINGERPRINT(LOWER(TRIM(requestor_name))) AS requestor_identity_key,
+        FARM_FINGERPRINT(
+            LOWER(TRIM(requestor_name))
+        ) AS requestor_identity_key,
 
-        -- source-specific key
-        FARM_FINGERPRINT(CONCAT(LOWER(TRIM(requestor_name)), '||', source)) AS requestor_key
+        FARM_FINGERPRINT(
+            CONCAT(
+                LOWER(TRIM(requestor_name)),
+                '||',
+                source
+            )
+        ) AS requestor_key
 
     FROM all_requestors
 )
@@ -58,24 +71,38 @@ cleaned AS (
 SELECT
     requestor_key,
     requestor_identity_key,
+
     requestor_name,
     source,
 
     CASE
-        WHEN REGEXP_CONTAINS(LOWER(requestor_name), r'government|ministry|state|authority|court|police|agency')
-            THEN 'Government / State'
 
-        WHEN REGEXP_CONTAINS(LOWER(requestor_name), r'court|judicial|prosecutor|attorney|legal')
-            THEN 'Law Enforcement / Judiciary'
+        WHEN REGEXP_CONTAINS(
+            requestor_norm,
+            r'court|judicial|judge|tribunal|attorney|legal|prosecutor'
+        )
+        THEN 'JUDICIAL_LEGAL'
 
-        WHEN REGEXP_CONTAINS(LOWER(requestor_name), r'copyright|media|music|film|publisher|broadcast')
-            THEN 'Rights Holder / Media'
+        WHEN REGEXP_CONTAINS(
+            requestor_norm,
+            r'ministry|government|state|authority|agency|police'
+        )
+        THEN 'STATE_EXECUTIVE'
 
-        WHEN REGEXP_CONTAINS(LOWER(requestor_name), r'company|inc|ltd|corp|platform|tech|service')
-            THEN 'Private / Commercial'
+        WHEN REGEXP_CONTAINS(
+            requestor_norm,
+            r'copyright|publisher|media|music|film|broadcast'
+        )
+        THEN 'RIGHTS_HOLDER'
 
-        ELSE 'Unknown / Other'
+        WHEN REGEXP_CONTAINS(
+            requestor_norm,
+            r'company|corp|inc|ltd|platform|service|tech'
+        )
+        THEN 'PRIVATE_ENTITY'
+
+        ELSE 'OTHER'
+
     END AS requestor_type
 
-FROM cleaned
-ORDER BY source, requestor_type, requestor_name;
+FROM normalized;

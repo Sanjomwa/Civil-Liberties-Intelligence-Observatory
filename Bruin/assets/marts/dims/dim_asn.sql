@@ -1,62 +1,87 @@
 /* @bruin
 tags:
   - marts_bq
+  - canonical_dimensions
+
 name: marts.dim_asn
 type: bq.sql
 connection: bigquery-default
-description: ASN dimension table for censorship + network classification
+
+description: |
+  Canonical ASN dimension for Kenyan OONI observability.
+
+  Models:
+  - ASN normalization
+  - Kenya network relevance
+  - network class
+  - censorship sensitivity heuristics
+
+  Scope:
+  Kenya civil-liberties analysis
+  June 2023 → June 2025
+
+depends:
+  - stg.ooni_measurements
+
 materialization:
   type: table
   strategy: create+replace
-depends:
-  -  stg.ooni_measurements
 @bruin */
 
 WITH base AS (
-  SELECT DISTINCT
-    probe_asn AS asn
-  FROM `encoded-joy-485413-k5.stg.ooni_measurements`
-  WHERE probe_asn IS NOT NULL
+
+    SELECT DISTINCT
+        CAST(probe_asn AS INT64) AS asn_numeric
+    FROM `encoded-joy-485413-k5.stg.ooni_measurements`
+    WHERE probe_asn IS NOT NULL
+
 )
 
 SELECT
-  asn,
+    CONCAT('AS', CAST(asn_numeric AS STRING)) AS asn,
+    asn_numeric,
 
-  -- numeric extraction for sorting/analysis
-  SAFE_CAST(REGEXP_REPLACE(asn, r'AS', '') AS INT64) AS asn_numeric,
+    CASE
+        WHEN asn_numeric IN (36926, 37061, 33771)
+            THEN 'MAJOR_KENYA_PROVIDER'
 
-  -- ─────────────────────────────────────────────
-  -- NETWORK TYPE CLASSIFICATION (heuristic layer)
-  -- ─────────────────────────────────────────────
+        WHEN asn_numeric IN (15399)
+            THEN 'SECONDARY_PROVIDER'
 
-  CASE
-    WHEN asn IN ('AS36926','AS37061','AS33771') THEN 'ISP_CORE'
-    WHEN asn LIKE 'AS32%' OR asn LIKE 'AS33%' THEN 'MOBILE_OR_AGGREGATOR'
-    WHEN asn IN ('AS15169','AS8075') THEN 'GLOBAL_CDN'
-    WHEN asn LIKE 'AS3%' THEN 'REGIONAL_ISP'
-    ELSE 'OTHER'
-  END AS network_class,
+        WHEN asn_numeric IN (15169, 8075)
+            THEN 'GLOBAL_INFRASTRUCTURE'
 
-  -- ─────────────────────────────────────────────
-  -- ROLE IN OONI CONTEXT
-  -- ─────────────────────────────────────────────
+        WHEN CAST(asn_numeric AS STRING) LIKE '3%'
+            THEN 'REGIONAL_NETWORK'
 
-  CASE
-    WHEN asn IN ('AS36926','AS37061') THEN 'MAJOR_KENYA_ISP'
-    WHEN asn IN ('AS33771','AS15399') THEN 'SECONDARY_ISP'
-    ELSE 'UNCLASSIFIED'
-  END AS kenya_relevance,
+        ELSE 'OTHER'
+    END AS network_class,
 
-  -- ─────────────────────────────────────────────
-  -- INTERFERENCE RISK SCORE (0–1 heuristic)
-  -- ─────────────────────────────────────────────
+    CASE
+        WHEN asn_numeric IN (
+            36926,
+            37061,
+            33771,
+            15399
+        )
+        THEN TRUE
+        ELSE FALSE
+    END AS is_kenya_observability_core,
 
-  CASE
-    WHEN asn IN ('AS36926','AS37061','AS33771') THEN 0.9
-    WHEN asn LIKE 'AS32%' THEN 0.6
-    ELSE 0.3
-  END AS censorship_sensitivity_score,
+    CASE
+        WHEN asn_numeric IN (36926, 37061)
+            THEN 0.95
 
-  CURRENT_TIMESTAMP() AS created_at
+        WHEN asn_numeric IN (33771, 15399)
+            THEN 0.80
 
-FROM base;
+        WHEN asn_numeric IN (15169, 8075)
+            THEN 0.35
+
+        ELSE 0.50
+    END AS censorship_sensitivity_score,
+
+    CURRENT_TIMESTAMP() AS created_at
+
+FROM base
+ORDER BY asn_numeric;

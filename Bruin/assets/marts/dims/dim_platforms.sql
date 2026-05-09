@@ -1,12 +1,24 @@
 /* @bruin
 tags:
   - marts_bq
+  - canonical_dimensions
+
 name: marts.dim_platforms
 type: bq.sql
 connection: bigquery-default
 
 description: |
-  Unified platform/service dimension across OONI, Google, and Lumen datasets.
+  Canonical platform and protocol dimension
+  across OONI, Google Transparency, and Lumen.
+
+  Scope:
+  Kenya observability analysis
+  June 2023 → June 2025
+
+  Provides unified platform taxonomy for:
+  - protocol interference analysis
+  - legal/platform pressure correlation
+  - cross-source observability reporting
 
 owner: civil-liberties-pipeline
 
@@ -20,58 +32,95 @@ materialization:
   strategy: create+replace
 @bruin */
 
-WITH raw AS (
+WITH ooni AS (
 
-  SELECT
-    test_name AS platform_name,
-    'OONI' AS source
-  FROM `encoded-joy-485413-k5.stg.ooni_measurements`
-  WHERE country = 'KE'
-    AND test_name IS NOT NULL
+    SELECT DISTINCT
+        LOWER(test_name) AS platform_name,
+        'OONI' AS source,
 
-  UNION DISTINCT
+        CASE
+            WHEN LOWER(test_name) IN (
+                'web_connectivity',
+                'dnscheck',
+                'http_requests'
+            ) THEN 'WEB_PROTOCOL'
 
-  SELECT
-    product AS platform_name,
-    'Google' AS source
-  FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
-  WHERE (country = 'Kenya' OR cldr_territory = 'KE')
-    AND product IS NOT NULL
+            WHEN LOWER(test_name) IN (
+                'whatsapp',
+                'telegram',
+                'signal',
+                'facebook_messenger'
+            ) THEN 'MESSAGING_PLATFORM'
 
-  UNION DISTINCT
+            WHEN LOWER(test_name) IN (
+                'tor',
+                'psiphon',
+                'lantern'
+            ) THEN 'CIRCUMVENTION_TOOL'
 
-  SELECT
-    recipient AS platform_name,
-    'Lumen' AS source
-  FROM `encoded-joy-485413-k5.stg.lumen_requests`
-  WHERE (country = 'Kenya' OR country = 'KE')
-    AND recipient IS NOT NULL
+            ELSE 'OTHER_PROTOCOL'
+        END AS platform_category
+
+    FROM `encoded-joy-485413-k5.stg.ooni_measurements`
+
+    WHERE test_name IS NOT NULL
 ),
 
-classified AS (
+google AS (
 
-  SELECT
-    platform_name,
-    source,
+    SELECT DISTINCT
+        LOWER(product) AS platform_name,
+        'GOOGLE_TRANSPARENCY' AS source,
+        'PLATFORM_SERVICE' AS platform_category
 
-    CASE
-      WHEN LOWER(platform_name) IN ('whatsapp','telegram','signal','facebook_messenger')
-        THEN 'Messaging'
-      WHEN LOWER(platform_name) IN ('web_connectivity','dnscheck','http_requests')
-        THEN 'Web / DNS'
-      WHEN LOWER(platform_name) IN ('tor','psiphon','lantern')
-        THEN 'Circumvention'
-      WHEN LOWER(platform_name) LIKE '%google%' THEN 'Search / Platform'
-      WHEN LOWER(platform_name) LIKE '%youtube%' THEN 'Media Platform'
-      ELSE 'Other'
-    END AS service_type
+    FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
 
-  FROM raw
+    WHERE product IS NOT NULL
+),
+
+lumen AS (
+
+    SELECT DISTINCT
+        LOWER(recipient) AS platform_name,
+        'LUMEN' AS source,
+        'CONTENT_PLATFORM' AS platform_category
+
+    FROM `encoded-joy-485413-k5.stg.lumen_requests`
+
+    WHERE recipient IS NOT NULL
+),
+
+unioned AS (
+
+    SELECT * FROM ooni
+    UNION DISTINCT
+    SELECT * FROM google
+    UNION DISTINCT
+    SELECT * FROM lumen
 )
 
 SELECT
-  FARM_FINGERPRINT(CONCAT(platform_name, '||', source)) AS platform_key,
-  platform_name,
-  source,
-  service_type
-FROM classified;
+    FARM_FINGERPRINT(
+        CONCAT(platform_name, '||', source)
+    ) AS platform_key,
+
+    platform_name,
+    source,
+    platform_category,
+
+    CASE
+        WHEN platform_category IN (
+            'MESSAGING_PLATFORM',
+            'CONTENT_PLATFORM'
+        )
+        THEN TRUE
+        ELSE FALSE
+    END AS is_user_facing_platform,
+
+    CASE
+        WHEN platform_category = 'CIRCUMVENTION_TOOL'
+        THEN TRUE
+        ELSE FALSE
+    END AS is_circumvention_tool
+
+FROM unioned;
