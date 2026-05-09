@@ -2,9 +2,13 @@
 tags:
   - reporting
 
-name: reporting.mart_asn_behavior_profile
+name: reporting.asn_behavior_profile_mart
 type: bq.sql
 connection: bigquery-default
+
+description: |
+  Behavioral observability profile for Kenyan ASNs based on
+  OONI-derived blocking signal distributions.
 
 depends:
   - marts.fact_network_blocking_daily
@@ -20,7 +24,7 @@ WITH base AS (
     SELECT
         asn,
 
-        COUNT(*) observation_days,
+        COUNT(*) AS observation_days,
 
         AVG(blocking_rate)
             AS avg_blocking_rate,
@@ -36,45 +40,54 @@ WITH base AS (
 
     FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
 
-    WHERE country='Kenya'
+    WHERE country = 'Kenya'
 
     GROUP BY asn
 )
 
 SELECT
-    a.asn,
-    d.asn_name,
-    d.provider_class,
+    b.asn,
 
-    observation_days,
+    d.asn AS display_asn,
+    d.network_class,
+    d.is_kenya_observability_core,
+    d.censorship_sensitivity_score,
 
-    avg_blocking_rate,
-    avg_weighted_blocking,
-    blocking_variability,
-    total_blocked_events,
+    b.observation_days,
+
+    b.avg_blocking_rate,
+    b.avg_weighted_blocking,
+    b.blocking_variability,
+    b.total_blocked_events,
 
     ROUND(
-        avg_weighted_blocking
-        * LOG(1+total_blocked_events),
+        (
+            b.avg_weighted_blocking
+            * LOG(1 + b.total_blocked_events)
+            * d.censorship_sensitivity_score
+        ),
         4
-    ) anomaly_score,
+    ) AS anomaly_score,
 
     CASE
-        WHEN avg_weighted_blocking>=0.80
-            THEN 'HIGH_OBSERVABILITY_PROVIDER'
+        WHEN b.avg_weighted_blocking >= 0.80
+            THEN 'HIGH_SIGNAL_PROVIDER'
 
-        WHEN avg_weighted_blocking>=0.50
+        WHEN b.avg_weighted_blocking >= 0.50
             THEN 'ELEVATED_SIGNAL_PROVIDER'
 
-        WHEN avg_weighted_blocking>=0.20
-            THEN 'VARIABLE'
+        WHEN b.avg_weighted_blocking >= 0.20
+            THEN 'VARIABLE_BEHAVIOR'
 
         ELSE 'STABLE'
-    END
-        AS behavioral_class
+    END AS behavioral_class,
 
-FROM base a
+    CURRENT_TIMESTAMP() AS snapshot_at
+
+FROM base b
 
 LEFT JOIN
     `encoded-joy-485413-k5.marts.dim_asn` d
-    ON a.asn=d.probe_asn
+ON b.asn = d.asn_numeric
+
+ORDER BY anomaly_score DESC

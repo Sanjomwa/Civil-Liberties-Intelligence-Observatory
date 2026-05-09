@@ -1,13 +1,19 @@
 /* @bruin
 tags:
   - marts_bq
+
 name: marts.fact_asn_repression_index
 type: bq.sql
 connection: bigquery-default
 
 description: |
-  ASN-level repression index (v3 FIXED).
-  Uses ONLY ASN-grain OONI + country-projected pressure signals.
+  ASN-level probabilistic repression observability index.
+
+  Integrates:
+  - confidence-weighted OONI blocking behavior
+  - political conflict stress
+  - takedown escalation pressure
+  - measurement reliability weighting
 
 depends:
   - marts.fact_network_blocking_daily
@@ -19,72 +25,91 @@ materialization:
   strategy: create+replace
 @bruin */
 
--- =========================
--- OONI (TRUE ASN GRAIN)
--- =========================
+-- ============================================
+-- ASN-GRAIN NETWORK OBSERVABILITY
+-- ============================================
 WITH ooni AS (
 
     SELECT
         measurement_date,
         asn,
-        ooni_tests,
-        blocked_tests,
-        block_rate
+
+        measurement_count,
+        blocked_events,
+        blocking_rate,
+        confidence_weighted_blocking
+
     FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
 ),
 
--- =========================
--- COUNTRY PRESSURE (ACLED + LUMEN)
--- =========================
+-- ============================================
+-- COUNTRY PRESSURE CONTEXT
+-- ============================================
 country_pressure AS (
 
     SELECT
         measurement_date,
         country,
+
         conflict_events,
         fatalities,
-        takedown_requests
+        takedown_requests,
+        composite_pressure_score
+
     FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
 ),
 
--- =========================
--- ASN ↔ COUNTRY MAPPING (FROM OONI)
--- =========================
+-- ============================================
+-- ASN ↔ COUNTRY MAP
+-- ============================================
 asn_country AS (
 
     SELECT DISTINCT
         asn,
         country
+
     FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
 ),
 
--- =========================
--- QUALITY WEIGHT
--- =========================
+-- ============================================
+-- QUALITY BASELINE
+-- ============================================
 quality AS (
 
     SELECT
         weight AS quality_weight
+
     FROM `encoded-joy-485413-k5.marts.dim_measurement_quality`
-    WHERE quality_level = 'MEDIUM'
+
+    WHERE quality_level = 'PARTIAL'
     LIMIT 1
 ),
 
--- =========================
--- JOINED ASN CONTEXT
--- =========================
+-- ============================================
+-- JOINED CONTEXT
+-- ============================================
 base AS (
 
     SELECT
         o.measurement_date,
         o.asn,
 
-        o.ooni_tests,
-        o.blocked_tests,
-        o.block_rate,
+        o.measurement_count,
+        o.blocked_events,
+        o.blocking_rate,
+        o.confidence_weighted_blocking,
 
-        COALESCE(cp.conflict_events, 0) AS conflict_events,
-        COALESCE(cp.takedown_requests, 0) AS takedown_requests,
+        COALESCE(cp.conflict_events,0)
+            AS conflict_events,
+
+        COALESCE(cp.fatalities,0)
+            AS fatalities,
+
+        COALESCE(cp.takedown_requests,0)
+            AS takedown_requests,
+
+        COALESCE(cp.composite_pressure_score,0)
+            AS country_pressure_score,
 
         q.quality_weight
 
@@ -100,42 +125,68 @@ base AS (
     CROSS JOIN quality q
 ),
 
--- =========================
--- NORMALIZATION
--- =========================
+-- ============================================
+-- RELIABILITY-WEIGHTED SIGNAL
+-- ============================================
 normalized AS (
 
     SELECT
         *,
 
-        SAFE_DIVIDE(blocked_tests, NULLIF(ooni_tests, 0)) * quality_weight AS q_block_rate
+        confidence_weighted_blocking
+            * quality_weight
+            AS weighted_signal
 
     FROM base
 )
 
--- =========================
+-- ============================================
 -- FINAL INDEX
--- =========================
+-- ============================================
 SELECT
     measurement_date,
     asn,
 
-    ooni_tests,
-    blocked_tests,
+    measurement_count,
+    blocked_events,
 
-    q_block_rate,
+    blocking_rate,
+    confidence_weighted_blocking,
+    weighted_signal,
 
     conflict_events,
+    fatalities,
     takedown_requests,
+    country_pressure_score,
 
-    LEAST(q_block_rate, 1.0) AS block_norm,
-    LEAST(conflict_events / 10.0, 1.0) AS conflict_norm,
-    LEAST(takedown_requests / 100.0, 1.0) AS takedown_norm,
+    LEAST(weighted_signal,1.0)
+        AS block_norm,
 
-    (
-        0.60 * LEAST(q_block_rate, 1.0) +
-        0.25 * LEAST(conflict_events / 10.0, 1.0) +
-        0.15 * LEAST(takedown_requests / 100.0, 1.0)
-    ) AS asn_repression_index_v3
+    LEAST(conflict_events / 10.0,1.0)
+        AS conflict_norm,
 
-FROM normalized;
+    LEAST(fatalities / 25.0,1.0)
+        AS fatality_norm,
+
+    LEAST(takedown_requests / 100.0,1.0)
+        AS takedown_norm,
+
+    LEAST(country_pressure_score / 10.0,1.0)
+        AS country_pressure_norm,
+
+    ROUND(
+        (
+            0.45 * LEAST(weighted_signal,1.0)
+          + 0.20 * LEAST(conflict_events / 10.0,1.0)
+          + 0.10 * LEAST(fatalities / 25.0,1.0)
+          + 0.10 * LEAST(takedown_requests / 100.0,1.0)
+          + 0.15 * LEAST(country_pressure_score / 10.0,1.0)
+        ),
+        4
+    ) AS asn_repression_index
+
+FROM normalized
+
+ORDER BY
+    measurement_date,
+    asn
