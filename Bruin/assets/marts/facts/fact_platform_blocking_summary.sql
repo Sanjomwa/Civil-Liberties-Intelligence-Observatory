@@ -1,13 +1,15 @@
 /* @bruin
 tags:
   - marts_bq
-name: marts.fact_platform_blocking_summary
+  - dataset_ooni
+
+name: marts.fact_protocol_blocking_summary
 type: bq.sql
 connection: bigquery-default
 
 description: |
-  Monthly aggregation of OONI censorship signals by platform.
-  Canonical, taxonomy-aligned, Streamlit-ready.
+  Monthly aggregation of OONI protocol-level experiment results.
+  Aligned to OONI v5 observation/result philosophy.
 
 owner: civil-liberties-pipeline
 
@@ -29,16 +31,24 @@ WITH base AS (
         EXTRACT(MONTH FROM measurement_date) AS month,
         FORMAT_DATE('%Y-%m', measurement_date) AS year_month,
 
-        test_name AS platform,
-        test_category,
+        country,
+        probe_asn,
+        probe_network_name,
 
-        blocking_signal_type,
-        blocking_confidence,
+        test_name,
+        protocol,
 
-        is_blocked,
-        has_measurement_failure,
+        result_state,
+        blocking_detail,
+        failure_reason,
 
-        COALESCE(asn, 'UNKNOWN') AS asn
+        is_blocking_signal,
+
+        confidence_score,
+
+        measurement_id,
+        observation_id,
+        experiment_result_id
 
     FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
 ),
@@ -51,48 +61,65 @@ aggregated AS (
         month,
         year_month,
 
-        platform,
-        test_category,
+        country,
 
-        COUNT(*) AS total_measurements,
+        test_name,
+        protocol,
 
-        COUNTIF(is_blocked) AS blocked_count,
-        COUNTIF(has_measurement_failure) AS failure_count,
+        COUNT(*) AS total_experiment_results,
 
-        COUNT(DISTINCT asn) AS distinct_asns_tested,
+        COUNTIF(is_blocking_signal) AS blocking_signal_count,
 
-        -- canonical taxonomy alignment
-        COUNTIF(blocking_signal_type = 'NETWORK_BLOCK') AS network_block_signals,
-        COUNTIF(blocking_signal_type = 'DNS_INCONSISTENCY') AS dns_signals,
-        COUNTIF(blocking_signal_type = 'APP_LAYER_BLOCK') AS app_layer_signals,
-        COUNTIF(blocking_signal_type = 'WEB_FAILURE') AS web_failure_signals,
-        COUNTIF(blocking_signal_type = 'SERVICE_FAILURE') AS service_failure_signals,
+        COUNTIF(result_state = 'BLOCKED') AS blocked_results,
+        COUNTIF(result_state = 'OK') AS ok_results,
+        COUNTIF(result_state = 'DOWN') AS down_results,
+        COUNTIF(result_state = 'ERROR') AS error_results,
 
-        -- confidence
-        COUNTIF(blocking_confidence = 'HIGH') AS high_conf_signals,
-        COUNTIF(blocking_confidence = 'MEDIUM') AS medium_conf_signals,
-        COUNTIF(blocking_confidence = 'LOW') AS low_conf_signals,
+        COUNT(DISTINCT measurement_id) AS distinct_measurements,
+        COUNT(DISTINCT observation_id) AS distinct_observations,
+        COUNT(DISTINCT probe_asn) AS distinct_asns,
 
-        -- rates
-        SAFE_DIVIDE(COUNTIF(is_blocked), COUNT(*)) AS blocking_rate,
-        SAFE_DIVIDE(COUNTIF(blocking_confidence = 'HIGH'), COUNT(*)) AS high_conf_rate,
-        SAFE_DIVIDE(COUNTIF(has_measurement_failure), COUNT(*)) AS failure_rate,
+        -- evidence types
+        COUNTIF(blocking_detail = 'dns') AS dns_blocking_events,
+        COUNTIF(blocking_detail = 'tcp') AS tcp_blocking_events,
+        COUNTIF(blocking_detail = 'tls') AS tls_blocking_events,
+        COUNTIF(blocking_detail = 'http') AS http_blocking_events,
+
+        -- confidence bands
+        COUNTIF(confidence_score >= 0.90) AS high_confidence_events,
+        COUNTIF(confidence_score BETWEEN 0.70 AND 0.89) AS medium_confidence_events,
+        COUNTIF(confidence_score < 0.70) AS low_confidence_events,
+
+        SAFE_DIVIDE(
+            COUNTIF(is_blocking_signal),
+            COUNT(*)
+        ) AS blocking_signal_rate,
+
+        SAFE_DIVIDE(
+            COUNTIF(result_state = 'BLOCKED'),
+            COUNT(*)
+        ) AS blocked_result_rate,
 
         CURRENT_TIMESTAMP() AS extracted_at
 
     FROM base
-    GROUP BY month_date, year, month, year_month, platform, test_category
+    GROUP BY
+        month_date,
+        year,
+        month,
+        year_month,
+        country,
+        test_name,
+        protocol
 )
 
 SELECT
     *,
 
-    -- improved intensity (more stable)
     LEAST(
-        (blocking_rate * 0.6) +
-        (high_conf_rate * 0.25) +
-        (failure_rate * 0.15),
+        (blocking_signal_rate * 0.7) +
+        (blocked_result_rate * 0.3),
         1.0
-    ) AS platform_censorship_intensity
+    ) AS protocol_interference_intensity
 
 FROM aggregated;
