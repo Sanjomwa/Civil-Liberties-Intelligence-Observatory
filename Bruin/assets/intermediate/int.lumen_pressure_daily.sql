@@ -29,6 +29,23 @@ WITH daily AS (
 
     FROM `encoded-joy-485413-k5.stg.lumen_requests`
     GROUP BY measurement_date
+),
+
+scored AS (
+
+    SELECT
+        *,
+
+        SAFE_DIVIDE(item_count, NULLIF(request_count,0))
+            AS items_per_request,
+
+        LOG(
+            1
+            + request_count
+            + item_count
+        ) AS base_pressure
+
+    FROM daily
 )
 
 SELECT
@@ -39,17 +56,14 @@ SELECT
     item_count,
     platforms_targeted,
     legal_vectors,
+    items_per_request,
 
     ROUND(
-        LOG(
-            1
-            + request_count
-            + item_count
-            + (platforms_targeted * 5)
-            + (legal_vectors * 8)
-        ),
+        base_pressure
+        * (1 + (platforms_targeted * 0.08))
+        * (1 + (legal_vectors * 0.06)),
         4
     ) AS lumen_pressure_score
 
-FROM daily
+FROM scored
 ORDER BY measurement_date
