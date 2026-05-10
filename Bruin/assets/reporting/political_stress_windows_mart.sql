@@ -7,7 +7,9 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Detects elevated digital pressure windows during Kenyan political stress periods.
+  Detects elevated digital suppression windows in Kenya by fusing
+  political conflict pressure, legal takedown activity, platform
+  moderation pressure, and network censorship anomalies.
 
 depends:
   - marts.fact_country_pressure_daily
@@ -25,14 +27,35 @@ WITH network AS (
         measurement_date,
 
         AVG(blocking_rate) AS avg_blocking_rate,
+
         AVG(confidence_weighted_blocking)
             AS weighted_blocking
 
     FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
 
-    WHERE country='Kenya'
+    WHERE country = 'KE'
 
     GROUP BY measurement_date
+
+),
+
+country_pressure AS (
+
+    SELECT
+        measurement_date,
+
+        composite_pressure_score AS country_pressure,
+
+        conflict_pressure_score AS conflict_pressure,
+
+        legal_pressure_score AS legal_pressure,
+
+        platform_pressure_score AS platform_pressure
+
+    FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
+
+    WHERE iso2 = 'KE'
+
 ),
 
 base AS (
@@ -40,23 +63,32 @@ base AS (
     SELECT
         d.date_key,
 
-        COALESCE(c.composite_pressure_score,0)
+        COALESCE(c.country_pressure, 0)
             AS country_pressure,
 
-        COALESCE(n.avg_blocking_rate,0)
+        COALESCE(c.conflict_pressure, 0)
+            AS conflict_pressure,
+
+        COALESCE(c.legal_pressure, 0)
+            AS legal_pressure,
+
+        COALESCE(c.platform_pressure, 0)
+            AS platform_pressure,
+
+        COALESCE(n.avg_blocking_rate, 0)
             AS blocking_rate,
 
-        COALESCE(n.weighted_blocking,0)
+        COALESCE(n.weighted_blocking, 0)
             AS weighted_blocking
 
     FROM `encoded-joy-485413-k5.marts.dim_dates` d
 
-    LEFT JOIN
-        `encoded-joy-485413-k5.marts.fact_country_pressure_daily` c
-        ON d.date_key=c.measurement_date
+    LEFT JOIN country_pressure c
+        ON d.date_key = c.measurement_date
 
     LEFT JOIN network n
-        ON d.date_key=n.measurement_date
+        ON d.date_key = n.measurement_date
+
 ),
 
 scored AS (
@@ -66,12 +98,13 @@ scored AS (
 
         ROUND(
             country_pressure
-          + (blocking_rate * 5)
-          + (weighted_blocking * 4),
+            + (blocking_rate * 5)
+            + (weighted_blocking * 4),
             4
         ) AS stress_score
 
     FROM base
+
 ),
 
 windowed AS (
@@ -80,34 +113,61 @@ windowed AS (
         *,
 
         AVG(stress_score)
-        OVER(
+        OVER (
             ORDER BY date_key
             ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
-        ) baseline
+        ) AS baseline
 
     FROM scored
+
+),
+
+finalized AS (
+
+    SELECT
+        *,
+
+        ROUND(
+            stress_score - baseline,
+            4
+        ) AS pressure_delta
+
+    FROM windowed
+
 )
 
 SELECT
-    *,
+    date_key,
 
-    stress_score-baseline
-        AS pressure_delta,
+    country_pressure,
+    conflict_pressure,
+    legal_pressure,
+    platform_pressure,
+
+    blocking_rate,
+    weighted_blocking,
+
+    stress_score,
+
+    pressure_delta,
+
+    baseline,
 
     CASE
-        WHEN stress_score>=8
+        WHEN pressure_delta >= 2.0
             THEN 'CRITICAL'
 
-        WHEN stress_score>=5
+        WHEN pressure_delta >= 1.0
             THEN 'HIGH'
 
-        WHEN stress_score>=2
+        WHEN pressure_delta >= 0.25
             THEN 'ELEVATED'
 
         ELSE 'NORMAL'
-    END
-        AS suppression_window_class
+    END AS suppression_window_class,
 
-FROM windowed
+    CURRENT_TIMESTAMP() AS snapshot_at
+
+FROM finalized
 
 ORDER BY date_key
