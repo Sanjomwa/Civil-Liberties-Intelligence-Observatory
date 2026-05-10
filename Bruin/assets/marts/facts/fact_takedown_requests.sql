@@ -7,12 +7,12 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Unified takedown request fact across Google + Lumen.
+  Unified daily takedown pressure fact across
+  Google transparency + Lumen legal removals.
 
 depends:
-  - stg.google_transparency_requests
-  - stg.google_transparency_detailed
-  - stg.lumen_requests
+  - int.google_pressure_periodized
+  - int.lumen_pressure_daily
 
 materialization:
   type: table
@@ -20,77 +20,55 @@ materialization:
 @bruin */
 
 SELECT
-    source,
+    'google' AS source,
     'Kenya' AS country,
     'KE' AS iso2,
 
-    platform,
-    requestor_name,
-    reason,
-    time_period,
+    measurement_date,
 
-    number_of_requests,
-    items_requested_removal,
-    items_removed_legal,
-    items_removed_policy,
+    google_requests AS number_of_requests,
+    requested_items AS items_requested_removal,
+    legal_removed AS items_removed_legal,
+    policy_removed AS items_removed_policy,
+    detailed_total AS item_count,
+
+    google_pressure_score AS pressure_score,
+
+    CASE
+        WHEN google_pressure_score >= 5 THEN 'CRITICAL'
+        WHEN google_pressure_score >= 4 THEN 'HIGH'
+        WHEN google_pressure_score >= 3 THEN 'MODERATE'
+        ELSE 'LOW'
+    END AS pressure_band,
+
+    CURRENT_TIMESTAMP() AS snapshot_at
+
+FROM `encoded-joy-485413-k5.int.google_pressure_periodized`
+
+UNION ALL
+
+SELECT
+    'lumen',
+    'Kenya',
+    'KE',
+
+    measurement_date,
+
+    request_count,
+    NULL,
+    NULL,
+    NULL,
     item_count,
 
-    extracted_at,
-    measurement_date,
-    year
+    lumen_pressure_score,
 
-FROM (
+    CASE
+        WHEN lumen_pressure_score >= 5 THEN 'CRITICAL'
+        WHEN lumen_pressure_score >= 4 THEN 'HIGH'
+        WHEN lumen_pressure_score >= 3 THEN 'MODERATE'
+        ELSE 'LOW'
+    END,
 
-    SELECT
-        'google_requests' AS source,
-        product AS platform,
-        requestor AS requestor_name,
-        reason,
-        time_period,
-        number_of_requests,
-        items_requested_removal,
-        items_removed_legal,
-        items_removed_policy,
-        NULL AS item_count,
-        extracted_at,
-        period_date AS measurement_date,
-        year
-    FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
+    CURRENT_TIMESTAMP()
 
-    UNION ALL
-
-    SELECT
-        'google_detailed',
-        product,
-        NULL,
-        reason,
-        NULL,
-        total,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        extracted_at,
-        period_date,
-        year
-    FROM `encoded-joy-485413-k5.stg.google_transparency_detailed`
-
-    UNION ALL
-
-    SELECT
-        'lumen',
-        recipient,
-        sender,
-        reason,
-        period,
-        request_count,
-        NULL,
-        NULL,
-        NULL,
-        item_count,
-        extracted_at,
-        measurement_date,
-        year
-    FROM `encoded-joy-485413-k5.stg.lumen_requests`
-
-)
+FROM `encoded-joy-485413-k5.int.lumen_pressure_daily`
