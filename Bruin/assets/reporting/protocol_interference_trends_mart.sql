@@ -19,6 +19,9 @@ materialization:
   strategy: create+replace
 @bruin */
 
+-- ============================================
+-- DAILY PROTOCOL AGGREGATION
+-- ============================================
 WITH base AS (
 
     SELECT
@@ -58,6 +61,9 @@ WITH base AS (
         s.protocol
 ),
 
+-- ============================================
+-- SCORE PROTOCOL STRESS
+-- ============================================
 scored AS (
 
     SELECT
@@ -70,12 +76,12 @@ scored AS (
 
         ROUND(
             (
-                signal_rate * 4
-                + confidence_weighted_interference * 4
-                + SAFE_DIVIDE(
+                signal_rate * 5
+              + confidence_weighted_interference * 8
+              + SAFE_DIVIDE(
                     failure_count,
                     measurement_volume
-                ) * 2
+                ) * 3
             ),
             4
         ) AS anomaly_score
@@ -83,6 +89,9 @@ scored AS (
     FROM base
 ),
 
+-- ============================================
+-- ROLLING BASELINE
+-- ============================================
 windowed AS (
 
     SELECT
@@ -98,6 +107,9 @@ windowed AS (
     FROM scored
 ),
 
+-- ============================================
+-- DELTA FROM HISTORICAL BASELINE
+-- ============================================
 finalized AS (
 
     SELECT
@@ -105,18 +117,26 @@ finalized AS (
 
         ROUND(
             anomaly_score
-            - rolling_baseline,
+            -
+            COALESCE(
+                rolling_baseline,
+                anomaly_score
+            ),
             4
         ) AS anomaly_delta
 
     FROM windowed
 )
 
+-- ============================================
+-- FINAL CLASSIFICATION
+-- ============================================
 SELECT
     date_key,
     protocol,
 
     measurement_volume,
+
     signal_rate,
     confidence_weighted_interference,
     protocol_failure_distribution,
@@ -126,16 +146,18 @@ SELECT
     anomaly_delta,
 
     CASE
-        WHEN anomaly_delta >= 2
+
+        WHEN anomaly_delta >= 0.75
             THEN 'CRITICAL_PROTOCOL_SHIFT'
 
-        WHEN anomaly_delta >= 1
+        WHEN anomaly_delta >= 0.35
             THEN 'HIGH_PROTOCOL_ANOMALY'
 
-        WHEN anomaly_delta >= 0.35
+        WHEN anomaly_delta >= 0.10
             THEN 'ELEVATED_PROTOCOL_ACTIVITY'
 
         ELSE 'NORMAL'
+
     END AS protocol_state,
 
     CURRENT_TIMESTAMP() AS snapshot_at
