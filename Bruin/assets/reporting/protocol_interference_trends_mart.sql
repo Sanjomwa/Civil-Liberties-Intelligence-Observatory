@@ -7,11 +7,15 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Detects protocol-level censorship interference trends across
-  DNS, HTTP, TCP and TLS observations in Kenya.
+  Detects protocol-level censorship interference trends across DNS, HTTP, TCP
+  and TLS observations in Kenya.
+
+  This reporting mart consumes the OONI features/intelligence layer and keeps
+  the existing reporting grain: one row per date x protocol.
 
 depends:
-  - marts.fact_ooni_censorship_signals
+  - features.protocol_daily_signals
+  - intelligence.protocol_signal_regimes
   - marts.dim_dates
 
 materialization:
@@ -19,153 +23,158 @@ materialization:
   strategy: create+replace
 @bruin */
 
--- ============================================
--- DAILY PROTOCOL AGGREGATION
--- ============================================
-WITH base AS (
+WITH feature_daily AS (
 
     SELECT
-        d.date_key,
-        s.protocol,
+        measurement_date,
+        protocol,
 
-        COUNT(*) AS measurement_volume,
-
-        AVG(
-            CASE
-                WHEN s.is_blocking_signal THEN 1
-                ELSE 0
-            END
-        ) AS signal_rate,
-
-        AVG(
-            CASE
-                WHEN s.is_blocking_signal
-                    THEN s.confidence_score
-                ELSE 0
-            END
-        ) AS confidence_weighted_interference,
-
-        COUNTIF(
-            s.result_state != 'OK'
-        ) AS failure_count
-
-    FROM `encoded-joy-485413-k5.marts.dim_dates` d
-
-    LEFT JOIN
-        `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals` s
-        ON d.date_key = s.measurement_date
-        AND s.country = 'KE'
-
-    GROUP BY
-        d.date_key,
-        s.protocol
-),
-
--- ============================================
--- SCORE PROTOCOL STRESS
--- ============================================
-scored AS (
-
-    SELECT
-        *,
+        SUM(measurement_count) AS measurement_volume,
+        SUM(observation_count) AS observation_volume,
 
         SAFE_DIVIDE(
-            failure_count,
-            measurement_volume
+            SUM(signal_rate * observation_count),
+            NULLIF(SUM(observation_count), 0)
+        ) AS signal_rate,
+
+        SAFE_DIVIDE(
+            SUM(confidence_weighted_interference * observation_count),
+            NULLIF(SUM(observation_count), 0)
+        ) AS confidence_weighted_interference,
+
+        SAFE_DIVIDE(
+            SUM((unknown_rate + down_rate) * observation_count),
+            NULLIF(SUM(observation_count), 0)
         ) AS protocol_failure_distribution,
 
-        ROUND(
-            (
-                signal_rate * 5
-              + confidence_weighted_interference * 8
-              + SAFE_DIVIDE(
-                    failure_count,
-                    measurement_volume
-                ) * 3
-            ),
-            4
-        ) AS anomaly_score
+        SAFE_DIVIDE(
+            SUM(baseline_signal_rate_30d * observation_count),
+            NULLIF(SUM(observation_count), 0)
+        ) AS rolling_baseline,
 
-    FROM base
+        SAFE_DIVIDE(
+            SUM(signal_delta_30d * observation_count),
+            NULLIF(SUM(observation_count), 0)
+        ) AS anomaly_delta,
+
+        MAX(anomaly_score) AS anomaly_score,
+        AVG(sample_quality_score) AS sample_quality_score,
+        COUNTIF(low_sample_flag) AS low_sample_feature_rows,
+        COUNTIF(sparse_window_flag) AS sparse_window_feature_rows,
+        COUNTIF(zero_variance_flag) AS zero_variance_feature_rows,
+        ANY_VALUE(feature_version) AS feature_version
+
+    FROM `encoded-joy-485413-k5.features.protocol_daily_signals`
+
+    WHERE country = 'KE'
+
+    GROUP BY
+        measurement_date,
+        protocol
 ),
 
--- ============================================
--- ROLLING BASELINE
--- ============================================
-windowed AS (
+regime_daily AS (
 
     SELECT
-        *,
+        measurement_date,
+        protocol,
 
-        AVG(anomaly_score)
-        OVER (
-            PARTITION BY protocol
-            ORDER BY date_key
-            ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
-        ) AS rolling_baseline
+        MAX(protocol_stress_score) AS protocol_stress_score,
 
-    FROM scored
-),
+        CASE
+            WHEN COUNTIF(protocol_state = 'SEVERE_ELEVATION') > 0
+                THEN 'SEVERE_ELEVATION'
 
--- ============================================
--- DELTA FROM HISTORICAL BASELINE
--- ============================================
-finalized AS (
+            WHEN COUNTIF(protocol_state = 'ELEVATED') > 0
+                THEN 'ELEVATED'
 
-    SELECT
-        *,
+            WHEN COUNTIF(protocol_state IN (
+                'LOW_SAMPLE',
+                'SPARSE_WINDOW',
+                'ZERO_VARIANCE_BASELINE',
+                'INSUFFICIENT_BASELINE'
+            )) > 0
+                THEN 'INSUFFICIENT_DATA'
 
-        ROUND(
-            anomaly_score
-            -
-            COALESCE(
-                rolling_baseline,
-                anomaly_score
-            ),
-            4
-        ) AS anomaly_delta
+            WHEN COUNTIF(protocol_state = 'BELOW_BASELINE') > 0
+                THEN 'BELOW_BASELINE'
 
-    FROM windowed
+            ELSE 'NORMAL_RANGE'
+        END AS protocol_state,
+
+        CASE
+            WHEN COUNTIF(confidence_level = 'HIGH') > 0 THEN 'HIGH'
+            WHEN COUNTIF(confidence_level = 'MEDIUM') > 0 THEN 'MEDIUM'
+            ELSE 'LOW'
+        END AS confidence_level,
+
+        ANY_VALUE(intelligence_version) AS intelligence_version
+
+    FROM `encoded-joy-485413-k5.intelligence.protocol_signal_regimes`
+
+    WHERE country = 'KE'
+
+    GROUP BY
+        measurement_date,
+        protocol
 )
 
--- ============================================
--- FINAL CLASSIFICATION
--- ============================================
 SELECT
-    date_key,
-    protocol,
+    d.date_key,
+    f.protocol,
 
-    measurement_volume,
+    f.measurement_volume,
+    f.observation_volume,
 
-    signal_rate,
-    confidence_weighted_interference,
-    protocol_failure_distribution,
+    f.signal_rate,
+    f.confidence_weighted_interference,
+    f.protocol_failure_distribution,
 
-    anomaly_score,
-    rolling_baseline,
-    anomaly_delta,
+    f.anomaly_score,
+    f.rolling_baseline,
+    f.anomaly_delta,
+
+    r.protocol_stress_score,
+    r.protocol_state,
+    r.confidence_level,
+    f.sample_quality_score,
+
+    f.low_sample_feature_rows,
+    f.sparse_window_feature_rows,
+    f.zero_variance_feature_rows,
 
     CASE
-
-        WHEN anomaly_delta >= 0.75
+        WHEN r.protocol_state = 'SEVERE_ELEVATION'
             THEN 'CRITICAL_PROTOCOL_SHIFT'
 
-        WHEN anomaly_delta >= 0.35
+        WHEN r.protocol_state = 'ELEVATED'
             THEN 'HIGH_PROTOCOL_ANOMALY'
 
-        WHEN anomaly_delta >= 0.10
-            THEN 'ELEVATED_PROTOCOL_ACTIVITY'
+        WHEN r.protocol_state = 'INSUFFICIENT_DATA'
+            THEN 'INSUFFICIENT_DATA'
+
+        WHEN r.protocol_state = 'BELOW_BASELINE'
+            THEN 'BELOW_BASELINE'
 
         ELSE 'NORMAL'
+    END AS trend_state,
 
-    END AS protocol_state,
-
+    'protocol_interference_trends_mart_v2' AS reporting_version,
+    f.feature_version,
+    r.intelligence_version,
     CURRENT_TIMESTAMP() AS snapshot_at
 
-FROM finalized
+FROM `encoded-joy-485413-k5.marts.dim_dates` d
 
-WHERE protocol IS NOT NULL
+LEFT JOIN feature_daily f
+    ON d.date_key = f.measurement_date
+
+LEFT JOIN regime_daily r
+    ON f.measurement_date = r.measurement_date
+    AND f.protocol = r.protocol
+
+WHERE f.protocol IS NOT NULL
 
 ORDER BY
-    date_key,
-    protocol
+    d.date_key,
+    f.protocol

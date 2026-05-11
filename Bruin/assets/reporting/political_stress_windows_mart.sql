@@ -7,13 +7,13 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Detects elevated digital suppression windows in Kenya by fusing
-  political conflict pressure, legal pressure, platform pressure,
-  and network censorship anomalies.
+  Detects elevated digital suppression windows in Kenya by combining country
+  pressure facts with OONI protocol interference trends sourced from the new
+  features/intelligence layer.
 
 depends:
+  - reporting.mart_protocol_interference_trends
   - marts.fact_country_pressure_daily
-  - marts.fact_network_blocking_daily
   - marts.dim_dates
 
 materialization:
@@ -24,16 +24,28 @@ materialization:
 WITH network AS (
 
     SELECT
-        measurement_date,
+        date_key AS measurement_date,
 
-        AVG(blocking_rate) AS blocking_rate,
+        AVG(signal_rate) AS signal_rate,
 
-        AVG(confidence_weighted_blocking)
-            AS weighted_blocking
+        AVG(confidence_weighted_interference)
+            AS weighted_blocking,
 
-    FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
+        MAX(anomaly_score)
+            AS max_protocol_anomaly_score,
 
-    WHERE country = 'KE'
+        MAX(protocol_stress_score)
+            AS max_protocol_stress_score,
+
+        COUNTIF(trend_state IN (
+            'CRITICAL_PROTOCOL_SHIFT',
+            'HIGH_PROTOCOL_ANOMALY'
+        )) AS elevated_protocol_count,
+
+        AVG(sample_quality_score)
+            AS avg_sample_quality_score
+
+    FROM `encoded-joy-485413-k5.reporting.mart_protocol_interference_trends`
 
     GROUP BY measurement_date
 ),
@@ -45,7 +57,9 @@ country_pressure AS (
 
         conflict_pressure_score,
         legal_pressure_score,
-        platform_pressure_score
+        platform_pressure_score,
+        composite_pressure_score AS source_composite_pressure_score,
+        pressure_level AS source_pressure_level
 
     FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
 
@@ -66,11 +80,29 @@ base AS (
         COALESCE(c.platform_pressure_score, 0)
             AS platform_pressure,
 
-        COALESCE(n.blocking_rate, 0)
-            AS blocking_rate,
+        COALESCE(c.source_composite_pressure_score, 0)
+            AS source_composite_pressure_score,
+
+        COALESCE(c.source_pressure_level, 'LOW')
+            AS source_pressure_level,
+
+        COALESCE(n.signal_rate, 0)
+            AS signal_rate,
 
         COALESCE(n.weighted_blocking, 0)
-            AS weighted_blocking
+            AS weighted_blocking,
+
+        COALESCE(n.max_protocol_anomaly_score, 0)
+            AS max_protocol_anomaly_score,
+
+        COALESCE(n.max_protocol_stress_score, 0)
+            AS max_protocol_stress_score,
+
+        COALESCE(n.elevated_protocol_count, 0)
+            AS elevated_protocol_count,
+
+        COALESCE(n.avg_sample_quality_score, 0)
+            AS avg_sample_quality_score
 
     FROM `encoded-joy-485413-k5.marts.dim_dates` d
 
@@ -87,13 +119,10 @@ scored AS (
         *,
 
         ROUND(
-            (
-                conflict_pressure * 0.45
-                + legal_pressure * 0.25
-                + platform_pressure * 0.15
-                + blocking_rate * 40
-                + weighted_blocking * 30
-            ),
+            source_composite_pressure_score
+            + signal_rate * 5
+            + weighted_blocking * 8
+            + COALESCE(max_protocol_stress_score, 0) * 0.03,
             4
         ) AS composite_pressure_score
 
@@ -109,7 +138,13 @@ windowed AS (
         OVER (
             ORDER BY date_key
             ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
-        ) AS rolling_baseline_pressure
+        ) AS rolling_baseline_pressure,
+
+        COUNT(composite_pressure_score)
+        OVER (
+            ORDER BY date_key
+            ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
+        ) AS baseline_days_30d
 
     FROM scored
 ),
@@ -125,17 +160,20 @@ finalized AS (
             4
         ) AS pressure_delta,
 
-        ROUND(
-            1 / (
-                1 + EXP(
-                    -(
-                        composite_pressure_score
-                        - rolling_baseline_pressure
+        CASE
+            WHEN baseline_days_30d < 14 THEN NULL
+            ELSE ROUND(
+                1 / (
+                    1 + EXP(
+                        -(
+                            composite_pressure_score
+                            - rolling_baseline_pressure
+                        )
                     )
-                )
-            ),
-            4
-        ) AS suppression_window_probability
+                ),
+                4
+            )
+        END AS suppression_window_probability
 
     FROM windowed
 )
@@ -146,19 +184,26 @@ SELECT
     conflict_pressure,
     legal_pressure,
     platform_pressure,
+    source_composite_pressure_score,
+    source_pressure_level,
 
-    blocking_rate,
+    signal_rate,
     weighted_blocking,
+    max_protocol_anomaly_score,
+    max_protocol_stress_score,
+    elevated_protocol_count,
+    avg_sample_quality_score,
 
     composite_pressure_score,
-
     rolling_baseline_pressure,
-
+    baseline_days_30d,
     pressure_delta,
-
     suppression_window_probability,
 
     CASE
+        WHEN baseline_days_30d < 14
+            THEN 'INSUFFICIENT_HISTORY'
+
         WHEN pressure_delta >= 1.8
             THEN 'CRITICAL_OBSERVABILITY_WINDOW'
 
@@ -171,6 +216,7 @@ SELECT
         ELSE 'NORMAL'
     END AS suppression_window_class,
 
+    'political_stress_windows_mart_v2' AS reporting_version,
     CURRENT_TIMESTAMP() AS snapshot_at
 
 FROM finalized
