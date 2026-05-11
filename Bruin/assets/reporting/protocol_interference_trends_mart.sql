@@ -1,0 +1,149 @@
+/* @bruin
+tags:
+  - reporting
+
+name: reporting.mart_protocol_interference_trends
+type: bq.sql
+connection: bigquery-default
+
+description: |
+  Detects protocol-level censorship interference trends across
+  DNS, HTTP, TCP and TLS observations in Kenya.
+
+depends:
+  - marts.fact_ooni_censorship_signals
+  - marts.dim_dates
+
+materialization:
+  type: table
+  strategy: create+replace
+@bruin */
+
+WITH base AS (
+
+    SELECT
+        d.date_key,
+        s.protocol,
+
+        COUNT(*) AS measurement_volume,
+
+        AVG(
+            CASE
+                WHEN s.is_blocking_signal THEN 1
+                ELSE 0
+            END
+        ) AS signal_rate,
+
+        AVG(
+            CASE
+                WHEN s.is_blocking_signal
+                    THEN s.confidence_score
+                ELSE 0
+            END
+        ) AS confidence_weighted_interference,
+
+        COUNTIF(
+            s.result_state != 'OK'
+        ) AS failure_count
+
+    FROM `encoded-joy-485413-k5.marts.dim_dates` d
+
+    LEFT JOIN
+        `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals` s
+        ON d.date_key = s.measurement_date
+        AND s.country = 'KE'
+
+    GROUP BY
+        d.date_key,
+        s.protocol
+),
+
+scored AS (
+
+    SELECT
+        *,
+
+        SAFE_DIVIDE(
+            failure_count,
+            measurement_volume
+        ) AS protocol_failure_distribution,
+
+        ROUND(
+            (
+                signal_rate * 4
+                + confidence_weighted_interference * 4
+                + SAFE_DIVIDE(
+                    failure_count,
+                    measurement_volume
+                ) * 2
+            ),
+            4
+        ) AS anomaly_score
+
+    FROM base
+),
+
+windowed AS (
+
+    SELECT
+        *,
+
+        AVG(anomaly_score)
+        OVER (
+            PARTITION BY protocol
+            ORDER BY date_key
+            ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
+        ) AS rolling_baseline
+
+    FROM scored
+),
+
+finalized AS (
+
+    SELECT
+        *,
+
+        ROUND(
+            anomaly_score
+            - rolling_baseline,
+            4
+        ) AS anomaly_delta
+
+    FROM windowed
+)
+
+SELECT
+    date_key,
+    protocol,
+
+    measurement_volume,
+    signal_rate,
+    confidence_weighted_interference,
+    protocol_failure_distribution,
+
+    anomaly_score,
+    rolling_baseline,
+    anomaly_delta,
+
+    CASE
+        WHEN anomaly_delta >= 2
+            THEN 'CRITICAL_PROTOCOL_SHIFT'
+
+        WHEN anomaly_delta >= 1
+            THEN 'HIGH_PROTOCOL_ANOMALY'
+
+        WHEN anomaly_delta >= 0.35
+            THEN 'ELEVATED_PROTOCOL_ACTIVITY'
+
+        ELSE 'NORMAL'
+    END AS protocol_state,
+
+    CURRENT_TIMESTAMP() AS snapshot_at
+
+FROM finalized
+
+WHERE protocol IS NOT NULL
+
+ORDER BY
+    date_key,
+    protocol

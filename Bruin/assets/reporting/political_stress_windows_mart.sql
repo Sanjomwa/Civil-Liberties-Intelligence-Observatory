@@ -8,8 +8,8 @@ connection: bigquery-default
 
 description: |
   Detects elevated digital suppression windows in Kenya by fusing
-  political conflict pressure, legal takedown activity, platform
-  moderation pressure, and network censorship anomalies.
+  political conflict pressure, legal pressure, platform pressure,
+  and network censorship anomalies.
 
 depends:
   - marts.fact_country_pressure_daily
@@ -26,7 +26,7 @@ WITH network AS (
     SELECT
         measurement_date,
 
-        AVG(blocking_rate) AS avg_blocking_rate,
+        AVG(blocking_rate) AS blocking_rate,
 
         AVG(confidence_weighted_blocking)
             AS weighted_blocking
@@ -36,7 +36,6 @@ WITH network AS (
     WHERE country = 'KE'
 
     GROUP BY measurement_date
-
 ),
 
 country_pressure AS (
@@ -44,18 +43,13 @@ country_pressure AS (
     SELECT
         measurement_date,
 
-        composite_pressure_score AS country_pressure,
-
-        conflict_pressure_score AS conflict_pressure,
-
-        legal_pressure_score AS legal_pressure,
-
-        platform_pressure_score AS platform_pressure
+        conflict_pressure_score,
+        legal_pressure_score,
+        platform_pressure_score
 
     FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
 
     WHERE iso2 = 'KE'
-
 ),
 
 base AS (
@@ -63,19 +57,16 @@ base AS (
     SELECT
         d.date_key,
 
-        COALESCE(c.country_pressure, 0)
-            AS country_pressure,
-
-        COALESCE(c.conflict_pressure, 0)
+        COALESCE(c.conflict_pressure_score, 0)
             AS conflict_pressure,
 
-        COALESCE(c.legal_pressure, 0)
+        COALESCE(c.legal_pressure_score, 0)
             AS legal_pressure,
 
-        COALESCE(c.platform_pressure, 0)
+        COALESCE(c.platform_pressure_score, 0)
             AS platform_pressure,
 
-        COALESCE(n.avg_blocking_rate, 0)
+        COALESCE(n.blocking_rate, 0)
             AS blocking_rate,
 
         COALESCE(n.weighted_blocking, 0)
@@ -88,7 +79,6 @@ base AS (
 
     LEFT JOIN network n
         ON d.date_key = n.measurement_date
-
 ),
 
 scored AS (
@@ -97,14 +87,17 @@ scored AS (
         *,
 
         ROUND(
-            country_pressure
-            + (blocking_rate * 5)
-            + (weighted_blocking * 4),
+            (
+                conflict_pressure * 0.45
+                + legal_pressure * 0.25
+                + platform_pressure * 0.15
+                + blocking_rate * 40
+                + weighted_blocking * 30
+            ),
             4
-        ) AS stress_score
+        ) AS composite_pressure_score
 
     FROM base
-
 ),
 
 windowed AS (
@@ -112,14 +105,13 @@ windowed AS (
     SELECT
         *,
 
-        AVG(stress_score)
+        AVG(composite_pressure_score)
         OVER (
             ORDER BY date_key
             ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
-        ) AS baseline
+        ) AS rolling_baseline_pressure
 
     FROM scored
-
 ),
 
 finalized AS (
@@ -128,18 +120,29 @@ finalized AS (
         *,
 
         ROUND(
-            stress_score - baseline,
+            composite_pressure_score
+            - rolling_baseline_pressure,
             4
-        ) AS pressure_delta
+        ) AS pressure_delta,
+
+        ROUND(
+            1 / (
+                1 + EXP(
+                    -(
+                        composite_pressure_score
+                        - rolling_baseline_pressure
+                    )
+                )
+            ),
+            4
+        ) AS suppression_window_probability
 
     FROM windowed
-
 )
 
 SELECT
     date_key,
 
-    country_pressure,
     conflict_pressure,
     legal_pressure,
     platform_pressure,
@@ -147,21 +150,23 @@ SELECT
     blocking_rate,
     weighted_blocking,
 
-    stress_score,
+    composite_pressure_score,
+
+    rolling_baseline_pressure,
 
     pressure_delta,
 
-    baseline,
+    suppression_window_probability,
 
     CASE
-        WHEN pressure_delta >= 2.0
-            THEN 'CRITICAL'
+        WHEN pressure_delta >= 1.8
+            THEN 'CRITICAL_OBSERVABILITY_WINDOW'
 
-        WHEN pressure_delta >= 1.0
-            THEN 'HIGH'
+        WHEN pressure_delta >= 1.2
+            THEN 'HIGH_STRESS_WINDOW'
 
-        WHEN pressure_delta >= 0.25
-            THEN 'ELEVATED'
+        WHEN pressure_delta >= 0.6
+            THEN 'ELEVATED_PRESSURE'
 
         ELSE 'NORMAL'
     END AS suppression_window_class,
