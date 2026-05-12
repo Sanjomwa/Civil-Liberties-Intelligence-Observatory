@@ -17,6 +17,7 @@ description: |
     - descriptive
     - explainable
     - non-causal
+    - confidence-aware
     - API-consumable
 
 depends:
@@ -175,9 +176,45 @@ scaled_features AS (
                 MAX(f.avg_weighted_blocking) OVER (),
                 0
             )
-        ) AS normalized_weighted_signal
+        ) AS normalized_weighted_signal,
+
+        LEAST(
+            1.0,
+            SAFE_DIVIDE(
+                f.observation_days,
+                90.0
+            )
+        ) AS evidence_maturity_score
 
     FROM feature_metrics f
+),
+
+
+scored AS (
+
+    SELECT
+        s.*,
+
+        ROUND(
+            (
+                COALESCE(
+                    s.normalized_weighted_signal,
+                    0
+                )
+                *
+                LOG(
+                    1 + COALESCE(
+                        s.total_blocked_events,
+                        0
+                    )
+                )
+                *
+                s.evidence_maturity_score
+            ),
+            4
+        ) AS maturity_adjusted_signal
+
+    FROM scaled_features s
 )
 
 
@@ -196,6 +233,7 @@ SELECT
     s.avg_blocking_rate,
     s.avg_weighted_blocking,
     s.normalized_weighted_signal,
+    s.evidence_maturity_score,
 
     s.blocking_variability,
     s.total_blocked_events,
@@ -219,43 +257,55 @@ SELECT
 
     i.max_intelligence_confidence_score,
 
-    i.latest_intelligence.measurement_date
-        AS latest_intelligence_date,
 
-    i.latest_intelligence.protocol
-        AS latest_protocol,
+    CASE
+        WHEN i.latest_intelligence.intelligence_state =
+            'INSUFFICIENT_DATA'
+        THEN NULL
+        ELSE i.latest_intelligence.measurement_date
+    END AS latest_intelligence_date,
 
-    i.latest_intelligence.intelligence_state
-        AS latest_intelligence_state,
 
-    i.latest_intelligence.final_confidence_level
-        AS latest_confidence_level,
+    CASE
+        WHEN i.latest_intelligence.intelligence_state =
+            'INSUFFICIENT_DATA'
+        THEN NULL
+        ELSE i.latest_intelligence.protocol
+    END AS latest_protocol,
+
+
+    CASE
+        WHEN i.latest_intelligence.intelligence_state =
+            'INSUFFICIENT_DATA'
+        THEN NULL
+        ELSE i.latest_intelligence.intelligence_state
+    END AS latest_intelligence_state,
+
+
+    CASE
+        WHEN i.latest_intelligence.intelligence_state =
+            'INSUFFICIENT_DATA'
+        THEN NULL
+        ELSE i.latest_intelligence.final_confidence_level
+    END AS latest_confidence_level,
+
 
     i.latest_intelligence.strongest_driver_protocol,
-
     i.latest_intelligence.strongest_driver_lag_days,
 
 
     ROUND(
         (
+            s.maturity_adjusted_signal
+
+            *
             COALESCE(
-                s.normalized_weighted_signal,
-                0
-            )
-
-            * LOG(
-                1 + COALESCE(
-                    s.total_blocked_events,
-                    0
-                )
-            )
-
-            * COALESCE(
                 d.censorship_sensitivity_score,
                 0.50
             )
 
-            * (
+            *
+            (
                 1 +
                 COALESCE(
                     i.coupled_escalation_days,
@@ -268,20 +318,74 @@ SELECT
 
 
     CASE
-        WHEN s.normalized_weighted_signal >= 0.75
+        WHEN ROUND(
+            (
+                s.maturity_adjusted_signal
+                *
+                COALESCE(
+                    d.censorship_sensitivity_score,
+                    0.50
+                )
+                *
+                (
+                    1 +
+                    COALESCE(
+                        i.coupled_escalation_days,
+                        0
+                    ) * 0.02
+                )
+            ),
+            4
+        ) >= 1.0
             THEN 'HIGH_SIGNAL_PROVIDER'
 
-        WHEN s.normalized_weighted_signal >= 0.45
+        WHEN ROUND(
+            (
+                s.maturity_adjusted_signal
+                *
+                COALESCE(
+                    d.censorship_sensitivity_score,
+                    0.50
+                )
+                *
+                (
+                    1 +
+                    COALESCE(
+                        i.coupled_escalation_days,
+                        0
+                    ) * 0.02
+                )
+            ),
+            4
+        ) >= 0.35
             THEN 'ELEVATED_SIGNAL_PROVIDER'
 
-        WHEN s.normalized_weighted_signal >= 0.20
+        WHEN ROUND(
+            (
+                s.maturity_adjusted_signal
+                *
+                COALESCE(
+                    d.censorship_sensitivity_score,
+                    0.50
+                )
+                *
+                (
+                    1 +
+                    COALESCE(
+                        i.coupled_escalation_days,
+                        0
+                    ) * 0.02
+                )
+            ),
+            4
+        ) >= 0.05
             THEN 'VARIABLE_BEHAVIOR'
 
         ELSE 'STABLE'
     END AS behavioral_class,
 
 
-    'asn_behavior_profile_mart_v3'
+    'asn_behavior_profile_mart_v5'
         AS reporting_version,
 
     s.feature_version,
@@ -291,7 +395,7 @@ SELECT
         AS snapshot_at
 
 
-FROM scaled_features s
+FROM scored s
 
 
 LEFT JOIN `encoded-joy-485413-k5.marts.dim_asn` d
