@@ -10,16 +10,6 @@ description: |
   Behavioral observability profile for Kenyan ASNs using normalized
   OONI-derived feature and intelligence distributions.
 
-  Reporting grain:
-    one row per ASN
-
-  Commercially safe reporting surface:
-    - descriptive
-    - explainable
-    - non-causal
-    - confidence-aware
-    - API-consumable
-
 depends:
   - features.protocol_daily_signals
   - intelligence.protocol_relationships
@@ -31,20 +21,35 @@ materialization:
 @bruin */
 
 
-WITH protocol_averages AS (
+WITH observation_horizon AS (
+
+    SELECT
+        COUNT(DISTINCT measurement_date)
+            AS expected_observation_days
+
+    FROM `encoded-joy-485413-k5.features.protocol_daily_signals`
+
+    WHERE country = 'KE'
+),
+
+
+protocol_averages AS (
 
     SELECT
         asn,
         protocol,
-        AVG(signal_rate) AS avg_protocol_signal_rate
+
+        AVG(signal_rate)
+            AS avg_protocol_signal_rate,
+
+        SUM(blocked_events)
+            AS protocol_blocked_events
 
     FROM `encoded-joy-485413-k5.features.protocol_daily_signals`
 
     WHERE country = 'KE'
 
-    GROUP BY
-        asn,
-        protocol
+    GROUP BY asn, protocol
 ),
 
 
@@ -52,14 +57,23 @@ dominant_protocol AS (
 
     SELECT
         ranked.asn,
-        ranked.protocol AS dominant_protocol
+
+        ranked.protocol
+            AS dominant_protocol,
+
+        SAFE_DIVIDE(
+            ranked.protocol_blocked_events,
+            SUM(
+                ranked.protocol_blocked_events
+            ) OVER (
+                PARTITION BY ranked.asn
+            )
+        ) AS primary_blocking_protocol_share
 
     FROM (
 
         SELECT
-            asn,
-            protocol,
-            avg_protocol_signal_rate,
+            *,
 
             ROW_NUMBER() OVER (
                 PARTITION BY asn
@@ -74,6 +88,23 @@ dominant_protocol AS (
 ),
 
 
+protocol_metrics AS (
+
+    SELECT
+        asn,
+
+        COUNTIF(protocol_blocked_events > 0)
+            AS total_active_protocols,
+
+        COUNTIF(protocol_blocked_events > 0)
+            AS protocol_diversity_score
+
+    FROM protocol_averages
+
+    GROUP BY asn
+),
+
+
 feature_metrics AS (
 
     SELECT
@@ -81,6 +112,9 @@ feature_metrics AS (
 
         COUNT(DISTINCT measurement_date)
             AS observation_days,
+
+        MAX(measurement_date)
+            AS last_data_observation_date,
 
         SUM(measurement_count)
             AS measurement_count,
@@ -115,7 +149,8 @@ feature_metrics AS (
         ANY_VALUE(feature_version)
             AS feature_version
 
-    FROM `encoded-joy-485413-k5.features.protocol_daily_signals`
+    FROM
+        `encoded-joy-485413-k5.features.protocol_daily_signals`
 
     WHERE country = 'KE'
 
@@ -157,7 +192,8 @@ intelligence_metrics AS (
         ANY_VALUE(intelligence_version)
             AS intelligence_version
 
-    FROM `encoded-joy-485413-k5.intelligence.protocol_relationships`
+    FROM
+        `encoded-joy-485413-k5.intelligence.protocol_relationships`
 
     WHERE country = 'KE'
 
@@ -169,11 +205,19 @@ scaled_features AS (
 
     SELECT
         f.*,
+        h.expected_observation_days,
+
+        SAFE_DIVIDE(
+            f.observation_days,
+            h.expected_observation_days
+        ) AS coverage_ratio,
 
         SAFE_DIVIDE(
             f.avg_weighted_blocking,
             NULLIF(
-                MAX(f.avg_weighted_blocking) OVER (),
+                MAX(
+                    f.avg_weighted_blocking
+                ) OVER (),
                 0
             )
         ) AS normalized_weighted_signal,
@@ -187,6 +231,7 @@ scaled_features AS (
         ) AS evidence_maturity_score
 
     FROM feature_metrics f
+    CROSS JOIN observation_horizon h
 ),
 
 
@@ -201,214 +246,163 @@ scored AS (
                     s.normalized_weighted_signal,
                     0
                 )
-                *
-                LOG(
-                    1 + COALESCE(
+                * LOG(
+                    1 +
+                    COALESCE(
                         s.total_blocked_events,
                         0
                     )
                 )
-                *
-                s.evidence_maturity_score
+                * s.evidence_maturity_score
             ),
             4
         ) AS maturity_adjusted_signal
 
     FROM scaled_features s
+),
+
+
+final_scores AS (
+
+    SELECT
+        s.*,
+
+        d.asn AS display_asn,
+        d.network_class,
+        d.is_kenya_observability_core,
+        d.censorship_sensitivity_score,
+
+        dp.dominant_protocol,
+        dp.primary_blocking_protocol_share,
+
+        pm.total_active_protocols,
+        pm.protocol_diversity_score,
+
+        i.intelligence_version,
+
+        COALESCE(i.coupled_escalation_days,0)
+            AS coupled_escalation_days,
+
+        COALESCE(i.isolated_escalation_days,0)
+            AS isolated_escalation_days,
+
+        i.max_intelligence_confidence_score,
+
+        i.latest_intelligence.measurement_date
+            AS latest_intelligence_date,
+
+        i.latest_intelligence.protocol
+            AS latest_protocol,
+
+        i.latest_intelligence.intelligence_state
+            AS latest_intelligence_state,
+
+        i.latest_intelligence.final_confidence_level
+            AS latest_confidence_level,
+
+        i.latest_intelligence.strongest_driver_protocol,
+
+        i.latest_intelligence.strongest_driver_lag_days,
+
+        ROUND(
+            (
+                s.maturity_adjusted_signal
+                * COALESCE(
+                    d.censorship_sensitivity_score,
+                    0.50
+                )
+                * (
+                    1 +
+                    COALESCE(
+                        i.coupled_escalation_days,
+                        0
+                    ) * 0.02
+                )
+            ),
+            4
+        ) AS behavioral_priority_score,
+
+        ROUND(
+            (
+                (
+                    COALESCE(
+                        s.coverage_ratio,
+                        0
+                    ) * 0.60
+                )
+                +
+                (
+                    COALESCE(
+                        s.avg_sample_quality_score,
+                        0
+                    ) * 0.40
+                )
+            ),
+            4
+        ) AS data_reliability_score
+
+    FROM scored s
+
+    LEFT JOIN `encoded-joy-485413-k5.marts.dim_asn` d
+        ON CAST(s.asn AS STRING)
+        = CAST(d.asn_numeric AS STRING)
+
+    LEFT JOIN dominant_protocol dp
+        ON s.asn = dp.asn
+
+    LEFT JOIN protocol_metrics pm
+        ON s.asn = pm.asn
+
+    LEFT JOIN intelligence_metrics i
+        ON s.asn = i.asn
 )
 
 
 SELECT
-    s.asn,
-
-    d.asn AS display_asn,
-    d.network_class,
-    d.is_kenya_observability_core,
-    d.censorship_sensitivity_score,
-
-    s.observation_days,
-    s.measurement_count,
-    s.observation_count,
-
-    s.avg_blocking_rate,
-    s.avg_weighted_blocking,
-    s.normalized_weighted_signal,
-    s.evidence_maturity_score,
-
-    s.blocking_variability,
-    s.total_blocked_events,
-    s.avg_sample_quality_score,
-
-    s.low_sample_days,
-    s.sparse_window_days,
-    s.zero_variance_days,
-
-    dp.dominant_protocol,
-
-    COALESCE(
-        i.coupled_escalation_days,
-        0
-    ) AS coupled_escalation_days,
-
-    COALESCE(
-        i.isolated_escalation_days,
-        0
-    ) AS isolated_escalation_days,
-
-    i.max_intelligence_confidence_score,
-
+    fs.*,
 
     CASE
-        WHEN i.latest_intelligence.intelligence_state =
-            'INSUFFICIENT_DATA'
-        THEN NULL
-        ELSE i.latest_intelligence.measurement_date
-    END AS latest_intelligence_date,
-
-
-    CASE
-        WHEN i.latest_intelligence.intelligence_state =
-            'INSUFFICIENT_DATA'
-        THEN NULL
-        ELSE i.latest_intelligence.protocol
-    END AS latest_protocol,
-
-
-    CASE
-        WHEN i.latest_intelligence.intelligence_state =
-            'INSUFFICIENT_DATA'
-        THEN NULL
-        ELSE i.latest_intelligence.intelligence_state
-    END AS latest_intelligence_state,
-
-
-    CASE
-        WHEN i.latest_intelligence.intelligence_state =
-            'INSUFFICIENT_DATA'
-        THEN NULL
-        ELSE i.latest_intelligence.final_confidence_level
-    END AS latest_confidence_level,
-
-
-    i.latest_intelligence.strongest_driver_protocol,
-    i.latest_intelligence.strongest_driver_lag_days,
-
-
-    ROUND(
-        (
-            s.maturity_adjusted_signal
-
-            *
-            COALESCE(
-                d.censorship_sensitivity_score,
-                0.50
-            )
-
-            *
-            (
-                1 +
-                COALESCE(
-                    i.coupled_escalation_days,
-                    0
-                ) * 0.02
-            )
-        ),
-        4
-    ) AS behavioral_priority_score,
-
-
-    CASE
-        WHEN ROUND(
-            (
-                s.maturity_adjusted_signal
-                *
-                COALESCE(
-                    d.censorship_sensitivity_score,
-                    0.50
-                )
-                *
-                (
-                    1 +
-                    COALESCE(
-                        i.coupled_escalation_days,
-                        0
-                    ) * 0.02
-                )
-            ),
-            4
-        ) >= 1.0
-            THEN 'HIGH_SIGNAL_PROVIDER'
-
-        WHEN ROUND(
-            (
-                s.maturity_adjusted_signal
-                *
-                COALESCE(
-                    d.censorship_sensitivity_score,
-                    0.50
-                )
-                *
-                (
-                    1 +
-                    COALESCE(
-                        i.coupled_escalation_days,
-                        0
-                    ) * 0.02
-                )
-            ),
-            4
-        ) >= 0.35
-            THEN 'ELEVATED_SIGNAL_PROVIDER'
-
-        WHEN ROUND(
-            (
-                s.maturity_adjusted_signal
-                *
-                COALESCE(
-                    d.censorship_sensitivity_score,
-                    0.50
-                )
-                *
-                (
-                    1 +
-                    COALESCE(
-                        i.coupled_escalation_days,
-                        0
-                    ) * 0.02
-                )
-            ),
-            4
-        ) >= 0.05
-            THEN 'VARIABLE_BEHAVIOR'
-
+        WHEN behavioral_priority_score >= 1.00 THEN 'HIGH_SIGNAL_PROVIDER'
+        WHEN behavioral_priority_score >= 0.35 THEN 'ELEVATED_SIGNAL_PROVIDER'
+        WHEN behavioral_priority_score >= 0.05 THEN 'VARIABLE_BEHAVIOR'
         ELSE 'STABLE'
     END AS behavioral_class,
 
+    CASE
+        WHEN avg_weighted_blocking >= 0.0035 THEN 'VERY_HIGH'
+        WHEN avg_weighted_blocking >= 0.0025 THEN 'HIGH'
+        WHEN avg_weighted_blocking >= 0.0015 THEN 'MEDIUM'
+        ELSE 'LOW'
+    END AS censorship_intensity_tier,
 
-    'asn_behavior_profile_mart_v5'
+    CASE
+        WHEN network_class='MAJOR_KENYA_PROVIDER'
+            AND avg_weighted_blocking>=0.0025
+            AND data_reliability_score>=0.70
+        THEN 'High blocking signal on major provider with strong evidence coverage'
+
+        WHEN avg_weighted_blocking>=0.0035
+            AND coverage_ratio<0.20
+        THEN 'Very high blocking intensity observed with limited evidence coverage'
+
+        WHEN coupled_escalation_days>=10
+        THEN 'Frequent multi-protocol escalation behavior detected'
+
+        WHEN data_reliability_score<0.35
+        THEN 'Observed blocking signals have low reliability and sparse coverage'
+
+        WHEN avg_weighted_blocking>=0.0025
+        THEN 'Elevated blocking activity observed across monitored protocols'
+
+        ELSE 'Relatively stable observable network behavior'
+    END AS summary_insight,
+
+    'asn_behavior_profile_mart_v7_1'
         AS reporting_version,
-
-    s.feature_version,
-    i.intelligence_version,
 
     CURRENT_TIMESTAMP()
         AS snapshot_at
 
-
-FROM scored s
-
-
-LEFT JOIN `encoded-joy-485413-k5.marts.dim_asn` d
-    ON CAST(s.asn AS STRING)
-    = CAST(d.asn_numeric AS STRING)
-
-
-LEFT JOIN dominant_protocol dp
-    ON s.asn = dp.asn
-
-
-LEFT JOIN intelligence_metrics i
-    ON s.asn = i.asn
-
+FROM final_scores fs
 
 ORDER BY behavioral_priority_score DESC
