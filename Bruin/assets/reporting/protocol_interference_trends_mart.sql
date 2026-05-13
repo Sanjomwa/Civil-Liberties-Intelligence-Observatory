@@ -7,11 +7,15 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Detects protocol-level censorship interference trends across DNS, HTTP, TCP
-  and TLS observations in Kenya.
+  Detects protocol-level censorship interference trends across DNS, HTTP,
+  TCP and TLS observations in Kenya.
 
-  This reporting mart consumes the OONI features/intelligence layer and keeps
-  the existing reporting grain: one row per date x protocol.
+  Consumes:
+    - features.protocol_daily_signals
+    - intelligence.protocol_signal_regimes
+
+  Grain:
+    one row per measurement_date x protocol
 
 depends:
   - features.protocol_daily_signals
@@ -58,10 +62,13 @@ WITH feature_daily AS (
         ) AS anomaly_delta,
 
         MAX(anomaly_score) AS anomaly_score,
+
         AVG(sample_quality_score) AS sample_quality_score,
+
         COUNTIF(low_sample_flag) AS low_sample_feature_rows,
         COUNTIF(sparse_window_flag) AS sparse_window_feature_rows,
         COUNTIF(zero_variance_flag) AS zero_variance_feature_rows,
+
         ANY_VALUE(feature_version) AS feature_version
 
     FROM `encoded-joy-485413-k5.features.protocol_daily_signals`
@@ -90,23 +97,26 @@ regime_daily AS (
 
             WHEN COUNTIF(protocol_state IN (
                 'LOW_SAMPLE',
-                'SPARSE_WINDOW',
-                'ZERO_VARIANCE_BASELINE',
-                'INSUFFICIENT_BASELINE'
+                'ZERO_VARIANCE',
+                'INSUFFICIENT_BASELINE',
+                'INVALID_STATISTICS'
             )) > 0
                 THEN 'INSUFFICIENT_DATA'
-
-            WHEN COUNTIF(protocol_state = 'BELOW_BASELINE') > 0
-                THEN 'BELOW_BASELINE'
 
             ELSE 'NORMAL_RANGE'
         END AS protocol_state,
 
         CASE
-            WHEN COUNTIF(confidence_level = 'HIGH') > 0 THEN 'HIGH'
-            WHEN COUNTIF(confidence_level = 'MEDIUM') > 0 THEN 'MEDIUM'
+            WHEN COUNTIF(confidence_level = 'HIGH') > 0
+                THEN 'HIGH'
+
+            WHEN COUNTIF(confidence_level = 'MEDIUM') > 0
+                THEN 'MEDIUM'
+
             ELSE 'LOW'
         END AS confidence_level,
+
+        AVG(regime_confidence) AS regime_confidence,
 
         ANY_VALUE(intelligence_version) AS intelligence_version
 
@@ -137,6 +147,8 @@ SELECT
     r.protocol_stress_score,
     r.protocol_state,
     r.confidence_level,
+    r.regime_confidence,
+
     f.sample_quality_score,
 
     f.low_sample_feature_rows,
@@ -153,15 +165,14 @@ SELECT
         WHEN r.protocol_state = 'INSUFFICIENT_DATA'
             THEN 'INSUFFICIENT_DATA'
 
-        WHEN r.protocol_state = 'BELOW_BASELINE'
-            THEN 'BELOW_BASELINE'
-
         ELSE 'NORMAL'
     END AS trend_state,
 
-    'protocol_interference_trends_mart_v2' AS reporting_version,
+    'protocol_interference_trends_mart_v3' AS reporting_version,
+
     f.feature_version,
     r.intelligence_version,
+
     CURRENT_TIMESTAMP() AS snapshot_at
 
 FROM `encoded-joy-485413-k5.marts.dim_dates` d
@@ -171,10 +182,11 @@ LEFT JOIN feature_daily f
 
 LEFT JOIN regime_daily r
     ON f.measurement_date = r.measurement_date
-    AND f.protocol = r.protocol
+   AND f.protocol = r.protocol
 
 WHERE f.protocol IS NOT NULL
 
 ORDER BY
     d.date_key,
     f.protocol
+;
