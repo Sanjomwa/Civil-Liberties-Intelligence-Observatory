@@ -2,7 +2,7 @@
 name: features.validate_protocol_daily_signals
 type: python
 image: python:3.12
-connection: duckdb-parquet
+connection: bigquery-default
 
 tags:
   - validation

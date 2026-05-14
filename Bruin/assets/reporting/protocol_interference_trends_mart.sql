@@ -8,7 +8,10 @@ connection: bigquery-default
 
 description: |
   Protocol-level interference trends (Kenya). Grain: date_key x protocol.
-  v5: weighted anomaly_score; observation-mass regime rollup + share diagnostics.
+
+  v5: observation-weighted anomaly_score; regime rollup uses observation mass
+  (thresholds in rollup_thresholds) so sparse tails do not erase protocol-day
+  signal when most volume is reliable.
 
 depends:
   - features.protocol_daily_signals
