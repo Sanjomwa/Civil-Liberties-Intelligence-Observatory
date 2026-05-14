@@ -7,9 +7,13 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Detects elevated digital suppression windows in Kenya by combining country
-  pressure facts with OONI protocol interference trends sourced from the new
-  features/intelligence layer.
+  Detects elevated digital suppression windows in Kenya by combining
+  country-level pressure indicators with statistically validated OONI
+  protocol interference trends.
+
+  This v4 rebuild corrects protocol feature collinearity by reducing
+  corroboration overweighting between protocol stress and elevated
+  protocol count.
 
 depends:
   - reporting.mart_protocol_interference_trends
@@ -58,8 +62,12 @@ country_pressure AS (
         conflict_pressure_score,
         legal_pressure_score,
         platform_pressure_score,
-        composite_pressure_score AS source_composite_pressure_score,
-        pressure_level AS source_pressure_level
+
+        composite_pressure_score
+            AS source_composite_pressure_score,
+
+        pressure_level
+            AS source_pressure_level
 
     FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
 
@@ -122,7 +130,9 @@ scored AS (
             source_composite_pressure_score
             + signal_rate * 5
             + weighted_blocking * 8
-            + COALESCE(max_protocol_stress_score, 0) * 0.03,
+            + COALESCE(max_protocol_stress_score, 0) * 0.04
+            + elevated_protocol_count * 0.18
+            - (1 - avg_sample_quality_score) * 1.2,
             4
         ) AS composite_pressure_score
 
@@ -161,7 +171,9 @@ finalized AS (
         ) AS pressure_delta,
 
         CASE
-            WHEN baseline_days_30d < 14 THEN NULL
+            WHEN baseline_days_30d < 14
+                THEN NULL
+
             ELSE ROUND(
                 1 / (
                     1 + EXP(
@@ -184,19 +196,23 @@ SELECT
     conflict_pressure,
     legal_pressure,
     platform_pressure,
+
     source_composite_pressure_score,
     source_pressure_level,
 
     signal_rate,
     weighted_blocking,
+
     max_protocol_anomaly_score,
     max_protocol_stress_score,
     elevated_protocol_count,
+
     avg_sample_quality_score,
 
     composite_pressure_score,
     rolling_baseline_pressure,
     baseline_days_30d,
+
     pressure_delta,
     suppression_window_probability,
 
@@ -204,20 +220,23 @@ SELECT
         WHEN baseline_days_30d < 14
             THEN 'INSUFFICIENT_HISTORY'
 
-        WHEN pressure_delta >= 1.8
+        WHEN pressure_delta >= 1.2
             THEN 'CRITICAL_OBSERVABILITY_WINDOW'
 
-        WHEN pressure_delta >= 1.2
+        WHEN pressure_delta >= 0.7
             THEN 'HIGH_STRESS_WINDOW'
 
-        WHEN pressure_delta >= 0.6
+        WHEN pressure_delta >= 0.35
             THEN 'ELEVATED_PRESSURE'
 
         ELSE 'NORMAL'
     END AS suppression_window_class,
 
-    'political_stress_windows_mart_v2' AS reporting_version,
-    CURRENT_TIMESTAMP() AS snapshot_at
+    'political_stress_windows_mart_v4'
+        AS reporting_version,
+
+    CURRENT_TIMESTAMP()
+        AS snapshot_at
 
 FROM finalized
 
