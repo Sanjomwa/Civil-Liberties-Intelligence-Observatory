@@ -160,7 +160,7 @@ SELECT
     protocol,'|',
     test_family,'|',
     asn,
-    '|protocol_signal_regimes_v2'
+    '|protocol_signal_regimes_v3'
   ))) AS regime_id,
 
   measurement_date,
@@ -219,7 +219,7 @@ SELECT
 
   intelligence_guardrail_config_json,
 
-  'protocol_signal_regimes_v2' AS intelligence_version,
+  'protocol_signal_regimes_v3' AS intelligence_version,
   CURRENT_TIMESTAMP() AS computed_at
 
 FROM scored;
