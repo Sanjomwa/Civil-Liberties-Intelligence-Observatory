@@ -7,12 +7,11 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Measures statistical relationship between protocol-level censorship
-  anomalies and country-level repression pressure.
+  Measures statistically validated relationship between protocol-level
+  censorship anomalies and country-level repression pressure.
 
-  Protocol metrics come from the new features/intelligence-backed reporting
-  mart. Pressure still comes from the existing country pressure fact until a
-  dedicated pressure feature layer is introduced.
+  v3 recalibrates correlation confidence weighting and suppresses synthetic
+  variance amplification from low-confidence protocol windows.
 
 depends:
   - reporting.mart_protocol_interference_trends
@@ -38,7 +37,10 @@ WITH pressure_windowed AS (
         SAFE_DIVIDE(
             composite_pressure_score
             - AVG(composite_pressure_score) OVER (),
-            NULLIF(STDDEV_SAMP(composite_pressure_score) OVER (), 0)
+            NULLIF(
+                STDDEV_SAMP(composite_pressure_score) OVER (),
+                0
+            )
         ) AS z_pressure
 
     FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
@@ -69,14 +71,14 @@ protocol_relationships AS (
         MAX(protocol_stress_score)
             AS protocol_stress_score,
 
-        ANY_VALUE(intelligence_state)
-            AS intelligence_state,
-
         MAX(final_confidence_score)
             AS final_confidence_score,
 
         ANY_VALUE(final_confidence_level)
             AS final_confidence_level,
+
+        ANY_VALUE(intelligence_state)
+            AS intelligence_state,
 
         ANY_VALUE(strongest_driver_protocol)
             AS strongest_driver_protocol,
@@ -90,7 +92,8 @@ protocol_relationships AS (
         ANY_VALUE(intelligence_version)
             AS intelligence_version
 
-    FROM `encoded-joy-485413-k5.intelligence.protocol_relationships`
+    FROM
+        `encoded-joy-485413-k5.intelligence.protocol_relationships`
 
     WHERE country = 'KE'
 
@@ -114,11 +117,12 @@ joined AS (
         p.anomaly_delta,
         p.sample_quality_score,
         p.trend_state,
+        p.confidence_level,
 
         pr.protocol_stress_score,
-        pr.intelligence_state,
         pr.final_confidence_score,
         pr.final_confidence_level,
+        pr.intelligence_state,
         pr.strongest_driver_protocol,
         pr.strongest_driver_lag_days,
         pr.strongest_relationship_state,
@@ -129,11 +133,11 @@ joined AS (
         pv.platform_pressure_score,
         pv.composite_pressure_score,
         pv.pressure_level,
-
         pv.z_pressure,
         pv.pressure_window_stddev
 
-    FROM `encoded-joy-485413-k5.reporting.mart_protocol_interference_trends` p
+    FROM
+        `encoded-joy-485413-k5.reporting.mart_protocol_interference_trends` p
 
     LEFT JOIN pressure_variance pv
         ON p.date_key = pv.measurement_date
@@ -160,9 +164,22 @@ normalized AS (
                 OVER (PARTITION BY protocol),
                 0
             )
-        ) AS z_anomaly
+        ) AS raw_z_anomaly
 
     FROM joined
+),
+
+quality_adjusted AS (
+
+    SELECT
+        *,
+
+        raw_z_anomaly
+        * sample_quality_score
+        * COALESCE(final_confidence_score, 0.25)
+            AS z_anomaly
+
+    FROM normalized
 ),
 
 correlated AS (
@@ -191,9 +208,9 @@ correlated AS (
             PARTITION BY protocol
             ORDER BY measurement_date
             ROWS BETWEEN 30 PRECEDING AND CURRENT ROW
-        ) AS raw_rolling_pressure_corr
+        ) AS raw_corr
 
-    FROM normalized
+    FROM quality_adjusted
 ),
 
 guarded AS (
@@ -202,13 +219,18 @@ guarded AS (
         *,
 
         CASE
-            WHEN window_obs < 14 THEN NULL
+            WHEN window_obs < 18 THEN NULL
             WHEN COALESCE(anomaly_window_stddev, 0) = 0 THEN NULL
             WHEN COALESCE(pressure_window_stddev, 0) = 0 THEN NULL
-            ELSE raw_rolling_pressure_corr
+
+            ELSE raw_corr
+                 * sample_quality_score
+                 * COALESCE(final_confidence_score, 0.25)
         END AS rolling_pressure_corr,
 
-        window_obs < 14 AS insufficient_history_flag,
+        window_obs < 18
+            AS insufficient_history_flag,
+
         COALESCE(anomaly_window_stddev, 0) = 0
             OR COALESCE(pressure_window_stddev, 0) = 0
             AS zero_variance_flag
@@ -236,7 +258,9 @@ finalized AS (
     SELECT
         *,
 
-        ABS(z_anomaly - z_pressure) AS stress_divergence
+        ABS(z_anomaly - z_pressure)
+        * (2 - sample_quality_score)
+            AS stress_divergence
 
     FROM synchronized
 )
@@ -260,7 +284,7 @@ SELECT
     platform_pressure_score,
     composite_pressure_score,
 
-    raw_rolling_pressure_corr,
+    raw_corr,
     rolling_pressure_corr,
     synchronized_stress,
     stress_divergence,
@@ -274,10 +298,15 @@ SELECT
     strongest_relationship_state,
 
     CASE
-        WHEN trend_state IN ('CRITICAL_PROTOCOL_SHIFT', 'HIGH_PROTOCOL_ANOMALY')
+        WHEN trend_state IN (
+            'CRITICAL_PROTOCOL_SHIFT',
+            'HIGH_PROTOCOL_ANOMALY'
+        )
             THEN 'ELEVATED'
+
         WHEN trend_state = 'INSUFFICIENT_DATA'
             THEN 'INSUFFICIENT_DATA'
+
         ELSE 'NORMAL'
     END AS protocol_state,
 
@@ -290,47 +319,58 @@ SELECT
         WHEN zero_variance_flag
             THEN 'ZERO_VARIANCE_WINDOW'
 
-        WHEN ABS(rolling_pressure_corr) >= 0.70
+        WHEN ABS(rolling_pressure_corr) >= 0.82
             THEN 'STRONG_RELATIONSHIP'
 
-        WHEN ABS(rolling_pressure_corr) >= 0.40
+        WHEN ABS(rolling_pressure_corr) >= 0.55
             THEN 'MODERATE_RELATIONSHIP'
 
         ELSE 'WEAK_OR_NO_RELATIONSHIP'
     END AS correlation_state,
 
     CASE
-        WHEN rolling_pressure_corr >= 0.40
-            AND z_anomaly > 0
-            AND z_pressure > 0
+        WHEN rolling_pressure_corr >= 0.55
+             AND z_anomaly > 0
+             AND z_pressure > 0
             THEN 'SYNCHRONIZED_ESCALATION'
 
-        WHEN rolling_pressure_corr <= -0.40
+        WHEN rolling_pressure_corr <= -0.55
             THEN 'INVERSE_MOVEMENT'
 
         WHEN z_anomaly > 0
-            AND z_pressure <= 0
+             AND z_pressure <= 0
             THEN 'PROTOCOL_DIVERGENCE'
 
         WHEN z_pressure > 0
-            AND z_anomaly <= 0
+             AND z_anomaly <= 0
             THEN 'PRESSURE_ONLY'
 
         ELSE 'NO_CLEAR_ALIGNMENT'
     END AS alignment_state,
 
     CASE
-        WHEN stress_divergence >= 2.0 THEN 'HIGH_DIVERGENCE'
-        WHEN stress_divergence >= 1.0 THEN 'MODERATE_DIVERGENCE'
+        WHEN stress_divergence >= 2.5
+            THEN 'HIGH_DIVERGENCE'
+
+        WHEN stress_divergence >= 1.4
+            THEN 'MODERATE_DIVERGENCE'
+
         ELSE 'LOW_DIVERGENCE'
     END AS divergence_state,
 
     insufficient_history_flag,
     zero_variance_flag,
-    'PRESSURE_FACT_V1' AS pressure_context_status,
-    'protocol_repression_correlation_mart_v2' AS reporting_version,
+
+    'PRESSURE_FACT_V1'
+        AS pressure_context_status,
+
+    'protocol_repression_correlation_mart_v3'
+        AS reporting_version,
+
     intelligence_version,
-    CURRENT_TIMESTAMP() AS snapshot_at
+
+    CURRENT_TIMESTAMP()
+        AS snapshot_at
 
 FROM finalized
 

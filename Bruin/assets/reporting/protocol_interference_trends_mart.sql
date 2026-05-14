@@ -10,13 +10,6 @@ description: |
   Detects protocol-level censorship interference trends across DNS, HTTP,
   TCP and TLS observations in Kenya.
 
-  Consumes:
-    - features.protocol_daily_signals
-    - intelligence.protocol_signal_regimes
-
-  Grain:
-    one row per measurement_date x protocol
-
 depends:
   - features.protocol_daily_signals
   - intelligence.protocol_signal_regimes
@@ -61,17 +54,41 @@ WITH feature_daily AS (
             NULLIF(SUM(observation_count), 0)
         ) AS anomaly_delta,
 
-        MAX(anomaly_score) AS anomaly_score,
+        SAFE_DIVIDE(
+            SUM(
+                COALESCE(anomaly_score, 0)
+                * observation_count
+            ),
+            NULLIF(
+                SUM(
+                    CASE
+                        WHEN anomaly_score IS NOT NULL
+                            THEN observation_count
+                    END
+                ),
+                0
+            )
+        ) AS anomaly_score,
 
-        AVG(sample_quality_score) AS sample_quality_score,
+        SAFE_DIVIDE(
+            SUM(sample_quality_score * observation_count),
+            NULLIF(SUM(observation_count), 0)
+        ) AS sample_quality_score,
 
-        COUNTIF(low_sample_flag) AS low_sample_feature_rows,
-        COUNTIF(sparse_window_flag) AS sparse_window_feature_rows,
-        COUNTIF(zero_variance_flag) AS zero_variance_feature_rows,
+        COUNTIF(low_sample_flag)
+            AS low_sample_feature_rows,
 
-        ANY_VALUE(feature_version) AS feature_version
+        COUNTIF(sparse_window_flag)
+            AS sparse_window_feature_rows,
 
-    FROM `encoded-joy-485413-k5.features.protocol_daily_signals`
+        COUNTIF(zero_variance_flag)
+            AS zero_variance_feature_rows,
+
+        ANY_VALUE(feature_version)
+            AS feature_version
+
+    FROM
+        `encoded-joy-485413-k5.features.protocol_daily_signals`
 
     WHERE country = 'KE'
 
@@ -86,21 +103,28 @@ regime_daily AS (
         measurement_date,
         protocol,
 
-        MAX(protocol_stress_score) AS protocol_stress_score,
+        MAX(protocol_stress_score)
+            AS protocol_stress_score,
 
         CASE
-            WHEN COUNTIF(protocol_state = 'SEVERE_ELEVATION') > 0
+            WHEN COUNTIF(
+                protocol_state = 'SEVERE_ELEVATION'
+            ) > 0
                 THEN 'SEVERE_ELEVATION'
 
-            WHEN COUNTIF(protocol_state = 'ELEVATED') > 0
+            WHEN COUNTIF(
+                protocol_state = 'ELEVATED'
+            ) > 0
                 THEN 'ELEVATED'
 
-            WHEN COUNTIF(protocol_state IN (
-                'LOW_SAMPLE',
-                'ZERO_VARIANCE',
-                'INSUFFICIENT_BASELINE',
-                'INVALID_STATISTICS'
-            )) > 0
+            WHEN COUNTIF(
+                protocol_state IN (
+                    'LOW_SAMPLE',
+                    'ZERO_VARIANCE',
+                    'INSUFFICIENT_BASELINE',
+                    'INVALID_STATISTICS'
+                )
+            ) > 0
                 THEN 'INSUFFICIENT_DATA'
 
             ELSE 'NORMAL_RANGE'
@@ -116,11 +140,14 @@ regime_daily AS (
             ELSE 'LOW'
         END AS confidence_level,
 
-        AVG(regime_confidence) AS regime_confidence,
+        MAX(regime_confidence)
+            AS regime_confidence,
 
-        ANY_VALUE(intelligence_version) AS intelligence_version
+        ANY_VALUE(intelligence_version)
+            AS intelligence_version
 
-    FROM `encoded-joy-485413-k5.intelligence.protocol_signal_regimes`
+    FROM
+        `encoded-joy-485413-k5.intelligence.protocol_signal_regimes`
 
     WHERE country = 'KE'
 
@@ -131,6 +158,7 @@ regime_daily AS (
 
 SELECT
     d.date_key,
+
     f.protocol,
 
     f.measurement_volume,
@@ -168,14 +196,17 @@ SELECT
         ELSE 'NORMAL'
     END AS trend_state,
 
-    'protocol_interference_trends_mart_v3' AS reporting_version,
+    'protocol_interference_trends_mart_v4'
+        AS reporting_version,
 
     f.feature_version,
     r.intelligence_version,
 
-    CURRENT_TIMESTAMP() AS snapshot_at
+    CURRENT_TIMESTAMP()
+        AS snapshot_at
 
-FROM `encoded-joy-485413-k5.marts.dim_dates` d
+FROM
+    `encoded-joy-485413-k5.marts.dim_dates` d
 
 LEFT JOIN feature_daily f
     ON d.date_key = f.measurement_date
