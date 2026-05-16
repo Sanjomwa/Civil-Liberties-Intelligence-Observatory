@@ -1,14 +1,89 @@
+# ============================================================
+# Kenya Civil Liberties Observatory
+# Global Streamlit Theme Configuration
+# Applies to every page automatically
+# ============================================================
+
 [theme]
+
+# Dark observatory foundation
 base = "dark"
+
+# Accent / alert coral
 primaryColor = "#E8593C"
+
+# Core surfaces
 backgroundColor = "#0D0D0F"
 secondaryBackgroundColor = "#16161A"
+
+# Typography
 textColor = "#E8E6DF"
-font = "monospace"
+font = "sans serif"
+
+
+# ============================================================
+# Server
+# ============================================================
 
 [server]
+
 headless = true
 port = 8501
 
+# safer hot reload
+runOnSave = true
+
+# allows larger dataframe/chart payloads safely
+maxUploadSize = 400
+
+
+# ============================================================
+# Browser
+# ============================================================
+
 [browser]
+
 gatherUsageStats = false
+serverAddress = "localhost"
+serverPort = 8501
+
+
+# ============================================================
+# Client Rendering
+# ============================================================
+
+[client]
+
+# cleaner exception traces for production dashboards
+showErrorDetails = true
+
+# smoother rendering
+toolbarMode = "minimal"
+
+
+# ============================================================
+# Runner
+# ============================================================
+
+[runner]
+
+# avoids unnecessary reruns during cache-heavy BQ fetches
+fastReruns = true
+
+
+# ============================================================
+# Logger
+# ============================================================
+
+[logger]
+
+level = "warning"
+
+
+# ============================================================
+# Global App Branding
+# ============================================================
+
+[global]
+
+developmentMode = false
