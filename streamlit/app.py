@@ -2,36 +2,23 @@
 
 import streamlit as st
 
-from core.constants import (
-    APP_NAME,
-    APP_TAGLINE,
-    APP_VERSION,
-    PAGES
-)
-
-from core.filters import render_sidebar
 from core.state import init_state
-
-from components.kpis import metric_row
+from core.filters import render_sidebar
 
 from services.marts import (
     get_national_stress,
-    get_protocol_trends,
-    get_protocol_correlation,
-    get_asn_profiles
+    get_protocol_regimes
 )
-
 
 # ============================================================
 # PAGE CONFIG
 # ============================================================
 
 st.set_page_config(
-    page_title=APP_NAME,
-    page_icon="📡",
+    page_title="Kenya Civil Liberties Observatory",
+    page_icon="🛰️",
     layout="wide"
 )
-
 
 # ============================================================
 # INIT
@@ -40,86 +27,88 @@ st.set_page_config(
 init_state()
 render_sidebar()
 
+# ============================================================
+# LOAD SUMMARY DATA
+# ============================================================
+
+national = get_national_stress(
+    st.session_state.start_date,
+    st.session_state.end_date
+)
+
+protocols = get_protocol_regimes(
+    st.session_state.start_date,
+    st.session_state.end_date
+)
 
 # ============================================================
-# HEADER
+# LANDING PAGE
 # ============================================================
 
-st.title(APP_NAME)
+st.title("🛰️ Kenya Civil Liberties Observatory")
 
 st.caption(
-    f"{APP_TAGLINE} • {APP_VERSION}"
+    """
+    Monitoring network interference, protocol suppression patterns,
+    and digital civil-liberties stress signals across Kenya
+    (June 2023 – June 2025).
+    """
 )
 
 st.divider()
 
-
 # ============================================================
-# NAV PREVIEW
+# SYSTEM STATUS
 # ============================================================
 
-st.subheader("Observatory Modules")
+col1, col2 = st.columns(2)
 
-for page in PAGES:
-    st.markdown(f"- {page}")
+with col1:
+    st.metric(
+        "National Stress Records",
+        len(national)
+    )
 
+with col2:
+    st.metric(
+        "Protocol Observations",
+        len(protocols)
+    )
 
 st.divider()
 
-
 # ============================================================
-# CONNECTIVITY SMOKE TEST
+# NAVIGATION HELP
 # ============================================================
 
-st.subheader("System Health")
+st.subheader("Available Observatory Views")
 
+st.markdown("""
+### 📈 National Stress Observatory
+Country-level pressure trends and suppression probability.
 
-try:
+### 🌐 Protocol Regime Monitor
+Protocol-by-protocol escalation states and confidence levels.
 
-    stress = get_national_stress(
-        st.session_state.start_date,
-        st.session_state.end_date
-    )
+### 🔗 Correlation Engine *(coming next)*
+Protocol repression alignment modelling.
 
-    protocols = get_protocol_trends(
-        st.session_state.start_date,
-        st.session_state.end_date
-    )
+### 🧠 ASN Behavioral Intelligence *(coming)*
+Network-level anomaly concentration detection.
 
-    corr = get_protocol_correlation(
-        st.session_state.start_date,
-        st.session_state.end_date
-    )
+### 🚨 Suppression Event Explorer *(coming)*
+Interactive investigation timelines.
 
-    asns = get_asn_profiles()
+### 📜 Finance Bill Incident Report *(coming)*
+Narrative reconstruction of June 2024 events.
 
-    metric_row([
-        ("National Stress Rows", f"{len(stress):,}"),
-        ("Protocol Trend Rows", f"{len(protocols):,}"),
-        ("Correlation Rows", f"{len(corr):,}"),
-        ("ASN Profiles", f"{len(asns):,}")
-    ])
-
-    st.success("All marts connected successfully.")
-
-except Exception as e:
-
-    st.error("Connectivity test failed.")
-    st.exception(e)
-
+### ⚖ Methodology & Statistical Guardrails *(coming)*
+Scientific thresholds, assumptions, and limitations.
+""")
 
 st.divider()
-
-
-# ============================================================
-# STATUS
-# ============================================================
 
 st.info(
-    """
-Shell build complete.
-
-Next:
-Step 6 → National Stress Observatory
-"""
+    "Use the left sidebar filters to adjust analysis windows "
+    "before opening observatory pages."
 )

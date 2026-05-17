@@ -1,80 +1,80 @@
-# services/marts.py
+# streamlit/services/marts.py
 
-"""
-Mart query interface
-All pages access data through here
-"""
-
+import streamlit as st
 from services.bq import run_query
-from core.constants import PROJECT_ID
 
 
 # ============================================================
-# TABLE REFERENCES
+# PAGE 1
+# NATIONAL STRESS OBSERVATORY
 # ============================================================
 
-REPORTING = f"{PROJECT_ID}.reporting"
-
-
-# ============================================================
-# NATIONAL STRESS
-# ============================================================
-
+@st.cache_data(ttl=3600)
 def get_national_stress(start_date, end_date):
 
-    query = f"""
-    SELECT *
-    FROM `{REPORTING}.mart_political_stress_windows`
-    WHERE date_key BETWEEN '{start_date}' AND '{end_date}'
-    ORDER BY date_key
+    sql = f"""
+        SELECT
+            date_key,
+            composite_pressure_score,
+            rolling_baseline_pressure,
+            pressure_delta,
+            suppression_window_probability,
+            suppression_window_class,
+            elevated_protocol_count,
+            avg_sample_quality_score,
+            baseline_days_30d,
+            reporting_version,
+            snapshot_at
+        FROM
+        `encoded-joy-485413-k5.reporting.mart_political_stress_windows`
+        WHERE date_key BETWEEN '{start_date}' AND '{end_date}'
+        ORDER BY date_key
     """
 
-    return run_query(query)
+    return run_query(sql)
 
 
 # ============================================================
-# PROTOCOL TRENDS
+# PAGE 2
+# PROTOCOL REGIME MONITOR
 # ============================================================
 
-def get_protocol_trends(start_date, end_date):
+@st.cache_data(ttl=3600)
+def get_protocol_regimes(start_date, end_date):
 
-    query = f"""
-    SELECT *
-    FROM `{REPORTING}.mart_protocol_interference_trends`
-    WHERE date_key BETWEEN '{start_date}' AND '{end_date}'
-    ORDER BY date_key
+    sql = f"""
+        SELECT
+            date_key,
+            protocol,
+            protocol_stress_score,
+            protocol_state,
+            trend_state,
+            anomaly_score,
+            regime_confidence,
+            severe_obs_share,
+            elevated_obs_share,
+            insufficient_obs_share,
+            sample_quality_score,
+            reporting_version,
+            snapshot_at
+        FROM
+        `encoded-joy-485413-k5.reporting.mart_protocol_interference_trends`
+        WHERE date_key BETWEEN '{start_date}' AND '{end_date}'
+        ORDER BY date_key, protocol
     """
 
-    return run_query(query)
+    return run_query(sql)
 
 
-# ============================================================
-# PROTOCOL CORRELATION
-# ============================================================
-
+@st.cache_data(ttl=1800)
 def get_protocol_correlation(start_date, end_date):
 
     query = f"""
     SELECT *
-    FROM `{REPORTING}.protocol_repression_correlation_mart`
-    WHERE measurement_date
-    BETWEEN '{start_date}' AND '{end_date}'
-    ORDER BY measurement_date
-    """
-
-    return run_query(query)
-
-
-# ============================================================
-# ASN INTELLIGENCE
-# ============================================================
-
-def get_asn_profiles():
-
-    query = f"""
-    SELECT *
-    FROM `{REPORTING}.asn_behavior_profile_mart`
-    ORDER BY behavioral_priority_score DESC
+    FROM `encoded-joy-485413-k5.reporting.mart_protocol_interference_trends`
+    WHERE date_key BETWEEN DATE('{start_date}')
+    AND DATE('{end_date}')
+    ORDER BY date_key
     """
 
     return run_query(query)
