@@ -26,7 +26,7 @@ def get_national_stress(start_date, end_date):
             reporting_version,
             snapshot_at
         FROM
-        `encoded-joy-485413-k5.reporting.mart_national_pressure`
+        `encoded-joy-485413-k5.reporting.mart_political_stress_windows`
         WHERE date_key BETWEEN DATE('{start_date}')
         AND DATE('{end_date}')
         ORDER BY date_key
