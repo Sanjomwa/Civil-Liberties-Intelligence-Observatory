@@ -1,91 +1,125 @@
-# streamlit/app.py
+# app.py
 
 import streamlit as st
-from utils.bq_client import run_query, table
+
+from core.constants import (
+    APP_NAME,
+    APP_TAGLINE,
+    APP_VERSION,
+    PAGES
+)
+
+from core.filters import render_sidebar
+from core.state import init_state
+
+from components.kpis import metric_row
+
+from services.marts import (
+    get_national_stress,
+    get_protocol_trends,
+    get_protocol_correlation,
+    get_asn_profiles
+)
+
+
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 
 st.set_page_config(
-    page_title="Kenya Civil Liberties Observatory",
-    page_icon="🌐",
+    page_title=APP_NAME,
+    page_icon="📡",
     layout="wide"
 )
 
-st.title("🌐 Kenya Civil Liberties & Censorship Observatory")
-st.caption("Analyzing the relationship between political unrest and digital censorship (2023–2025)")
 
-# ─────────────────────────────────────────────────────────────
-# GLOBAL FILTER HELPERS
-# ─────────────────────────────────────────────────────────────
+# ============================================================
+# INIT
+# ============================================================
 
-@st.cache_data(ttl=3600)
-def get_date_bounds():
-    df = run_query(f"""
-        SELECT
-            MIN(measurement_date) AS min_date,
-            MAX(measurement_date) AS max_date
-        FROM {table('civil_liberties_mart')}
-    """)
-    return df.iloc[0]["min_date"], df.iloc[0]["max_date"]
+init_state()
+render_sidebar()
 
 
-@st.cache_data(ttl=3600)
-def get_platforms():
-    df = run_query(f"""
-        SELECT DISTINCT platform
-        FROM {table('platform_censorship_mart')}
-        ORDER BY platform
-    """)
-    return df["platform"].tolist()
+# ============================================================
+# HEADER
+# ============================================================
 
+st.title(APP_NAME)
 
-# ─────────────────────────────────────────────────────────────
-# SIDEBAR FILTERS
-# ─────────────────────────────────────────────────────────────
-
-st.sidebar.header("🔍 Global Filters")
-
-min_date, max_date = get_date_bounds()
-
-date_range = st.sidebar.date_input(
-    "Date Range",
-    value=(min_date, max_date),
-    min_value=min_date,
-    max_value=max_date
+st.caption(
+    f"{APP_TAGLINE} • {APP_VERSION}"
 )
 
-platforms = get_platforms()
+st.divider()
 
-selected_platforms = st.sidebar.multiselect(
-    "Platforms",
-    options=platforms,
-    default=[]
+
+# ============================================================
+# NAV PREVIEW
+# ============================================================
+
+st.subheader("Observatory Modules")
+
+for page in PAGES:
+    st.markdown(f"- {page}")
+
+
+st.divider()
+
+
+# ============================================================
+# CONNECTIVITY SMOKE TEST
+# ============================================================
+
+st.subheader("System Health")
+
+
+try:
+
+    stress = get_national_stress(
+        st.session_state.start_date,
+        st.session_state.end_date
+    )
+
+    protocols = get_protocol_trends(
+        st.session_state.start_date,
+        st.session_state.end_date
+    )
+
+    corr = get_protocol_correlation(
+        st.session_state.start_date,
+        st.session_state.end_date
+    )
+
+    asns = get_asn_profiles()
+
+    metric_row([
+        ("National Stress Rows", f"{len(stress):,}"),
+        ("Protocol Trend Rows", f"{len(protocols):,}"),
+        ("Correlation Rows", f"{len(corr):,}"),
+        ("ASN Profiles", f"{len(asns):,}")
+    ])
+
+    st.success("All marts connected successfully.")
+
+except Exception as e:
+
+    st.error("Connectivity test failed.")
+    st.exception(e)
+
+
+st.divider()
+
+
+# ============================================================
+# STATUS
+# ============================================================
+
+st.info(
+    """
+Shell build complete.
+
+Next:
+Step 6 → National Stress Observatory
+"""
 )
-
-# Store globally
-st.session_state["start_date"] = str(date_range[0])
-st.session_state["end_date"] = str(date_range[1])
-st.session_state["platforms"] = selected_platforms
-
-# ─────────────────────────────────────────────────────────────
-# LANDING CONTENT
-# ─────────────────────────────────────────────────────────────
-
-st.markdown("## 📊 What This Dashboard Answers")
-
-st.markdown("""
-**Core Question:**
-
-> How does political unrest correlate with digital censorship in Kenya?
-
-### Navigate using the sidebar:
-
-- **Censorship Timeline** → Trends over time  
-- **Platform Blocking** → Which platforms are targeted  
-- **Protest vs Censorship** → Correlation analysis  
-- **Suppression Windows** → Patterns of repression  
-- **Finance Bill Crisis** → Case study  
-
-### Notes:
-- All metrics are precomputed in BigQuery marts
-- Data is filtered globally using the sidebar
-- No raw datasets are used
-""")
