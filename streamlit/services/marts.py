@@ -26,8 +26,9 @@ def get_national_stress(start_date, end_date):
             reporting_version,
             snapshot_at
         FROM
-        `encoded-joy-485413-k5.reporting.mart_political_stress_windows`
-        WHERE date_key BETWEEN '{start_date}' AND '{end_date}'
+        `encoded-joy-485413-k5.reporting.mart_national_pressure`
+        WHERE date_key BETWEEN DATE('{start_date}')
+        AND DATE('{end_date}')
         ORDER BY date_key
     """
 
@@ -50,31 +51,54 @@ def get_protocol_regimes(start_date, end_date):
             protocol_state,
             trend_state,
             anomaly_score,
+            confidence_level,
             regime_confidence,
             severe_obs_share,
             elevated_obs_share,
             insufficient_obs_share,
             sample_quality_score,
             reporting_version,
+            feature_version,
+            intelligence_version,
             snapshot_at
         FROM
         `encoded-joy-485413-k5.reporting.mart_protocol_interference_trends`
-        WHERE date_key BETWEEN '{start_date}' AND '{end_date}'
+        WHERE date_key BETWEEN DATE('{start_date}')
+        AND DATE('{end_date}')
         ORDER BY date_key, protocol
     """
 
     return run_query(sql)
 
 
-@st.cache_data(ttl=1800)
+# ============================================================
+# PAGE 3
+# PROTOCOL STRESS INTELLIGENCE
+# ============================================================
+
+@st.cache_data(ttl=3600)
 def get_protocol_correlation(start_date, end_date):
 
-    query = f"""
-    SELECT *
-    FROM `encoded-joy-485413-k5.reporting.mart_protocol_interference_trends`
-    WHERE date_key BETWEEN DATE('{start_date}')
-    AND DATE('{end_date}')
-    ORDER BY date_key
+    sql = f"""
+        SELECT
+            date_key,
+            protocol,
+            protocol_stress_score,
+            protocol_state,
+            confidence_level,
+            regime_confidence,
+            severe_obs_share,
+            elevated_obs_share,
+            insufficient_obs_share,
+            reporting_version,
+            feature_version,
+            intelligence_version,
+            snapshot_at
+        FROM
+        `encoded-joy-485413-k5.reporting.mart_protocol_interference_trends`
+        WHERE date_key BETWEEN DATE('{start_date}')
+        AND DATE('{end_date}')
+        ORDER BY date_key, protocol
     """
 
-    return run_query(query)
+    return run_query(sql)

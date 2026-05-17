@@ -7,23 +7,20 @@ import plotly.graph_objects as go
 from core.state import init_state
 from core.filters import render_sidebar
 from core.theme import apply_layout, stress_color
+from services.marts import get_protocol_regimes
+from components.trust import render_trust_strip
 
-from services.marts import get_protocol_correlation
-
-from components.trust import (
-    render_trust_strip,
-    insufficient_history_notice
-)
 
 # ============================================================
 # PAGE CONFIG
 # ============================================================
 
 st.set_page_config(
-    page_title="Protocol ↔ Repression Correlation Engine",
+    page_title="Protocol Stress Intelligence Observatory",
     page_icon="🔗",
     layout="wide"
 )
+
 
 # ============================================================
 # INIT
@@ -32,39 +29,35 @@ st.set_page_config(
 init_state()
 render_sidebar()
 
+
 # ============================================================
 # DATA
 # ============================================================
 
-df = get_protocol_correlation(
+df = get_protocol_regimes(
     st.session_state.start_date,
     st.session_state.end_date
 )
 
 if df.empty:
-    st.warning("No protocol correlation data available.")
+    st.warning("No protocol intelligence data available.")
     st.stop()
 
 latest = df.iloc[-1]
+
 
 # ============================================================
 # HEADER
 # ============================================================
 
-st.title("🔗 Protocol ↔ Repression Correlation Engine")
+st.title("🔗 Protocol Stress Intelligence Observatory")
 
 st.caption(
     """
-    Measures statistical alignment between protocol-level stress
-    and national digital repression pressure.
-
-    High sustained correlation suggests coordinated suppression behavior.
+    Tracks protocol-level anomaly pressure, escalation states,
+    and statistical confidence across Kenya's censorship surface.
     """
 )
-
-# ============================================================
-# TRUST STRIP
-# ============================================================
 
 render_trust_strip(
     reporting_version=latest["reporting_version"],
@@ -74,20 +67,19 @@ render_trust_strip(
 
 st.divider()
 
+
 # ============================================================
-# FILTER BY PROTOCOL
+# PROTOCOL FILTER
 # ============================================================
 
-protocols = sorted(df["protocol"].unique())
-
-selected_protocol = st.selectbox(
+protocol = st.selectbox(
     "Select Protocol",
-    protocols
+    sorted(df["protocol"].unique())
 )
 
-protocol_df = df[df["protocol"] == selected_protocol]
-
+protocol_df = df[df["protocol"] == protocol]
 latest_protocol = protocol_df.iloc[-1]
+
 
 # ============================================================
 # KPI ROW
@@ -96,62 +88,44 @@ latest_protocol = protocol_df.iloc[-1]
 c1, c2, c3, c4 = st.columns(4)
 
 c1.metric(
-    "Rolling Correlation",
-    f"{latest_protocol['rolling_correlation']:.2f}"
+    "Stress Score",
+    f"{latest_protocol['protocol_stress_score']:.2f}"
 )
 
 c2.metric(
-    "Alignment State",
-    latest_protocol["alignment_state"]
+    "Current State",
+    latest_protocol["protocol_state"]
 )
 
 c3.metric(
-    "Window Observations",
-    int(latest_protocol["window_obs"])
+    "Confidence",
+    latest_protocol["confidence_level"]
 )
 
 c4.metric(
-    "Correlation Strength",
-    f"{latest_protocol['correlation_strength']:.2f}"
+    "Regime Confidence",
+    f"{latest_protocol['regime_confidence']:.2f}"
 )
 
 st.divider()
 
-# ============================================================
-# INSUFFICIENT HISTORY
-# ============================================================
-
-if latest_protocol["insufficient_history_flag"]:
-    insufficient_history_notice()
 
 # ============================================================
-# CORRELATION TIMELINE
+# STRESS TIMELINE
 # ============================================================
 
 fig = go.Figure()
 
 fig.add_trace(go.Scatter(
     x=protocol_df["date_key"],
-    y=protocol_df["rolling_correlation"],
-    mode="lines",
-    name="Rolling Correlation"
+    y=protocol_df["protocol_stress_score"],
+    name="Stress Score",
+    line=dict(width=2)
 ))
 
-fig.add_hline(
-    y=0.7,
-    line_dash="dash",
-    annotation_text="Strong Alignment"
-)
-
-fig.add_hline(
-    y=0.3,
-    line_dash="dot",
-    annotation_text="Weak Alignment"
-)
-
 apply_layout(
     fig,
-    f"{selected_protocol}: Rolling Correlation with National Pressure"
+    f"{protocol} Protocol Stress Trend"
 )
 
 st.plotly_chart(
@@ -160,32 +134,39 @@ st.plotly_chart(
 )
 
 st.markdown("""
-**What this shows**
+**Plain English**
 
-- Higher values indicate protocol stress rising alongside national repression pressure
-- Sustained high alignment suggests coordinated interference patterns
-- Near-zero correlation suggests unrelated local variation
+Higher stress means protocol behavior is diverging sharply from
+historical normal operation.
+
+Sustained spikes often indicate interference escalation.
 """)
 
 st.divider()
 
+
 # ============================================================
-# ALIGNMENT HEATMAP
+# REGIME DISTRIBUTION
 # ============================================================
 
-heat = protocol_df.copy()
+state_counts = (
+    protocol_df["protocol_state"]
+    .value_counts()
+    .reset_index()
+)
 
-fig2 = px.density_heatmap(
-    heat,
-    x="date_key",
-    y="alignment_state",
-    z="rolling_correlation",
-    histfunc="avg"
+state_counts.columns = ["protocol_state", "count"]
+
+fig2 = px.bar(
+    state_counts,
+    x="protocol_state",
+    y="count",
+    color="protocol_state"
 )
 
 apply_layout(
     fig2,
-    "Alignment Regime Density"
+    "Observed Regime Distribution"
 )
 
 st.plotly_chart(
@@ -194,48 +175,82 @@ st.plotly_chart(
 )
 
 st.markdown("""
-This heatmap reveals whether the protocol spends most of its
-history in weak, moderate, or severe alignment regimes.
+This shows how often this protocol spent time in each
+suppression regime.
 """)
 
 st.divider()
 
+
 # ============================================================
-# FULL PROTOCOL RANKING
+# OBSERVABILITY SHARES
 # ============================================================
 
-st.subheader("Current Protocol Correlation Ranking")
+fig3 = go.Figure()
+
+fig3.add_trace(go.Scatter(
+    x=protocol_df["date_key"],
+    y=protocol_df["severe_obs_share"],
+    name="Severe Share",
+    stackgroup="one"
+))
+
+fig3.add_trace(go.Scatter(
+    x=protocol_df["date_key"],
+    y=protocol_df["elevated_obs_share"],
+    name="Elevated Share",
+    stackgroup="one"
+))
+
+fig3.add_trace(go.Scatter(
+    x=protocol_df["date_key"],
+    y=protocol_df["insufficient_obs_share"],
+    name="Insufficient Share",
+    stackgroup="one"
+))
+
+apply_layout(
+    fig3,
+    "Observation Reliability Composition"
+)
+
+st.plotly_chart(
+    fig3,
+    use_container_width=True
+)
+
+st.markdown("""
+This explains *why* the protocol state was assigned.
+
+High insufficient share means evidence was sparse.
+""")
+
+st.divider()
+
+
+# ============================================================
+# RANKING TABLE
+# ============================================================
 
 latest_all = (
     df.sort_values("date_key")
     .groupby("protocol")
     .tail(1)
-    .sort_values("rolling_correlation", ascending=False)
+    .sort_values("protocol_stress_score", ascending=False)
 )
+
+st.subheader("Current Protocol Ranking")
 
 st.dataframe(
     latest_all[
         [
             "protocol",
-            "rolling_correlation",
-            "alignment_state",
-            "window_obs",
-            "correlation_strength"
+            "protocol_stress_score",
+            "protocol_state",
+            "confidence_level",
+            "regime_confidence"
         ]
     ],
     use_container_width=True,
     hide_index=True
 )
-
-st.divider()
-
-# ============================================================
-# RAW DATA
-# ============================================================
-
-with st.expander("View Raw Correlation Data"):
-    st.dataframe(
-        protocol_df,
-        use_container_width=True,
-        hide_index=True
-    )
