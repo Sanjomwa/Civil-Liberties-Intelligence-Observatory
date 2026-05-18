@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import date, datetime
 from typing import Any, Callable
 
 import pandas as pd
@@ -20,26 +19,64 @@ def _normalize_expected_type(expected: str) -> str:
     return expected.strip().lower()
 
 
+def _coerce_series(series: pd.Series, expected: str) -> pd.Series:
+    expected = _normalize_expected_type(expected)
+
+    if expected == "numeric":
+        return pd.to_numeric(series, errors="coerce")
+
+    if expected in ("datetime", "date"):
+        return pd.to_datetime(series, errors="coerce")
+
+    if expected == "string":
+        return series.astype("string")
+
+    return series
+
+
+def normalize_dataframe_for_contract(
+    df: pd.DataFrame,
+    dtype_hints: dict[str, str] | None = None,
+) -> pd.DataFrame:
+    """Coerce BigQuery/Pandas extension dtypes into dashboard-friendly dtypes.
+
+    BigQuery DATE columns may arrive as object/date or db-dtypes extension
+    arrays. The app wants pandas datetimes for plotting and validation, so we
+    normalize before contract checks instead of rejecting valid query results.
+    """
+
+    if df.empty or not dtype_hints:
+        return df
+
+    normalized = df.copy()
+
+    for column, expected in dtype_hints.items():
+        if column not in normalized.columns:
+            continue
+
+        expected = _normalize_expected_type(expected)
+        if expected in {"numeric", "datetime", "date", "string"}:
+            normalized[column] = _coerce_series(normalized[column], expected)
+
+    return normalized
+
+
 def _is_expected_dtype(series: pd.Series, expected: str) -> bool:
     expected = _normalize_expected_type(expected)
 
     if expected == "numeric":
         if is_numeric_dtype(series):
             return True
-        if is_object_dtype(series) or is_string_dtype(series):
-            coerced = pd.to_numeric(series, errors="coerce")
-            invalid_mask = series.notna() & coerced.isna()
-            return not invalid_mask.any()
-        return False
+        coerced = pd.to_numeric(series, errors="coerce")
+        invalid_mask = series.notna() & coerced.isna()
+        return not invalid_mask.any()
 
     if expected in ("datetime", "date"):
         if is_datetime64_any_dtype(series):
             return True
-        if is_object_dtype(series) or is_string_dtype(series):
-            coerced = pd.to_datetime(series, errors="coerce")
-            invalid_mask = series.notna() & coerced.isna()
-            return not invalid_mask.any()
-        return False
+        coerced = pd.to_datetime(series, errors="coerce")
+        invalid_mask = series.notna() & coerced.isna()
+        return not invalid_mask.any()
 
     if expected == "string":
         return is_string_dtype(series) or is_object_dtype(series)
@@ -105,17 +142,18 @@ def guard_dataframe_schema(
         except Exception:  # pragma: no cover
             warn_fn = print
 
+    normalized = normalize_dataframe_for_contract(df, dtype_hints)
+
     try:
         validate_dataframe_schema(
-            df,
+            normalized,
             required_columns=required_columns,
             dtype_hints=dtype_hints,
             non_nullable=non_nullable,
             title=title,
         )
-
     except MartContractError as error:
         warn_fn(str(error))
         return pd.DataFrame()
 
-    return df
+    return normalized

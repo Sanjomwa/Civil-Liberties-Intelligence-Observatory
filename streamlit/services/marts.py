@@ -1,9 +1,12 @@
 # streamlit/services/marts.py
 
+from __future__ import annotations
+
 import streamlit as st
-from services.bq import run_query
+
 from core.constants import REPORTING
 from core.contracts import guard_dataframe_schema
+from services.bq import run_query
 
 
 def _validate_mart_response(
@@ -22,14 +25,8 @@ def _validate_mart_response(
     )
 
 
-# ============================================================
-# PAGE 1
-# NATIONAL STRESS OBSERVATORY
-# ============================================================
-
 @st.cache_data(ttl=3600)
 def get_national_stress(start_date, end_date):
-
     sql = f"""
         SELECT
             date_key,
@@ -81,7 +78,6 @@ def get_national_stress(start_date, end_date):
         non_nullable=[
             "date_key",
             "composite_pressure_score",
-            "suppression_window_probability",
             "reporting_version",
             "snapshot_at",
         ],
@@ -89,14 +85,8 @@ def get_national_stress(start_date, end_date):
     )
 
 
-# ============================================================
-# PAGE 2
-# PROTOCOL REGIME MONITOR
-# ============================================================
-
 @st.cache_data(ttl=3600)
 def get_protocol_regimes(start_date, end_date):
-
     sql = f"""
         SELECT
             date_key,
@@ -163,7 +153,6 @@ def get_protocol_regimes(start_date, end_date):
         non_nullable=[
             "date_key",
             "protocol",
-            "protocol_stress_score",
             "reporting_version",
             "snapshot_at",
         ],
@@ -171,57 +160,36 @@ def get_protocol_regimes(start_date, end_date):
     )
 
 
-# ============================================================
-# PAGE 3
-# PROTOCOL STRESS INTELLIGENCE OBSERVATORY
-# ============================================================
-
 @st.cache_data(ttl=3600)
 def get_protocol_stress_intelligence(start_date, end_date):
-
     return get_protocol_regimes(start_date, end_date)
 
 
-# ============================================================
-# PAGE 4
-# PROTOCOL ↔ REPRESSION CORRELATION ENGINE
-# ============================================================
-
 @st.cache_data(ttl=3600)
 def get_protocol_correlation(start_date, end_date):
-
     sql = f"""
         SELECT
             measurement_date,
             protocol,
-
             rolling_pressure_corr,
             raw_corr,
             synchronized_stress,
             stress_divergence,
-
             protocol_stress_score,
             protocol_state,
-
             final_confidence_score,
             final_confidence_level,
-
             correlation_state,
             alignment_state,
             divergence_state,
-
             pressure_level,
             composite_pressure_score,
-
             reporting_version,
             intelligence_version,
             snapshot_at
-
         FROM `{REPORTING}.protocol_repression_correlation_mart`
-
         WHERE measurement_date BETWEEN DATE('{start_date}')
         AND DATE('{end_date}')
-
         ORDER BY measurement_date, protocol
     """
 
@@ -271,7 +239,6 @@ def get_protocol_correlation(start_date, end_date):
         non_nullable=[
             "measurement_date",
             "protocol",
-            "rolling_pressure_corr",
             "reporting_version",
             "snapshot_at",
         ],
@@ -279,45 +246,31 @@ def get_protocol_correlation(start_date, end_date):
     )
 
 
-# ============================================================
-# PAGE 5
-# ASN BEHAVIORAL INTELLIGENCE
-# ============================================================
-
 @st.cache_data(ttl=3600)
 def get_asn_behavior():
-
     sql = f"""
         SELECT
-            asn,
+            CAST(asn AS STRING) AS asn,
             display_asn,
             network_class,
             dominant_protocol,
-
             behavioral_priority_score,
             behavioral_class,
             censorship_intensity_tier,
-
             maturity_adjusted_signal,
             data_reliability_score,
             avg_weighted_blocking,
             coverage_ratio,
-
             coupled_escalation_days,
             isolated_escalation_days,
-
             latest_protocol,
             latest_intelligence_state,
             latest_confidence_level,
-
             summary_insight,
-
             reporting_version,
             intelligence_version,
             snapshot_at
-
         FROM `{REPORTING}.asn_behavior_profile_mart`
-
         ORDER BY behavioral_priority_score DESC
     """
 
@@ -347,7 +300,7 @@ def get_asn_behavior():
             "snapshot_at",
         ],
         dtype_hints={
-            "asn": "numeric",
+            "asn": "string",
             "display_asn": "string",
             "network_class": "string",
             "dominant_protocol": "string",
@@ -379,15 +332,9 @@ def get_asn_behavior():
         title="get_asn_behavior",
     )
 
-# ============================================================
-# PAGE 6
-# SUPPRESSION EVENT EXPLORER
-# ============================================================
-
 
 @st.cache_data(ttl=3600)
 def get_event_explorer(start_date, end_date):
-
     sql = f"""
         SELECT
             c.measurement_date,
@@ -399,22 +346,16 @@ def get_event_explorer(start_date, end_date):
             c.protocol_stress_score,
             c.composite_pressure_score,
             c.pressure_level,
-
             p.protocol_state,
             p.regime_confidence,
-
             c.reporting_version,
             c.snapshot_at
-
         FROM `{REPORTING}.protocol_repression_correlation_mart` c
-
         LEFT JOIN `{REPORTING}.mart_protocol_interference_trends` p
             ON c.measurement_date = p.date_key
             AND c.protocol = p.protocol
-
         WHERE c.measurement_date BETWEEN DATE('{start_date}')
         AND DATE('{end_date}')
-
         ORDER BY c.measurement_date, c.protocol
     """
 
@@ -454,22 +395,15 @@ def get_event_explorer(start_date, end_date):
         non_nullable=[
             "measurement_date",
             "protocol",
-            "rolling_pressure_corr",
             "reporting_version",
             "snapshot_at",
         ],
         title="get_event_explorer",
     )
 
-# ============================================================
-# PAGE 7
-# FINANCE BILL 2024 INCIDENT REPORT
-# ============================================================
-
 
 @st.cache_data(ttl=3600)
 def get_finance_bill_incident():
-
     sql = f"""
         SELECT
             c.measurement_date,
@@ -481,25 +415,18 @@ def get_finance_bill_incident():
             c.protocol_stress_score,
             c.composite_pressure_score,
             c.pressure_level,
-
             a.display_asn,
             a.network_class,
             a.behavioral_priority_score,
             a.avg_weighted_blocking,
-
             c.reporting_version,
             c.snapshot_at
-
         FROM `{REPORTING}.protocol_repression_correlation_mart` c
-
         CROSS JOIN `{REPORTING}.asn_behavior_profile_mart` a
-
         WHERE c.measurement_date BETWEEN
             DATE('2024-06-15')
             AND DATE('2024-07-15')
-
         AND a.network_class = 'MAJOR_KENYA_PROVIDER'
-
         ORDER BY c.measurement_date, c.protocol
     """
 
@@ -543,7 +470,6 @@ def get_finance_bill_incident():
         non_nullable=[
             "measurement_date",
             "protocol",
-            "rolling_pressure_corr",
             "reporting_version",
             "snapshot_at",
         ],
