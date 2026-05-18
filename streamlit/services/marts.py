@@ -214,3 +214,48 @@ def get_event_explorer(start_date, end_date):
     """
 
     return run_query(sql)
+
+# ============================================================
+# PAGE 7
+# FINANCE BILL 2024 INCIDENT REPORT
+# ============================================================
+
+
+@st.cache_data(ttl=3600)
+def get_finance_bill_incident():
+
+    sql = f"""
+        SELECT
+            c.measurement_date,
+            c.protocol,
+            c.rolling_pressure_corr,
+            c.alignment_state,
+            c.correlation_state,
+            c.divergence_state,
+            c.protocol_stress_score,
+            c.composite_pressure_score,
+            c.pressure_level,
+
+            a.display_asn,
+            a.network_class,
+            a.behavioral_priority_score,
+            a.avg_weighted_blocking,
+
+            c.reporting_version,
+            c.snapshot_at
+
+        FROM `{REPORTING}.protocol_repression_correlation_mart` c
+
+        LEFT JOIN `{REPORTING}.asn_behavior_profile_mart` a
+            ON TRUE
+
+        WHERE c.measurement_date BETWEEN
+            DATE('2024-06-15')
+            AND DATE('2024-07-15')
+
+        AND a.network_class = 'MAJOR_KENYA_PROVIDER'
+
+        ORDER BY c.measurement_date, c.protocol
+    """
+
+    return run_query(sql)
