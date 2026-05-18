@@ -1,1 +1,23 @@
-placeholder
+# Dashboard-facing statistical thresholds.
+# Keep this file small and explicit so methodology pages can display the
+# thresholds used by the reporting marts without hardcoding narrative text.
+
+protocol_correlation:
+  moderate_relationship: 0.55
+  strong_relationship: 0.82
+  minimum_window_observations: 18
+
+suppression_windows:
+  elevated_pressure_delta: 0.6
+  high_stress_delta: 1.2
+  critical_window_delta: 1.8
+  minimum_baseline_days: 14
+
+sample_quality:
+  low: 0.35
+  medium: 0.70
+  high: 0.90
+
+asn_behavior:
+  elevated_signal_provider: 0.35
+  high_signal_provider: 1.0
