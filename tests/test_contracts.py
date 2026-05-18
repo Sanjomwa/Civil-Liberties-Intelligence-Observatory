@@ -24,7 +24,8 @@ def test_validate_dataframe_schema_rejects_missing_columns():
     df = pd.DataFrame({"id": [1], "value": [2.0]})
 
     try:
-        validate_dataframe_schema(df, required_columns=["id", "name"], title="test query")
+        validate_dataframe_schema(df, required_columns=[
+                                  "id", "name"], title="test query")
     except MartContractError as exc:
         assert "missing required columns" in str(exc)
     else:

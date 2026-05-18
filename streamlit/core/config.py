@@ -54,10 +54,14 @@ DEFAULTS = {
     },
 }
 
-PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT") or _CONFIG.get("project_id") or DEFAULTS["project_id"]
-GCS_BUCKET = os.getenv("GCS_BUCKET") or _CONFIG.get("bucket") or DEFAULTS["bucket"]
-BQ_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION") or _CONFIG.get("location") or DEFAULTS["location"]
-TARGET_ENV = os.getenv("TARGET_ENV") or os.getenv("BRUIN_ENV") or _CONFIG.get("environment") or DEFAULTS["environment"]
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT") or _CONFIG.get(
+    "project_id") or DEFAULTS["project_id"]
+GCS_BUCKET = os.getenv("GCS_BUCKET") or _CONFIG.get(
+    "bucket") or DEFAULTS["bucket"]
+BQ_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION") or _CONFIG.get(
+    "location") or DEFAULTS["location"]
+TARGET_ENV = os.getenv("TARGET_ENV") or os.getenv(
+    "BRUIN_ENV") or _CONFIG.get("environment") or DEFAULTS["environment"]
 BRUIN_ENV = os.getenv("BRUIN_ENV") or TARGET_ENV
 COUNTRY = os.getenv("COUNTRY") or _CONFIG.get("country") or DEFAULTS["country"]
 ISO2 = os.getenv("ISO2") or _CONFIG.get("iso2") or DEFAULTS["iso2"]

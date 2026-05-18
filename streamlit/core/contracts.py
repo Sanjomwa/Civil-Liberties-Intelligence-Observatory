@@ -52,7 +52,8 @@ def validate_dataframe_schema(
     non_nullable: list[str] | None = None,
     title: str = "mart query",
 ) -> None:
-    missing_columns = [col for col in required_columns if col not in df.columns]
+    missing_columns = [
+        col for col in required_columns if col not in df.columns]
     if missing_columns:
         raise MartContractError(
             f"{title} is missing required columns: {', '.join(missing_columns)}"
