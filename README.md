@@ -174,8 +174,6 @@ http://localhost:8501
 
 ## Dashboard Showcase
 
-Replace the placeholders below with screenshots after running the Streamlit app.
-
 ### National Stress Observatory
 
 ![Country-level digital suppression pressure across Kenya (June 2023 – June 2025)](<Screenshot 2026-05-18 182543.png>)
