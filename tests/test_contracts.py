@@ -20,12 +20,43 @@ def test_validate_dataframe_schema_accepts_matching_schema():
     )
 
 
+def test_validate_dataframe_schema_accepts_numeric_string_columns():
+    df = pd.DataFrame(
+        {
+            "id": ["1", "2", "3"],
+            "amount": ["10.5", "20.0", "30"],
+        }
+    )
+
+    validate_dataframe_schema(
+        df,
+        required_columns=["id", "amount"],
+        dtype_hints={"id": "numeric", "amount": "numeric"},
+        non_nullable=["id", "amount"],
+    )
+
+
+def test_validate_dataframe_schema_accepts_date_string_columns():
+    df = pd.DataFrame(
+        {
+            "date_key": ["2024-01-01", "2024-01-02", "2024-01-03"],
+            "value": [1, 2, 3],
+        }
+    )
+
+    validate_dataframe_schema(
+        df,
+        required_columns=["date_key", "value"],
+        dtype_hints={"date_key": "date", "value": "numeric"},
+        non_nullable=["date_key", "value"],
+    )
+
+
 def test_validate_dataframe_schema_rejects_missing_columns():
     df = pd.DataFrame({"id": [1], "value": [2.0]})
 
     try:
-        validate_dataframe_schema(df, required_columns=[
-                                  "id", "name"], title="test query")
+        validate_dataframe_schema(df, required_columns=["id", "name"], title="test query")
     except MartContractError as exc:
         assert "missing required columns" in str(exc)
     else:

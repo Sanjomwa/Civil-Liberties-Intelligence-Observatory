@@ -24,16 +24,21 @@ def _is_expected_dtype(series: pd.Series, expected: str) -> bool:
     expected = _normalize_expected_type(expected)
 
     if expected == "numeric":
-        return is_numeric_dtype(series)
+        if is_numeric_dtype(series):
+            return True
+        if is_object_dtype(series) or is_string_dtype(series):
+            coerced = pd.to_numeric(series, errors="coerce")
+            invalid_mask = series.notna() & coerced.isna()
+            return not invalid_mask.any()
+        return False
 
     if expected in ("datetime", "date"):
         if is_datetime64_any_dtype(series):
             return True
-        if is_object_dtype(series):
-            values = series.dropna()
-            return values.empty or all(
-                isinstance(value, (datetime, date)) for value in values
-            )
+        if is_object_dtype(series) or is_string_dtype(series):
+            coerced = pd.to_datetime(series, errors="coerce")
+            invalid_mask = series.notna() & coerced.isna()
+            return not invalid_mask.any()
         return False
 
     if expected == "string":
