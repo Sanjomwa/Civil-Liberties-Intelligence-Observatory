@@ -184,31 +184,59 @@ Country-level digital suppression pressure across Kenya (June 2023 – June 2025
 
 ### Protocol Regime Monitor
 
-![Protocol-level censorship regime classification across Kenya (June 2023 – June 2025)](<Screenshot 2026-05-18 182816.png>)
+![](<Screenshot 2026-05-18 182816.png>)
+
+Protocol-level censorship regime classification across Kenya (June 2023 – June 2025)
+
+---
 
 ### Protocol Stress Intelligence Observatory
 
-![Tracks protocol-level anomaly pressure, escalation behavior, and statistical confidence across Kenya’s censorship surface.](<Screenshot 2026-05-18 183302.png>)
+![](<Screenshot 2026-05-18 183302.png>)
+
+Tracks protocol-level anomaly pressure, escalation behavior, and statistical confidence across Kenya’s censorship surface.
+
+---
 
 ### Protocol ↔ Repression Correlation Engine
 
-![alt tMeasures statistically validated alignment between protocol-level anomaly escalation and national repression pressure.chose dns this instance](<Screenshot 2026-05-18 183334.png>)
+![](<Screenshot 2026-05-18 183334.png>)
+
+Measures statistically validated alignment between protocol-level (dns this instance) anomaly escalation and national repression pressure.
+
+---
 
 ### ASN Behavioral Intelligence
 
-![aBehavioral observability profiles across Kenyan networks.lt text](<Screenshot 2026-05-18 183400.png>)
+![](<Screenshot 2026-05-18 183400.png>)
+
+Behavioral observability profiles across Kenyan networks.
+
+---
 
 ### Finance Bill 2024 Incident Report
 
-![alt Observed protocol behavior suggests structured suppression dynamics rather than isolated service instability.text](<Screenshot 2026-05-18 183519.png>)
+![](<Screenshot 2026-05-18 183519.png>)
+
+Observed protocol behavior suggests structured suppression dynamics rather than isolated service instability.
+
+---
 
 ### Suppression Event Explorer
 
-![Investigate synchronized censorship escalation windows across Kenya's protocol surface. Any date between scope](<Screenshot 2026-05-18 183454.png>)
+![](<Screenshot 2026-05-18 183454.png>)
+
+Investigates synchronized censorship escalation windows across Kenya's protocol surface. Any date between scope
+
+---
 
 ### Methodology & Statistical Guardrails
 
-![alt explains how every signal is validated before entering intelligence outputs.text](<Screenshot 2026-05-18 183550.png>)
+![](<Screenshot 2026-05-18 183550.png>)
+
+Explains how every signal is validated before entering intelligence outputs.text
+
+---
 
 ## Architecture Overview
 
