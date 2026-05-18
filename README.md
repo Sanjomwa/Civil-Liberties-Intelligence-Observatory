@@ -198,7 +198,7 @@ Replace the placeholders below with screenshots after running the Streamlit app.
 
 ### Finance Bill 2024 Incident Report
 
-[INSERT PAGE 6 SCREENSHOT HERE]
+(<Screenshot 2026-05-18 183519.png>)
 
 ### Suppression Event Explorer
 
@@ -206,7 +206,7 @@ Replace the placeholders below with screenshots after running the Streamlit app.
 
 ### Methodology & Statistical Guardrails
 
-![alt explains how every signal is validated before entering intelligence outputs.text](<Screenshot 2026-05-18 183550.png>)
+(<Screenshot 2026-05-18 183550.png>)
 
 ## Architecture Overview
 
