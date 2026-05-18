@@ -206,7 +206,7 @@ Replace the placeholders below with screenshots after running the Streamlit app.
 
 ### Methodology & Statistical Guardrails
 
-[INSERT PAGE 8 SCREENSHOT HERE]
+![alt explains how every signal is validated before entering intelligence outputs.text](<Screenshot 2026-05-18 183550.png>)
 
 ## Architecture Overview
 

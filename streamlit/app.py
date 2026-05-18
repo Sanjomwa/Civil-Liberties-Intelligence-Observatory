@@ -90,19 +90,22 @@ Country-level pressure trends and suppression probability.
 ### 🌐 Protocol Regime Monitor
 Protocol-by-protocol escalation states and confidence levels.
 
-### 🔗 Correlation Engine *(coming next)*
-Protocol repression alignment modelling.
+### 🔗 Protocol Stress Intelligence Observatory
+Protocol-level anomaly pressure, escalation behavior, and statistical confidence.
+            
+### 📊 Protocol Repression Correllation Engine
+Statistical linkages between protocol stress and national-level suppression.
 
-### 🧠 ASN Behavioral Intelligence *(coming)*
+### 🧠 ASN Behavioral Intelligence 
 Network-level anomaly concentration detection.
 
-### 🚨 Suppression Event Explorer *(coming)*
+### 🚨 Suppression Event Explorer 
 Interactive investigation timelines.
 
-### 📜 Finance Bill Incident Report *(coming)*
+### 📜 Finance Bill Incident Report 
 Narrative reconstruction of June 2024 events.
 
-### ⚖ Methodology & Statistical Guardrails *(coming)*
+### ⚖ Methodology & Statistical Guardrails 
 Scientific thresholds, assumptions, and limitations.
 """)
 
