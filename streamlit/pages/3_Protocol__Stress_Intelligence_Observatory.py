@@ -1,19 +1,13 @@
-# pages/3_Protocol_Repression_Correlation_Engine.py
-
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 
 from core.state import init_state
 from core.filters import render_sidebar
-from core.theme import apply_layout, stress_color
-from services.marts import get_protocol_regimes
+from core.theme import apply_layout
+from services.marts import get_protocol_stress_intelligence
 from components.trust import render_trust_strip
 
-
-# ============================================================
-# PAGE CONFIG
-# ============================================================
 
 st.set_page_config(
     page_title="Protocol Stress Intelligence Observatory",
@@ -22,19 +16,11 @@ st.set_page_config(
 )
 
 
-# ============================================================
-# INIT
-# ============================================================
-
 init_state()
 render_sidebar()
 
 
-# ============================================================
-# DATA
-# ============================================================
-
-df = get_protocol_regimes(
+df = get_protocol_stress_intelligence(
     st.session_state.start_date,
     st.session_state.end_date
 )
@@ -46,18 +32,13 @@ if df.empty:
 latest = df.iloc[-1]
 
 
-# ============================================================
-# HEADER
-# ============================================================
-
 st.title("🔗 Protocol Stress Intelligence Observatory")
 
-st.caption(
-    """
-    Tracks protocol-level anomaly pressure, escalation states,
-    and statistical confidence across Kenya's censorship surface.
-    """
-)
+st.caption("""
+Tracks protocol-level anomaly pressure, escalation behavior,
+and statistical confidence across Kenya’s censorship surface.
+""")
+
 
 render_trust_strip(
     reporting_version=latest["reporting_version"],
@@ -68,10 +49,6 @@ render_trust_strip(
 st.divider()
 
 
-# ============================================================
-# PROTOCOL FILTER
-# ============================================================
-
 protocol = st.selectbox(
     "Select Protocol",
     sorted(df["protocol"].unique())
@@ -80,10 +57,6 @@ protocol = st.selectbox(
 protocol_df = df[df["protocol"] == protocol]
 latest_protocol = protocol_df.iloc[-1]
 
-
-# ============================================================
-# KPI ROW
-# ============================================================
 
 c1, c2, c3, c4 = st.columns(4)
 
@@ -120,33 +93,21 @@ fig.add_trace(go.Scatter(
     x=protocol_df["date_key"],
     y=protocol_df["protocol_stress_score"],
     name="Stress Score",
-    line=dict(width=2)
+    line=dict(width=3)
 ))
 
-apply_layout(
-    fig,
-    f"{protocol} Protocol Stress Trend"
-)
+apply_layout(fig, f"{protocol} Stress Evolution")
 
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
+st.plotly_chart(fig, use_container_width=True)
 
-st.markdown("""
-**Plain English**
-
-Higher stress means protocol behavior is diverging sharply from
-historical normal operation.
-
-Sustained spikes often indicate interference escalation.
+st.info("""
+Higher stress indicates protocol behavior deviating sharply from historical normal operation.
+Sustained spikes often suggest coordinated interference escalation.
 """)
-
-st.divider()
 
 
 # ============================================================
-# REGIME DISTRIBUTION
+# STATE DISTRIBUTION
 # ============================================================
 
 state_counts = (
@@ -164,22 +125,13 @@ fig2 = px.bar(
     color="protocol_state"
 )
 
-apply_layout(
-    fig2,
-    "Observed Regime Distribution"
-)
+apply_layout(fig2, "Observed State Distribution")
 
-st.plotly_chart(
-    fig2,
-    use_container_width=True
-)
+st.plotly_chart(fig2, use_container_width=True)
 
-st.markdown("""
-This shows how often this protocol spent time in each
-suppression regime.
+st.info("""
+Shows how often this protocol entered each statistical regime.
 """)
-
-st.divider()
 
 
 # ============================================================
@@ -188,48 +140,30 @@ st.divider()
 
 fig3 = go.Figure()
 
-fig3.add_trace(go.Scatter(
-    x=protocol_df["date_key"],
-    y=protocol_df["severe_obs_share"],
-    name="Severe Share",
-    stackgroup="one"
-))
+for col in [
+    "severe_obs_share",
+    "elevated_obs_share",
+    "insufficient_obs_share"
+]:
+    fig3.add_trace(go.Scatter(
+        x=protocol_df["date_key"],
+        y=protocol_df[col],
+        stackgroup="one",
+        name=col
+    ))
 
-fig3.add_trace(go.Scatter(
-    x=protocol_df["date_key"],
-    y=protocol_df["elevated_obs_share"],
-    name="Elevated Share",
-    stackgroup="one"
-))
+apply_layout(fig3, "Observation Reliability Composition")
 
-fig3.add_trace(go.Scatter(
-    x=protocol_df["date_key"],
-    y=protocol_df["insufficient_obs_share"],
-    name="Insufficient Share",
-    stackgroup="one"
-))
+st.plotly_chart(fig3, use_container_width=True)
 
-apply_layout(
-    fig3,
-    "Observation Reliability Composition"
-)
-
-st.plotly_chart(
-    fig3,
-    use_container_width=True
-)
-
-st.markdown("""
-This explains *why* the protocol state was assigned.
-
-High insufficient share means evidence was sparse.
+st.info("""
+Explains why protocol states were assigned.
+High insufficient share indicates sparse evidence.
 """)
-
-st.divider()
 
 
 # ============================================================
-# RANKING TABLE
+# RANKING
 # ============================================================
 
 latest_all = (
