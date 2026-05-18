@@ -240,7 +240,7 @@ Minimum source expectations:
 - Google Transparency CSV exports
 - Lumen-style Parquet data, generated or replaced with approved real exports
 
-See [Data Sources and Acquisition Notes](README.md#data-sources-and-acquisition-notes) for details.
+See the "Data Sources and Acquisition Notes" section below for details.
 
 ### 8. Run Bruin
 
