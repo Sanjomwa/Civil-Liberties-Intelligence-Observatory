@@ -538,15 +538,6 @@ High-ROI next builds:
 - LLM analyst copilot grounded in reporting marts and evidence traces.
 - Cost controls, partitioning, clustering, and dashboard summary marts.
 
-## Lessons Learned
-
-- Setup instructions must come early. Reviewers should not have to read the full methodology before running the project.
-- ACLED data acquisition is a real onboarding hurdle and should be documented honestly.
-- Generated or substitute datasets are acceptable only when clearly labeled.
-- Statistical guardrails are not decoration; they are necessary for responsible interpretation of sparse censorship data.
-- A polished dashboard is strongest when every visual can be traced back to a governed mart.
-- Hardcoded project and country assumptions are fine for a pilot, but they are the first barrier to productization.
-
 ## Responsible Use
 
 This system is observational and historical. It does not identify individuals, track users, exploit networks, or provide real-time operational surveillance.
