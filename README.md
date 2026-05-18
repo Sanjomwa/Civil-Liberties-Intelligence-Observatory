@@ -199,7 +199,7 @@ If you use Windows and prefer PowerShell, install from the Bruin documentation o
 
 ### 6. Prepare Data
 
-This project expects local raw files before cloud publishing and BigQuery modeling. See [Data Sources and Acquisition Notes](#data-sources-and-acquisition-notes) for details.
+This project expects local raw files before cloud publishing and BigQuery modeling. See [Data Sources and Acquisition Notes](docs/data_sources.md) for details.
 
 Minimum source expectations:
 
