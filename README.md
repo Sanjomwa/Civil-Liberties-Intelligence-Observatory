@@ -208,6 +208,8 @@ Minimum source expectations:
 - Google Transparency CSV exports
 - Lumen-style Parquet data, generated or replaced with approved real exports
 
+See [Data Sources and Acquisition Notes](docs/data_sources.md) for details.
+
 ### 7. Run the Pipeline
 
 From the repository root:
