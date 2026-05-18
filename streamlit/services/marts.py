@@ -136,14 +136,81 @@ def get_protocol_correlation(start_date, end_date):
 # ============================================================
 
 @st.cache_data(ttl=3600)
-def get_asn_behavior(start_date, end_date):
+def get_asn_behavior():
 
     sql = f"""
-        SELECT *
+        SELECT
+            asn,
+            display_asn,
+            network_class,
+            dominant_protocol,
+
+            behavioral_priority_score,
+            behavioral_class,
+            censorship_intensity_tier,
+
+            maturity_adjusted_signal,
+            data_reliability_score,
+            avg_weighted_blocking,
+            coverage_ratio,
+
+            coupled_escalation_days,
+            isolated_escalation_days,
+
+            latest_protocol,
+            latest_intelligence_state,
+            latest_confidence_level,
+
+            summary_insight,
+
+            reporting_version,
+            intelligence_version,
+            snapshot_at
+
         FROM `{REPORTING}.asn_behavior_profile_mart`
-        WHERE date_key BETWEEN DATE('{start_date}')
+
+        ORDER BY behavioral_priority_score DESC
+    """
+
+    return run_query(sql)
+
+# ============================================================
+# PAGE 6
+# SUPPRESSION EVENT EXPLORER
+# ============================================================
+
+
+@st.cache_data(ttl=3600)
+def get_event_explorer(start_date, end_date):
+
+    sql = f"""
+        SELECT
+            c.measurement_date,
+            c.protocol,
+            c.rolling_pressure_corr,
+            c.alignment_state,
+            c.correlation_state,
+            c.divergence_state,
+            c.protocol_stress_score,
+            c.composite_pressure_score,
+            c.pressure_level,
+
+            p.protocol_state,
+            p.regime_confidence,
+
+            c.reporting_version,
+            c.snapshot_at
+
+        FROM `{REPORTING}.protocol_repression_correlation_mart` c
+
+        LEFT JOIN `{REPORTING}.mart_protocol_interference_trends` p
+            ON c.measurement_date = p.date_key
+            AND c.protocol = p.protocol
+
+        WHERE c.measurement_date BETWEEN DATE('{start_date}')
         AND DATE('{end_date}')
-        ORDER BY date_key
+
+        ORDER BY c.measurement_date, c.protocol
     """
 
     return run_query(sql)
