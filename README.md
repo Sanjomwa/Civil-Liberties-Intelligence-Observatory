@@ -456,8 +456,6 @@ The latest project pass adds a stronger production-readiness foundation around c
 | Reduced dashboard breakage risk    | Present | BigQuery dtype normalization, relaxed sparse-window null handling, resilient Protocol Stress page                                               |
 | Better deployment portability      | Present | environment variables, `.env.example`, dependency pins, Codespaces reinstall path, Terraform modules                                            |
 
-This does not mean the system is finished as a production SaaS. It means the project now has the scaffolding expected of a serious analytics engineering system: configurable runtime settings, contract-aware dashboard access, test entry points, CI entry points, and safer app-layer handling of real BigQuery behavior.
-
 ## Streamlit App Hardening
 
 The dashboard has been hardened around the real BigQuery and Streamlit runtime behavior.
