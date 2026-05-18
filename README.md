@@ -178,35 +178,35 @@ Replace the placeholders below with screenshots after running the Streamlit app.
 
 ### National Stress Observatory
 
-[INSERT PAGE 1 SCREENSHOT HERE]
+![Country-level digital suppression pressure across Kenya (June 2023 – June 2025)](<Screenshot 2026-05-18 182543.png>)
 
 ### Protocol Regime Monitor
 
-[INSERT PAGE 2 SCREENSHOT HERE]
+![Protocol-level censorship regime classification across Kenya (June 2023 – June 2025)](<Screenshot 2026-05-18 182816.png>)
 
 ### Protocol Stress Intelligence Observatory
 
-[INSERT PAGE 3 SCREENSHOT HERE]
+![Tracks protocol-level anomaly pressure, escalation behavior, and statistical confidence across Kenya’s censorship surface.](<Screenshot 2026-05-18 183302.png>)
 
 ### Protocol ↔ Repression Correlation Engine
 
-[INSERT PAGE 4 SCREENSHOT HERE]
+![alt tMeasures statistically validated alignment between protocol-level anomaly escalation and national repression pressure.chose dns this instance](<Screenshot 2026-05-18 183334.png>)
 
 ### ASN Behavioral Intelligence
 
-[INSERT PAGE 5 SCREENSHOT HERE]
+![aBehavioral observability profiles across Kenyan networks.lt text](<Screenshot 2026-05-18 183400.png>)
 
 ### Finance Bill 2024 Incident Report
 
-(<Screenshot 2026-05-18 183519.png>)
+![alt Observed protocol behavior suggests structured suppression dynamics rather than isolated service instability.text](<Screenshot 2026-05-18 183519.png>)
 
 ### Suppression Event Explorer
 
-[INSERT PAGE 7 SCREENSHOT HERE]
+![Investigate synchronized censorship escalation windows across Kenya's protocol surface. Any date between scope](<Screenshot 2026-05-18 183454.png>)
 
 ### Methodology & Statistical Guardrails
 
-(<Screenshot 2026-05-18 183550.png>)
+![alt explains how every signal is validated before entering intelligence outputs.text](<Screenshot 2026-05-18 183550.png>)
 
 ## Architecture Overview
 
