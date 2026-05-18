@@ -9,7 +9,7 @@ import pandas as pd
 
 from google.cloud import bigquery
 
-from core.constants import PROJECT_ID
+from core.config import PROJECT_ID
 
 
 # ============================================================

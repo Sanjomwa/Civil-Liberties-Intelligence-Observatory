@@ -1,0 +1,14 @@
+project_id: encoded-joy-485413-k5
+bucket: civil-liberties-data
+location: us-central1
+environment: dev
+datasets:
+  reporting: reporting
+  marts: marts
+  features: features
+  intelligence: intelligence
+country: Kenya
+iso2: KE
+dashboard:
+  default_start: 2023-06-01
+  default_end: 2025-06-30

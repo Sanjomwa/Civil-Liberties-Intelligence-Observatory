@@ -16,7 +16,7 @@ Single source of truth for:
 - Page registry
 """
 
-from datetime import date
+from core.config import COUNTRY, DATASETS, DEFAULT_END, DEFAULT_START, ISO2, PROJECT_ID
 
 
 # ============================================================
@@ -33,30 +33,30 @@ APP_TAGLINE = (
 
 APP_VERSION = "v1.0"
 
-COUNTRY = "Kenya"
-ISO2 = "KE"
-
 
 # ============================================================
 # BIGQUERY PROJECT
 # ============================================================
 
-PROJECT_ID = "encoded-joy-485413-k5"
-
-DATASETS = {
-    "reporting": "reporting",
-    "marts": "marts",
-    "features": "features",
-    "intelligence": "intelligence",
-}
+# These values are driven by streamlit/core/config.py and by environment variables.
 
 
 # ============================================================
 # SCIENTIFIC OBSERVATION WINDOW
 # ============================================================
 
-DEFAULT_START = date(2023, 6, 1)
-DEFAULT_END = date(2025, 6, 30)
+# These values are also driven by streamlit/core/config.py and by environment variables.
+
+
+# Re-export config values so downstream modules can remain unchanged.
+
+COUNTRY = COUNTRY
+ISO2 = ISO2
+PROJECT_ID = PROJECT_ID
+DATASETS = DATASETS
+REPORTING = f"{PROJECT_ID}.{DATASETS['reporting']}"
+DEFAULT_START = DEFAULT_START
+DEFAULT_END = DEFAULT_END
 
 
 # ============================================================
