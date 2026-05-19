@@ -1,4 +1,4 @@
-# Kenya Civil Liberties and Censorship Observatory
+# Kenya Civil Liberties Intelligence Observatory
 
 > A historical intelligence platform for reconstructing latent censorship pressure in Kenya by fusing fragmented civil-liberties indicators into auditable statistical signals.
 
@@ -10,7 +10,7 @@
 [![DuckDB](https://img.shields.io/badge/DuckDB-Local%20Analytics-FFF000?style=for-the-badge&logo=duckdb&logoColor=black)](https://duckdb.org/)
 [![Parquet](https://img.shields.io/badge/Parquet-Columnar%20Data-005571?style=for-the-badge)](https://parquet.apache.org/)
 
-## What This Project Does
+## Intelligence Reconstruction Scope
 
 This repository reconstructs historical digital repression pressure across Kenya from June 2023 through June 2025. It combines network measurements, conflict indicators, legal-pressure signals, and platform transparency data into governed BigQuery marts and Streamlit intelligence views.
 
@@ -22,7 +22,7 @@ The platform is designed to answer high-context analytical questions:
 - Did pressure indicators align around the Finance Bill 2024 period?
 - Which signals are statistically weak because of sparse data, low confidence, or zero variance?
 
-The system is historical intelligence reconstruction, not real-time monitoring.
+The platform reconstructs historical civil-liberties pressure; it does not perform live operational surveillance.
 
 ## Why This Matters
 
@@ -30,7 +30,7 @@ Digital repression is rarely observable through one clean dataset. It can appear
 
 This project treats censorship analysis as an observability and inference problem. It fuses fragmented civil-liberties indicators into auditable statistical outputs, while preserving guardrails that prevent weak or sparse evidence from being overstated.
 
-The result is a data-platform reference implementation for civil-liberties analysis, investigative reporting, public-interest research, and analytics engineering review.
+TThe result is a production-oriented reference architecture for civil-liberties observability, analytical inference, and governed public-interest intelligence reconstruction.
 
 ---
 
@@ -56,7 +56,7 @@ Protocol-level regime classification for DNS, HTTP, TCP, and TLS, showing when n
 
 ![](<Screenshot 2026-05-18 183302.png>)
 
-Protocol stress analysis surface for comparing anomaly pressure, escalation state, confidence level, and observation reliability over time.
+Comparative protocol-intelligence surface exposing anomaly escalation, confidence-weighted severity, and regime transition behavior across monitored transport layers.
 
 ---
 
@@ -97,6 +97,124 @@ Investigation surface for exploring synchronized censorship escalation windows, 
 ![](<Screenshot 2026-05-18 183550.png>)
 
 Methodology view documenting how sparse data, confidence weighting, variance checks, and rolling baselines constrain interpretation before signals enter intelligence outputs.
+
+---
+
+## Architecture Overview
+
+```mermaid
+flowchart LR
+    Sources["OONI, ACLED, Google Transparency, Lumen-style data"]
+    Ingest["Python ingestion and Parquet normalization"]
+    Warehouse["BigQuery staging, facts, dimensions, features"]
+    Intelligence["Protocol regimes, lag relationships, pressure correlation"]
+    Reporting["Dashboard-facing reporting marts"]
+    Contracts["Streamlit query services and dataframe contracts"]
+    Dashboard["Streamlit intelligence observatory"]
+
+    Sources --> Ingest
+    Ingest --> Warehouse
+    Warehouse --> Intelligence
+    Intelligence --> Reporting
+    Reporting --> Contracts
+    Contracts --> Dashboard
+```
+
+Design principles:
+
+- Preserve source data as re-runnable analytical inputs.
+- Separate ingestion, staging, features, intelligence, and reporting.
+- Apply statistical guardrails before surfacing intelligence claims.
+- Preserve mart versioning and snapshot metadata in the dashboard.
+- Normalize BigQuery date and timestamp types before dashboard validation.
+- Treat the system as historical reconstruction, not live surveillance.
+
+## Engineering Reliability Controls
+
+| Control                              | Implementation                                                                                                                                                    |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract-enforced schema validation  | `streamlit/core/contracts.py` validates required columns, expected dtypes, and non-null fields for dashboard-facing marts.                                        |
+| Environment portability              | `.env.example`, `streamlit/core/config.py`, `TARGET_ENV`, `BRUIN_ENV`, `GOOGLE_CLOUD_PROJECT`, country, date, and dataset settings support runtime configuration. |
+| CI-backed verification               | `.github/workflows/lint.yml`, `.github/workflows/tests.yml`, and `tests/test_contracts.py` provide lint and contract-test entry points.                           |
+| Query normalization                  | `streamlit/services/bq.py` normalizes BigQuery `DATE` and timestamp outputs before page rendering.                                                                |
+| Sparse-window resilience             | Mart fetch contracts allow guarded statistical nulls where sparse history or zero variance makes inference unsafe.                                                |
+| Dashboard contract safety            | `streamlit/services/marts.py` centralizes mart queries and validation before page code consumes results.                                                          |
+| Service-layer separation of concerns | BigQuery execution, mart access, dataframe validation, reusable components, and page rendering are separated.                                                     |
+| Deployment portability               | Dependency pins, `.env.example`, Terraform modules, and Codespaces reinstall commands reduce environment-specific breakage.                                       |
+
+These controls are intended to keep the observatory stable across local development, Codespaces, and cloud-backed BigQuery execution.
+
+## Repository Structure
+
+```text
+.
+|-- Bruin/
+|   |-- pipeline.yml
+|   |-- requirements.txt
+|   `-- assets/
+|       |-- ingest/          # Raw source ingestion assets
+|       |-- load/            # GCS and BigQuery external table loaders
+|       |-- staging/         # Source normalization models
+|       |-- intermediate/    # Cross-source preparation models
+|       |-- marts/
+|       |   |-- dims/        # Conformed dimensions
+|       |   `-- facts/       # Analytics-ready fact tables
+|       |-- features/        # Model-ready protocol features
+|       |-- intelligence/    # Regime and relationship inference
+|       `-- reporting/       # Dashboard-facing marts
+|-- .env.example             # Portable environment variable template
+|-- .github/
+|   `-- workflows/
+|       |-- lint.yml         # CI lint scaffolding
+|       `-- tests.yml        # CI test scaffolding
+|-- docs/
+|   |-- analysts-questions-playbook.md
+|   |-- civil-liberties-reporting-playbook-Kenya.md
+|   |-- data-modelling.md
+|   |-- data_sources.md
+|   |-- erd-lineage.md
+|   `-- project_difficulties.md
+|-- infra/
+|   |-- main.tf
+|   |-- provider.tf
+|   |-- variables.tf
+|   |-- setup-gcp.sh
+|   |-- verify-gcp.sh
+|   `-- modules/
+|       |-- bigquery/
+|       |-- gcs/
+|       `-- iam/
+|-- scripts/
+|   |-- download_ooni.ps1
+|   |-- local_ingest_ooni.py
+|   `-- lumen_parquet.py
+|-- streamlit/
+|   |-- app.py
+|   |-- requirements.txt
+|   |-- pages/
+|   |   `-- 3_Protocol__Stress_Intelligence_Observatory.py
+|   |-- services/
+|   |   |-- bq.py
+|   |   `-- marts.py
+|   |-- core/
+|   |   |-- config.py
+|   |   |-- constants.py
+|   |   `-- contracts.py
+|   |-- components/
+|   |   |-- charts.py
+|   |   |-- status.py
+|   |   |-- tables.py
+|   |   `-- trust.py
+|   `-- assets/
+|       |-- annotations/
+|       `-- methodology/
+|           `-- thresholds.yml
+|-- tests/
+|   `-- test_contracts.py    # Automated dashboard contract tests
+|-- pyproject.toml
+|-- uv.lock
+`-- README.md
+```
 
 ---
 
@@ -285,122 +403,6 @@ Expected NumPy version:
 
 ---
 
-## Architecture Overview
-
-```mermaid
-flowchart LR
-    Sources["OONI, ACLED, Google Transparency, Lumen-style data"]
-    Ingest["Python ingestion and Parquet normalization"]
-    Warehouse["BigQuery staging, facts, dimensions, features"]
-    Intelligence["Protocol regimes, lag relationships, pressure correlation"]
-    Reporting["Dashboard-facing reporting marts"]
-    Contracts["Streamlit query services and dataframe contracts"]
-    Dashboard["Streamlit intelligence observatory"]
-
-    Sources --> Ingest
-    Ingest --> Warehouse
-    Warehouse --> Intelligence
-    Intelligence --> Reporting
-    Reporting --> Contracts
-    Contracts --> Dashboard
-```
-
-Design principles:
-
-- Preserve source data as re-runnable analytical inputs.
-- Separate ingestion, staging, features, intelligence, and reporting.
-- Apply statistical guardrails before surfacing intelligence claims.
-- Preserve mart versioning and snapshot metadata in the dashboard.
-- Normalize BigQuery date and timestamp types before dashboard validation.
-- Treat the system as historical reconstruction, not live surveillance.
-
-## Engineering Reliability Controls
-
-| Control                             | Implementation                                                                                                                                                    |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contract-enforced schema validation | `streamlit/core/contracts.py` validates required columns, expected dtypes, and non-null fields for dashboard-facing marts.                                        |
-| Environment portability             | `.env.example`, `streamlit/core/config.py`, `TARGET_ENV`, `BRUIN_ENV`, `GOOGLE_CLOUD_PROJECT`, country, date, and dataset settings support runtime configuration. |
-| CI-backed verification              | `.github/workflows/lint.yml`, `.github/workflows/tests.yml`, and `tests/test_contracts.py` provide lint and contract-test entry points.                           |
-| Query normalization                 | `streamlit/services/bq.py` normalizes BigQuery `DATE` and timestamp outputs before page rendering.                                                                |
-| Sparse-window resilience            | Mart fetch contracts allow guarded statistical nulls where sparse history or zero variance makes inference unsafe.                                                |
-| Dashboard contract safety           | `streamlit/services/marts.py` centralizes mart queries and validation before page code consumes results.                                                          |
-| Cleaner service boundaries          | BigQuery execution, mart access, dataframe validation, reusable components, and page rendering are separated.                                                     |
-| Deployment portability              | Dependency pins, `.env.example`, Terraform modules, and Codespaces reinstall commands reduce environment-specific breakage.                                       |
-
-These controls are intended to keep the observatory stable across local development, Codespaces, and cloud-backed BigQuery execution.
-
-## Repository Structure
-
-```text
-.
-|-- Bruin/
-|   |-- pipeline.yml
-|   |-- requirements.txt
-|   `-- assets/
-|       |-- ingest/          # Raw source ingestion assets
-|       |-- load/            # GCS and BigQuery external table loaders
-|       |-- staging/         # Source normalization models
-|       |-- intermediate/    # Cross-source preparation models
-|       |-- marts/
-|       |   |-- dims/        # Conformed dimensions
-|       |   `-- facts/       # Analytics-ready fact tables
-|       |-- features/        # Model-ready protocol features
-|       |-- intelligence/    # Regime and relationship inference
-|       `-- reporting/       # Dashboard-facing marts
-|-- .env.example             # Portable environment variable template
-|-- .github/
-|   `-- workflows/
-|       |-- lint.yml         # CI lint scaffolding
-|       `-- tests.yml        # CI test scaffolding
-|-- docs/
-|   |-- analysts-questions-playbook.md
-|   |-- civil-liberties-reporting-playbook-Kenya.md
-|   |-- data-modelling.md
-|   |-- data_sources.md
-|   |-- erd-lineage.md
-|   `-- project_difficulties.md
-|-- infra/
-|   |-- main.tf
-|   |-- provider.tf
-|   |-- variables.tf
-|   |-- setup-gcp.sh
-|   |-- verify-gcp.sh
-|   `-- modules/
-|       |-- bigquery/
-|       |-- gcs/
-|       `-- iam/
-|-- scripts/
-|   |-- download_ooni.ps1
-|   |-- local_ingest_ooni.py
-|   `-- lumen_parquet.py
-|-- streamlit/
-|   |-- app.py
-|   |-- requirements.txt
-|   |-- pages/
-|   |   `-- 3_Protocol__Stress_Intelligence_Observatory.py
-|   |-- services/
-|   |   |-- bq.py
-|   |   `-- marts.py
-|   |-- core/
-|   |   |-- config.py
-|   |   |-- constants.py
-|   |   `-- contracts.py
-|   |-- components/
-|   |   |-- charts.py
-|   |   |-- status.py
-|   |   |-- tables.py
-|   |   `-- trust.py
-|   `-- assets/
-|       |-- annotations/
-|       `-- methodology/
-|           `-- thresholds.yml
-|-- tests/
-|   `-- test_contracts.py    # Automated dashboard contract tests
-|-- pyproject.toml
-|-- uv.lock
-`-- README.md
-```
-
 ## Data Model and Methodology
 
 ### Source Inputs
@@ -412,7 +414,7 @@ These controls are intended to keep the observatory stable across local developm
 | Google Transparency | Government and platform removal-pressure indicators             |
 | Lumen-style data    | Takedown and legal-pressure signal branch                       |
 
-ACLED acquisition requires account/API access and manual export discipline. Detailed acquisition notes live in `/docs`.
+ACLED ingestion depends on approved API or export access; reproducibility guidance is documented in `/docs`.
 
 ### Modeling Layers
 
@@ -504,7 +506,7 @@ Deployment portability is supported through:
 - pinned dashboard dependencies
 - CI lint and test workflows
 
-Production hardening should continue around secret management, least-privilege IAM, remote Terraform state, authenticated dashboard hosting, and BigQuery cost controls.
+Additional production controls may include: secret management, least-privilege IAM, remote Terraform state, authenticated dashboard hosting, and BigQuery cost controls.
 
 ## Roadmap
 
@@ -524,7 +526,7 @@ Outputs should be interpreted as evidence-weighted indicators, not definitive pr
 
 ## Attribution and License
 
-Project owner: Samwel Njogu  
+Maintained by Samwel Njogu  
 X: [@sam_njogu9](https://x.com/sam_njogu9)
 
 Built as a Kenya-focused civil-liberties observability platform using Bruin, BigQuery, Streamlit, Terraform, Python, OONI, ACLED, Google Transparency, and Lumen-style legal pressure data.
