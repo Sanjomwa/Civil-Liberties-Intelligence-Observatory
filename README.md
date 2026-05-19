@@ -1,6 +1,6 @@
 # Kenya Civil Liberties and Censorship Observatory
 
-> A Bruin, BigQuery, and Streamlit intelligence platform for modeling digital repression, censorship pressure, and civil-liberties stress in Kenya from June 2023 through June 2025.
+> A historical intelligence platform for reconstructing latent censorship pressure in Kenya by fusing fragmented civil-liberties indicators into auditable statistical signals.
 
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Bruin](https://img.shields.io/badge/Bruin-Orchestration-FF9900?style=for-the-badge)](https://getbruin.com/)
@@ -12,42 +12,25 @@
 
 ## What This Project Does
 
-This project builds a historical observability platform for understanding how political pressure, legal pressure, platform takedowns, and network interference move together during high-pressure civil-liberties periods in Kenya.
+This repository reconstructs historical digital repression pressure across Kenya from June 2023 through June 2025. It combines network measurements, conflict indicators, legal-pressure signals, and platform transparency data into governed BigQuery marts and Streamlit intelligence views.
 
-It combines:
+The platform is designed to answer high-context analytical questions:
 
-- OONI network interference measurements
-- ACLED political conflict and protest pressure
-- Google Transparency removal request indicators
-- Lumen-style takedown and legal pressure data
-- Bruin-orchestrated BigQuery marts
-- Statistical anomaly and correlation models
-- Streamlit intelligence dashboards
-
-The system is not real-time surveillance. It is historical intelligence modeling for June 2023 through June 2025.
-
-Core questions:
-
-- Did protocol-level network interference rise during political stress windows?
-- Which protocols showed abnormal behavior?
-- Which ASNs concentrated the strongest censorship signals?
+- Did network interference intensify during political stress windows?
+- Which protocols showed abnormal censorship behavior?
+- Which ASNs concentrated the strongest interference signals?
 - Did pressure indicators align around the Finance Bill 2024 period?
-- Which conclusions are statistically weak because of sparse data, low confidence, or zero variance?
+- Which signals are statistically weak because of sparse data, low confidence, or zero variance?
+
+The system is historical intelligence reconstruction, not real-time monitoring.
 
 ## Why This Matters
 
-Digital repression rarely appears as one clean signal. It can involve network instability, DNS anomalies, HTTP/TCP/TLS interference, platform policy actions, legal requests, protest pressure, and missing measurements.
+Digital repression is rarely observable through one clean dataset. It can appear as protocol anomalies, DNS or TCP failures, platform removals, legal pressure, protest dynamics, and inconsistent measurement coverage.
 
-This repository treats censorship analysis as a data engineering and statistical intelligence problem. Instead of relying on a single indicator, it fuses multiple pressure sources and applies explicit guardrails before surfacing a finding.
+This project treats censorship analysis as an observability and inference problem. It fuses fragmented civil-liberties indicators into auditable statistical outputs, while preserving guardrails that prevent weak or sparse evidence from being overstated.
 
-The result is a portfolio-grade civil-liberties observability system for:
-
-- digital-rights researchers
-- investigative journalists
-- civil-society analysts
-- policy teams
-- analytics engineers
-- data platform reviewers
+The result is a data-platform reference implementation for civil-liberties analysis, investigative reporting, public-interest research, and analytics engineering review.
 
 ---
 
@@ -57,7 +40,7 @@ The result is a portfolio-grade civil-liberties observability system for:
 
 ![](<Screenshot 2026-05-18 182543.png>)
 
-Country-level digital suppression pressure across Kenya (June 2023 – June 2025)
+Executive view of national digital-pressure movement, baseline divergence, suppression-window probability, and evidence quality across the Kenya observation window.
 
 ---
 
@@ -65,7 +48,7 @@ Country-level digital suppression pressure across Kenya (June 2023 – June 2025
 
 ![](<Screenshot 2026-05-18 182816.png>)
 
-Protocol-level censorship regime classification across Kenya (June 2023 – June 2025)
+Protocol-level regime classification for DNS, HTTP, TCP, and TLS, showing when network behavior moves from normal range into elevated, severe, or insufficient-evidence states.
 
 ---
 
@@ -73,7 +56,7 @@ Protocol-level censorship regime classification across Kenya (June 2023 – June
 
 ![](<Screenshot 2026-05-18 183302.png>)
 
-Tracks protocol-level anomaly pressure, escalation behavior, and statistical confidence across Kenya’s censorship surface.
+Protocol stress analysis surface for comparing anomaly pressure, escalation state, confidence level, and observation reliability over time.
 
 ---
 
@@ -81,7 +64,7 @@ Tracks protocol-level anomaly pressure, escalation behavior, and statistical con
 
 ![](<Screenshot 2026-05-18 183334.png>)
 
-Measures statistically validated alignment between protocol-level (dns this instance) anomaly escalation and national repression pressure.
+Statistical alignment engine measuring whether protocol anomalies move with national repression-pressure indicators across rolling historical windows.
 
 ---
 
@@ -89,7 +72,7 @@ Measures statistically validated alignment between protocol-level (dns this inst
 
 ![](<Screenshot 2026-05-18 183400.png>)
 
-Behavioral observability profiles across Kenyan networks.
+Network-level intelligence view ranking ASNs by blocking intensity, behavioral priority, evidence maturity, dominant protocol, and reliability of observed interference.
 
 ---
 
@@ -97,7 +80,7 @@ Behavioral observability profiles across Kenyan networks.
 
 ![](<Screenshot 2026-05-18 183519.png>)
 
-Observed protocol behavior suggests structured suppression dynamics rather than isolated service instability.
+Focused reconstruction of the Finance Bill 2024 period, connecting protocol behavior, national pressure signals, and major-provider activity during a known political stress window.
 
 ---
 
@@ -105,7 +88,7 @@ Observed protocol behavior suggests structured suppression dynamics rather than 
 
 ![](<Screenshot 2026-05-18 183454.png>)
 
-Investigates synchronized censorship escalation windows across Kenya's protocol surface. Any date between scope
+Investigation surface for exploring synchronized censorship escalation windows, correlation states, divergence patterns, and protocol-specific pressure signals.
 
 ---
 
@@ -113,13 +96,11 @@ Investigates synchronized censorship escalation windows across Kenya's protocol 
 
 ![](<Screenshot 2026-05-18 183550.png>)
 
-Explains how every signal is validated before entering intelligence outputs.text
+Methodology view documenting how sparse data, confidence weighting, variance checks, and rolling baselines constrain interpretation before signals enter intelligence outputs.
 
 ---
 
 ## Quickstart
-
-The setup path is intentionally early because the app depends on BigQuery credentials, Bruin connections, and a stable Python geospatial stack.
 
 ### 1. Clone
 
@@ -156,9 +137,9 @@ python -m pip install --upgrade pip setuptools wheel
 python -m pip install --no-cache-dir -r streamlit\requirements.txt
 ```
 
-### 3. Dependency Note: NumPy and Shapely
+### 3. Dependency Compatibility
 
-The Streamlit app imports BigQuery, which may import optional geospatial packages such as `geopandas` and `shapely`. To avoid NumPy ABI crashes, the dashboard requirements intentionally pin:
+The dashboard requirements pin the geospatial stack to avoid NumPy ABI conflicts during BigQuery imports:
 
 ```text
 numpy>=1.26.4,<2.0
@@ -166,11 +147,11 @@ shapely==2.0.3
 geopandas==0.14.3
 ```
 
-If you see an error like `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x`, rebuild the virtual environment and reinstall from `streamlit/requirements.txt`.
+If dependency state is stale, rebuild the virtual environment and reinstall from `streamlit/requirements.txt`.
 
 ### 4. Environment Variables
 
-The current implementation is configured around the original Kenya pilot project. Replace these values for your own deployment.
+Replace these values for your own deployment.
 
 ```bash
 export GOOGLE_CLOUD_PROJECT="encoded-joy-485413-k5"
@@ -198,7 +179,7 @@ $env:DEFAULT_START = "2023-06-01"
 $env:DEFAULT_END = "2025-06-30"
 ```
 
-The Streamlit config also supports a `.env` file and Bruin config values when present.
+The Streamlit configuration also supports `.env` values and Bruin configuration defaults.
 
 ### 5. Authenticate BigQuery
 
@@ -231,8 +212,6 @@ The Bruin pipeline expects these connection names:
 
 ### 7. Prepare Source Data
 
-The project expects local source files before full pipeline execution.
-
 Minimum source expectations:
 
 - OONI JSONL gzip files normalized into `ooni_measurements.parquet`
@@ -240,7 +219,7 @@ Minimum source expectations:
 - Google Transparency CSV exports
 - Lumen-style Parquet data, generated or replaced with approved real exports
 
-See the "Data Sources and Acquisition Notes" section below for details.
+See `/docs` for expanded data acquisition and modeling notes.
 
 ### 8. Run Bruin
 
@@ -276,8 +255,6 @@ http://localhost:8501
 
 ### 10. Codespaces Clean Reinstall
 
-If Codespaces has stale dependencies:
-
 ```bash
 cd /workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin
 deactivate 2>/dev/null || true
@@ -311,62 +288,46 @@ Expected NumPy version:
 ## Architecture Overview
 
 ```mermaid
-flowchart TB
-    subgraph Sources["Source Data"]
-        OONI["OONI measurements"]
-        ACLED["ACLED conflict events"]
-        Google["Google Transparency"]
-        Lumen["Lumen-style legal pressure"]
-    end
+flowchart LR
+    Sources["OONI, ACLED, Google Transparency, Lumen-style data"]
+    Ingest["Python ingestion and Parquet normalization"]
+    Warehouse["BigQuery staging, facts, dimensions, features"]
+    Intelligence["Protocol regimes, lag relationships, pressure correlation"]
+    Reporting["Dashboard-facing reporting marts"]
+    Contracts["Streamlit query services and dataframe contracts"]
+    Dashboard["Streamlit intelligence observatory"]
 
-    subgraph Local["Local and Dev Processing"]
-        Python["Python ingestion scripts"]
-        DuckDB["DuckDB and Parquet"]
-        Validation["Schema and quality validation"]
-    end
-
-    subgraph Cloud["Cloud Warehouse"]
-        GCS["Google Cloud Storage"]
-        Staging["BigQuery staging"]
-        Intermediate["Intermediate models"]
-        Marts["Facts and dimensions"]
-        Features["Feature tables"]
-        Intelligence["Intelligence marts"]
-        Reporting["Reporting marts"]
-    end
-
-    subgraph App["Dashboard Layer"]
-        BQService["Streamlit BigQuery service"]
-        Contracts["Dataframe contracts and dtype normalization"]
-        Pages["Executive and investigative pages"]
-    end
-
-    OONI --> Python
-    ACLED --> Python
-    Google --> Python
-    Lumen --> Python
-    Python --> DuckDB
-    DuckDB --> Validation
-    Validation --> GCS
-    GCS --> Staging
-    Staging --> Intermediate
-    Intermediate --> Marts
-    Marts --> Features
-    Features --> Intelligence
+    Sources --> Ingest
+    Ingest --> Warehouse
+    Warehouse --> Intelligence
     Intelligence --> Reporting
-    Reporting --> BQService
-    BQService --> Contracts
-    Contracts --> Pages
+    Reporting --> Contracts
+    Contracts --> Dashboard
 ```
 
 Design principles:
 
-- Keep raw ingestion auditable and re-runnable.
-- Separate staging, feature engineering, intelligence inference, and reporting.
-- Use statistical guardrails before making claims from noisy data.
-- Preserve dashboard trust metadata such as mart versions and snapshot timestamps.
-- Normalize BigQuery date and timestamp dtypes before dashboard validation.
-- Treat pressure modeling as historical analysis, not real-time detection.
+- Preserve source data as re-runnable analytical inputs.
+- Separate ingestion, staging, features, intelligence, and reporting.
+- Apply statistical guardrails before surfacing intelligence claims.
+- Preserve mart versioning and snapshot metadata in the dashboard.
+- Normalize BigQuery date and timestamp types before dashboard validation.
+- Treat the system as historical reconstruction, not live surveillance.
+
+## Engineering Reliability Controls
+
+| Control                             | Implementation                                                                                                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract-enforced schema validation | `streamlit/core/contracts.py` validates required columns, expected dtypes, and non-null fields for dashboard-facing marts.                                        |
+| Environment portability             | `.env.example`, `streamlit/core/config.py`, `TARGET_ENV`, `BRUIN_ENV`, `GOOGLE_CLOUD_PROJECT`, country, date, and dataset settings support runtime configuration. |
+| CI-backed verification              | `.github/workflows/lint.yml`, `.github/workflows/tests.yml`, and `tests/test_contracts.py` provide lint and contract-test entry points.                           |
+| Query normalization                 | `streamlit/services/bq.py` normalizes BigQuery `DATE` and timestamp outputs before page rendering.                                                                |
+| Sparse-window resilience            | Mart fetch contracts allow guarded statistical nulls where sparse history or zero variance makes inference unsafe.                                                |
+| Dashboard contract safety           | `streamlit/services/marts.py` centralizes mart queries and validation before page code consumes results.                                                          |
+| Cleaner service boundaries          | BigQuery execution, mart access, dataframe validation, reusable components, and page rendering are separated.                                                     |
+| Deployment portability              | Dependency pins, `.env.example`, Terraform modules, and Codespaces reinstall commands reduce environment-specific breakage.                                       |
+
+These controls are intended to keep the observatory stable across local development, Codespaces, and cloud-backed BigQuery execution.
 
 ## Repository Structure
 
@@ -440,108 +401,20 @@ Design principles:
 `-- README.md
 ```
 
-## Current Hardening Status
+## Data Model and Methodology
 
-The latest project pass adds a stronger production-readiness foundation around configuration, contracts, CI, and dashboard stability.
+### Source Inputs
 
-| Upgrade                            | Status  | Where it appears                                                                                                                                |
-| ---------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Config abstraction                 | Present | `streamlit/core/config.py`, `.env.example`, environment-driven project/country/date settings                                                    |
-| Environment portability foundation | Present | `.env.example`, `TARGET_ENV`, `BRUIN_ENV`, `GOOGLE_CLOUD_PROJECT`, dataset config defaults                                                      |
-| Dashboard schema contracts         | Present | `streamlit/core/contracts.py`, `streamlit/services/marts.py`                                                                                    |
-| Automated validation tests         | Present | `tests/test_contracts.py`, Bruin validation assets                                                                                              |
-| CI scaffolding                     | Present | `.github/workflows/lint.yml`, `.github/workflows/tests.yml`                                                                                     |
-| Safer mart fetch enforcement       | Present | `streamlit/services/bq.py`, `streamlit/services/marts.py`, required-column and dtype validation                                                 |
-| Cleaner service boundaries         | Present | `streamlit/services/bq.py` for BigQuery execution, `streamlit/services/marts.py` for mart queries, `streamlit/core/contracts.py` for validation |
-| Reduced dashboard breakage risk    | Present | BigQuery dtype normalization, relaxed sparse-window null handling, resilient Protocol Stress page                                               |
-| Better deployment portability      | Present | environment variables, `.env.example`, dependency pins, Codespaces reinstall path, Terraform modules                                            |
+| Source              | Analytical role                                                 |
+| ------------------- | --------------------------------------------------------------- |
+| OONI                | Network interference and protocol-level censorship measurements |
+| ACLED               | Protest, conflict, and political pressure context               |
+| Google Transparency | Government and platform removal-pressure indicators             |
+| Lumen-style data    | Takedown and legal-pressure signal branch                       |
 
-## Streamlit App Hardening
+ACLED acquisition requires account/API access and manual export discipline. Detailed acquisition notes live in `/docs`.
 
-The dashboard has been hardened around the real BigQuery and Streamlit runtime behavior.
-
-Current Streamlit stability improvements:
-
-- `streamlit/requirements.txt` pins NumPy below 2 to avoid Shapely/GeoPandas ABI crashes.
-- `python-dotenv` is included because `streamlit/core/config.py` loads `.env` values.
-- `streamlit/services/bq.py` normalizes BigQuery `DATE` and timestamp fields after query execution.
-- `streamlit/core/contracts.py` coerces expected dataframe dtypes before validation.
-- `streamlit/services/marts.py` relaxes non-null contracts for statistically guarded fields.
-- ASN values are treated as strings because the feature layer can include non-numeric values such as `unknown`.
-- Page 3, the Protocol Stress Intelligence Observatory, now falls back to `anomaly_score` when `protocol_stress_score` is missing.
-- `width="stretch"` is used in new components/pages instead of deprecated `use_container_width=True`.
-
-These changes preserve contract validation while avoiding false empty-dashboard states.
-
-## Data Sources and Acquisition Notes
-
-| Source              | Role                                                            | Acquisition                                                                                                        | Notes                                                                       |
-| ------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| OONI                | Network interference and protocol-level censorship measurements | Public OONI S3 data downloaded with `scripts/download_ooni.ps1` and normalized with `scripts/local_ingest_ooni.py` | Highest-volume source. Requires disk space and resumable processing.        |
-| ACLED               | Protest, conflict, and political pressure context               | Manual export from ACLED export tools or API after account/API approval                                            | Most tedious source. The raw asset expects an aggregated CSV export.        |
-| Google Transparency | Government/platform removal pressure                            | CSV export from Google Transparency Report                                                                         | Used as legal and platform pressure input after staging normalization.      |
-| Lumen-style data    | Takedown/legal request pressure                                 | Generated Parquet fallback or approved Lumen export                                                                | Generated data keeps the pipeline runnable when real Lumen access is gated. |
-
-### OONI
-
-The downloader syncs Kenya measurements from OONI public S3 paths for selected tests:
-
-- `web_connectivity`
-- `whatsapp`
-- `telegram`
-- `facebook_messenger`
-- `signal`
-- `tor`
-- `psiphon`
-- `dnscheck`
-
-Example normalization:
-
-```bash
-python scripts/local_ingest_ooni.py \
-  --root "C:/ooni-kenya-censorship" \
-  --out-file "C:/ooni-kenya-censorship/processed/ooni_measurements.parquet" \
-  --start-date "2023-06-01" \
-  --end-date "2025-06-30" \
-  --probe-cc "KE" \
-  --clean
-```
-
-### ACLED
-
-ACLED requires special attention:
-
-- You need an ACLED account and approved access.
-- Exports may require manual filtering and date selection.
-- The current raw asset expects an aggregated CSV similar to `Africa_aggregated_data_up_to_week_of-2026-03-14.csv`.
-- The pipeline normalizes columns such as `WEEK`, `COUNTRY`, `EVENT_TYPE`, `EVENTS`, `FATALITIES`, and centroid coordinates.
-
-For reproducibility, document the exact ACLED export filters used for any run.
-
-### Google Transparency
-
-The raw asset expects a CSV with fields such as:
-
-- `time_period`
-- `country`
-- `cldr_territory`
-- `requestor`
-- `product`
-- `reason`
-- `number_of_requests`
-- `items_requested_removal`
-- `items_removed_legal`
-- `items_removed_policy`
-
-### Lumen
-
-Direct Lumen data access can be gated. This repository uses generated Lumen-style data so the legal-pressure branch remains testable and the pipeline stays runnable.
-
-When approved real exports are available, replace the generated Parquet with schema-compatible Lumen data.
-
-## Data Model Design
-
-The model separates source ingestion, feature generation, intelligence inference, and presentation.
+### Modeling Layers
 
 | Layer        | Purpose                                            | Examples                                                                                      |
 | ------------ | -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -554,51 +427,28 @@ The model separates source ingestion, feature generation, intelligence inference
 | Intelligence | Inference over regimes and relationships           | `intelligence.protocol_signal_regimes`, `intelligence.protocol_relationships`                 |
 | Reporting    | Streamlit-facing marts                             | `mart_political_stress_windows`, `protocol_repression_correlation_mart`                       |
 
-Important reporting marts:
+Key reporting marts:
 
 - `reporting.mart_political_stress_windows`
 - `reporting.mart_protocol_interference_trends`
 - `reporting.protocol_repression_correlation_mart`
 - `reporting.asn_behavior_profile_mart`
 
-## Statistical Methodology
+### Statistical Methodology
 
-### Rolling Baselines
+The platform uses guarded statistical inference rather than raw-count interpretation.
 
-Protocol and pressure signals are compared against rolling historical windows, usually 30-day or 90-day baselines. This detects abnormal movement relative to recent local behavior.
+Core methods:
 
-### Anomaly Scoring
+- Rolling baselines compare current pressure against recent historical behavior.
+- Anomaly scoring measures protocol deviation from expected signal patterns.
+- Sparse-window suppression prevents weak evidence from producing strong claims.
+- Confidence weighting gives stronger influence to higher-quality observations.
+- Variance guardrails suppress correlation claims when statistical windows collapse.
+- Protocol inference evaluates DNS, HTTP, TCP, and TLS regime behavior.
+- Pressure correlation modeling aligns protocol anomalies with national pressure signals.
 
-Protocol anomaly scores measure deviations from expected signal behavior. Where variance exists, z-score style normalization is used.
-
-### Sparse-Window Suppression
-
-The system flags low-sample days, sparse baselines, and insufficient relationship windows. Dashboard contracts no longer reject these windows simply because guarded statistical fields are null.
-
-### Confidence Weighting
-
-Higher-confidence censorship observations contribute more strongly than ambiguous measurements.
-
-### Variance Guardrails
-
-Correlation and anomaly calculations are suppressed when one side of the window has no variance. This prevents false relationship claims.
-
-### Protocol Intelligence Inference
-
-The intelligence layer evaluates DNS, HTTP, TCP, and TLS behavior. It identifies elevated regimes, lag relationships, coupled protocol escalation, isolated protocol escalation, and confidence levels.
-
-### Pressure Correlation Modeling
-
-The correlation mart aligns protocol anomaly behavior with national pressure scores. It computes:
-
-- rolling pressure correlation
-- synchronized stress
-- stress divergence
-- correlation state
-- alignment state
-- divergence state
-
-Interpretation categories include:
+Correlation outputs include:
 
 - `SYNCHRONIZED_ESCALATION`
 - `INVERSE_MOVEMENT`
@@ -606,45 +456,11 @@ Interpretation categories include:
 - `PRESSURE_ONLY`
 - `NO_CLEAR_ALIGNMENT`
 
-These are analytical signals, not proof of causality.
-
-## Dashboard Page Walkthroughs
-
-### 1. National Stress Observatory
-
-Country-level pressure trends, suppression-window probability, baseline divergence, elevated protocol count, and quality context.
-
-### 2. Protocol Regime Monitor
-
-Protocol state monitoring across DNS, HTTP, TCP, and TLS. Tracks anomaly state, confidence level, severe observation share, elevated observation share, and insufficient observation share.
-
-### 3. Protocol Stress Intelligence Observatory
-
-Protocol-centric stress view. The page is resilient to mart versions where `protocol_stress_score` is missing or null by falling back to `anomaly_score` and displaying `N/A` for unavailable metrics.
-
-### 4. Protocol-Repression Correlation Engine
-
-Measures rolling alignment between protocol anomalies and national pressure. This is the main statistical relationship page.
-
-### 5. ASN Behavioral Intelligence
-
-Ranks networks by behavioral priority, weighted blocking, dominant protocol, evidence maturity, reliability, and coupled escalation activity.
-
-### 6. Finance Bill 2024 Incident Report
-
-Focuses on the June and July 2024 political window and reconstructs protocol, pressure, and ASN behavior around the Finance Bill crisis period.
-
-### 7. Suppression Event Explorer
-
-Exploratory view across suppression states, correlation states, divergence states, pressure levels, and protocol-specific stress signals.
-
-### 8. Methodology and Statistical Guardrails
-
-Documents assumptions, thresholds, confidence logic, limitations, and responsible interpretation constraints.
+These states are analytical indicators, not causal findings.
 
 ## Validation and Contracts
 
-The repository includes Bruin checks, Python validation assets, and Streamlit dataframe contracts.
+The repository includes Bruin validation assets, Streamlit dataframe contracts, and pytest-based contract checks.
 
 Bruin validation assets:
 
@@ -653,74 +469,52 @@ Bruin validation assets:
 
 Streamlit contract layer:
 
-- validates required columns
+- validates required mart columns
 - coerces date and timestamp fields
 - coerces numeric display fields
 - supports string ASNs
+- permits valid sparse-window nulls
 - returns empty dataframes only for true contract failures
-- avoids treating valid sparse/guarded statistical nulls as fatal
 
-Current validation checks include:
+Automated test entry point:
 
-- required columns
-- unique feature or relationship identifiers
-- valid dates and protocols
-- signal rates and quality scores within expected bounds
-- low-sample counts
-- sparse windows
-- zero-variance windows
+```bash
+pytest -q
+```
 
-Next contract upgrades:
+Lint entry point:
 
-- pytest-based mart contract tests
-- Streamlit query schema snapshots
-- freshness and row-count expectations
-- CI failure on dashboard-facing schema drift
-- source-specific quality thresholds
+```bash
+ruff check .
+```
 
 ## Infrastructure and Deployment
 
-Terraform under `infra/` provisions:
+Terraform under `infra/` provisions the cloud backbone:
 
 - Google Cloud Storage bucket
 - BigQuery staging and production datasets
 - IAM bindings
 
-The infrastructure is useful for a reproducible project deployment, but it should be hardened before production use.
+Deployment portability is supported through:
 
-Recommended hardening:
+- environment variable configuration
+- `.env.example`
+- Terraform modules
+- pinned dashboard dependencies
+- CI lint and test workflows
 
-- Move project IDs, bucket names, dataset IDs, and admin emails out of committed defaults.
-- Use Secret Manager for dashboard and service-account credentials.
-- Replace broad editor permissions with least-privilege IAM.
-- Add Terraform remote state.
-- Add CI gates for `terraform fmt`, `terraform validate`, SQL linting, and Python tests.
-- Deploy Streamlit behind Cloud Run plus an authentication layer.
+Production hardening should continue around secret management, least-privilege IAM, remote Terraform state, authenticated dashboard hosting, and BigQuery cost controls.
 
 ## Roadmap
 
-Highest ROI next builds:
+Near-term platform evolution:
 
-- Move project IDs, datasets, countries, date windows, thresholds, and weights into config.
-- Add complete pytest mart contracts.
-- Add multi-country support.
-- Add evidence traceability from dashboard scores back to source rows.
-- Add executive PDF exports for incident reports.
-- Add Cloud Run deployment hardening.
-- Add an API layer over reporting marts.
-- Add analyst investigation workflows for event drilldown.
-- Add an LLM analyst copilot grounded in evidence traces.
-- Add cost controls, partitioning, clustering, and dashboard summary marts.
-
-## Lessons Learned
-
-- Setup instructions should be early and operational.
-- ACLED acquisition friction should be documented honestly.
-- Generated or substitute datasets must be clearly labeled.
-- Statistical guardrails are core methodology, not decoration.
-- BigQuery/Pandas dtype behavior matters in production dashboards.
-- Dashboard contracts should protect users from schema drift without hiding valid sparse data.
-- A polished intelligence UI is strongest when every visual can be traced back to a governed mart.
+- Multi-country expansion using configurable country, dataset, and date settings
+- Deeper mart contract coverage across all dashboard-facing models
+- Evidence lineage tracing from dashboard scores back to source records
+- Deployment hardening for authenticated cloud hosting
+- Reporting API layer over curated marts
 
 ## Responsible Use
 
@@ -728,13 +522,11 @@ This system is observational and historical. It does not identify individuals, t
 
 Outputs should be interpreted as evidence-weighted indicators, not definitive proof of intent or causality. Civil-liberties analysis requires context, source awareness, and careful communication.
 
-## Contact and Attribution
+## Attribution and License
 
 Project owner: Samwel Njogu  
 X: [@sam_njogu9](https://x.com/sam_njogu9)
 
 Built as a Kenya-focused civil-liberties observability platform using Bruin, BigQuery, Streamlit, Terraform, Python, OONI, ACLED, Google Transparency, and Lumen-style legal pressure data.
-
-## License
 
 This project is licensed under the MIT License.
