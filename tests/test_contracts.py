@@ -1,6 +1,12 @@
+from pathlib import Path
+import sys
+
 import pandas as pd
 
-from streamlit.core.contracts import MartContractError, validate_dataframe_schema
+STREAMLIT_DIR = Path(__file__).resolve().parents[1] / "streamlit"
+sys.path.insert(0, str(STREAMLIT_DIR))
+
+from core.contracts import MartContractError, validate_dataframe_schema  # noqa: E402
 
 
 def test_validate_dataframe_schema_accepts_matching_schema():
