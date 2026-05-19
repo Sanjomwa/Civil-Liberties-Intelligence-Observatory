@@ -90,7 +90,7 @@ def materialize():
             gcs_df[col] = gcs_df[col].dt.tz_convert('UTC').dt.tz_localize(None)
         gcs_df[col] = gcs_df[col].astype('datetime64[us]')
 
-    print(f"✅ Timestamps prepared for BigQuery")
+    print("✅ Timestamps prepared for BigQuery")
     print(
         f"   date_submitted range: {gcs_df['date_submitted'].min()} → {gcs_df['date_submitted'].max()}")
 

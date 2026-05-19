@@ -63,8 +63,6 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
-import os
-
 
 def resolve_env(fallback: str = "dev") -> str:
     for k in ("BRUIN_ENV", "BRUIN_ENVIRONMENT", "BRUIN_PIPELINE_ENVIRONMENT"):

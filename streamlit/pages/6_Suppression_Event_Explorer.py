@@ -1,6 +1,5 @@
 import streamlit as st
 import plotly.express as px
-import plotly.graph_objects as go
 
 from core.state import init_state
 from core.filters import render_sidebar

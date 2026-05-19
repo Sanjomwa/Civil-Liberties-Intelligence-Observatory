@@ -2,7 +2,7 @@
 
 import pandas as pd
 import streamlit as st
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 # ─────────────────────────────────────────────
