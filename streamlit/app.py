@@ -7,8 +7,26 @@ from core.filters import render_sidebar
 
 from services.marts import (
     get_national_stress,
-    get_protocol_regimes
+    get_protocol_regimes,
 )
+
+
+def _safe_count(records) -> int:
+    try:
+        return len(records)
+    except TypeError:
+        return 0
+
+
+def _is_empty(records) -> bool:
+    if records is None:
+        return True
+
+    if hasattr(records, "empty"):
+        return bool(records.empty)
+
+    return _safe_count(records) == 0
+
 
 # ============================================================
 # PAGE CONFIG
@@ -17,7 +35,7 @@ from services.marts import (
 st.set_page_config(
     page_title="Kenya Civil Liberties Observatory",
     page_icon="🛰️",
-    layout="wide"
+    layout="wide",
 )
 
 # ============================================================
@@ -26,20 +44,6 @@ st.set_page_config(
 
 init_state()
 render_sidebar()
-
-# ============================================================
-# LOAD SUMMARY DATA
-# ============================================================
-
-national = get_national_stress(
-    st.session_state.start_date,
-    st.session_state.end_date
-)
-
-protocols = get_protocol_regimes(
-    st.session_state.start_date,
-    st.session_state.end_date
-)
 
 # ============================================================
 # LANDING PAGE
@@ -58,6 +62,31 @@ st.caption(
 st.divider()
 
 # ============================================================
+# LOAD SUMMARY DATA
+# ============================================================
+
+try:
+    national = get_national_stress(
+        st.session_state.start_date,
+        st.session_state.end_date,
+    )
+
+    protocols = get_protocol_regimes(
+        st.session_state.start_date,
+        st.session_state.end_date,
+    )
+except Exception:
+    national = []
+    protocols = []
+
+if _is_empty(national) or _is_empty(protocols):
+    st.warning(
+        "Dashboard summary data is currently unavailable. "
+        "The landing page remains available while deployment credentials, "
+        "BigQuery permissions, or reporting mart availability are checked."
+    )
+
+# ============================================================
 # SYSTEM STATUS
 # ============================================================
 
@@ -66,13 +95,13 @@ col1, col2 = st.columns(2)
 with col1:
     st.metric(
         "National Stress Records",
-        len(national)
+        _safe_count(national),
     )
 
 with col2:
     st.metric(
         "Protocol Observations",
-        len(protocols)
+        _safe_count(protocols),
     )
 
 st.divider()
