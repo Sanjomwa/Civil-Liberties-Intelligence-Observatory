@@ -3,7 +3,7 @@ name = "Civil-Liberties-and-Censorship-Analysis-with-Bruin"
 version = "0.1.0"
 description = "Civil liberties and Analysis with Bruin in Kenya end-to-end batch data pipeline"
 readme = "README.md"
-requires-python = ">=3.12.3"
+requires-python = ">=3.12.3,<3.13"
 
 dependencies =  [
     "requests>=2.31.0,<3.0",
@@ -37,12 +37,15 @@ test = [
     "PyYAML>=6.0.0,<7.0",
 ]
 streamlit = [
-    "streamlit>=1.44.0,<2.0",
+    "streamlit>=1.35.0,<2.0",
+    "google-cloud-bigquery>=3.20.0,<4.0",
+    "google-auth>=2.29.0,<3.0",
+    "python-dotenv>=1.0.0,<2.0",
     "pandas>=2.2.0,<3.0",
-    "plotly>=6.0.0,<7.0",
-    "db-dtypes>=1.4.0,<2.0",
-    "pyarrow>=19.0.0,<20.0",
-     "requests>=2.31.0,<3.0",
+    "plotly>=5.22.0,<7.0",
+    "numpy>=1.26.4,<2.0",
+    "pyarrow>=15.0.0,<20.0",
+    "db-dtypes>=1.2.0,<2.0",
 ]
 
 [tool.black]
