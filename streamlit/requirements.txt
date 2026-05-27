@@ -1,20 +1,9 @@
-streamlit>=1.35.0
-google-cloud-bigquery>=3.20.0
-google-auth>=2.29.0
-pandas>=2.2.0
-plotly>=5.22.0
-numpy>=1.26.4,<2.0
-pyarrow>=15.0.0
-db-dtypes>=1.2.0
-matplotlib==3.8.3
-
-# Geospatial (for Kenya heatmap)
-geopandas==0.14.3
-shapely==2.0.3
-
-# Optional: map rendering
-pydeck==0.9.1
-geopandas==0.14.3
-shapely==2.0.3
-fiona==1.9.5
+streamlit>=1.35.0,<2.0
+google-cloud-bigquery>=3.20.0,<4.0
+google-auth>=2.29.0,<3.0
 python-dotenv>=1.0.0,<2.0
+pandas>=2.2.0,<3.0
+plotly>=5.22.0,<7.0
+numpy>=1.26.4,<2.0
+pyarrow>=15.0.0,<20.0
+db-dtypes>=1.2.0,<2.0
