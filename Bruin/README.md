@@ -1,109 +1,230 @@
-# Bruin - DuckDB Template
+## Project Walkthrough
 
-This pipeline is a simple example of a Bruin pipeline for DuckDB,
-featuring `example.sql`—a SQL asset that creates a table with sample data and enforces schema constraints
-like `not_null`, `unique`, and `primary_key`.
+This project is a Bruin-orchestrated civil-liberties intelligence platform that reconstructs censorship pressure and digital repression indicators in Kenya using network measurements, political-pressure signals, and statistical intelligence layers.
+The system combines:
+• OONI network measurement evidence
+• ACLED political/conflict indicators
+• Google Transparency reporting signals
+• legal/platform pressure modeling
+• protocol-level intelligence features
+• explainable analytical guardrails
+The result is a governed analytical pipeline that transforms raw internet observability data into interpretable intelligence outputs.
 
-It also includes a `macros/` folder with reusable Jinja macros for common SQL patterns:
-- **aggregations.sql**: Common aggregation patterns (count_by, sum_by, top_n)
-- **filters.sql**: Common filtering patterns (date_range, recent_records, filter_null, in_list)
-- **transformations.sql**: Data transformation helpers (pivot_sum, deduplicate, generate_surrogate_key, safe_divide)
+---
 
-The `macro_example.sql` asset demonstrates how to use these macros in your queries.
+## Architecture Overview
 
-## Setup
-The pipeline already includes an empty `.bruin.yml` file, fill it with your connections and environments. You can read more about connections [here](https://getbruin.com/docs/bruin/commands/connections.html).
+The platform follows a layered analytical architecture:
+Raw Sources
+↓
+Ingestion Layer
+↓
+Staging Layer
+↓
+Intermediate Interpretation Layer
+↓
+Facts & Dimensions
+↓
+Feature Engineering Layer
+↓
+Intelligence Layer
+↓
+Reporting & Streamlit Dashboard
+Core principle:
+• facts capture evidence
+• features produce stable analytical signals
+• intelligence interprets relationships
+• reporting exposes product-safe outputs
 
-Here's a sample `.bruin.yml` file:
+---
 
+## Data Sources
 
-```yaml
-environments:
-  default:
-    connections:
-      duckdb:
-        - name: "duckdb_default"
-          path: "/path/to/your/database.db"
-      
-```
+### OONI
 
-## Running the pipeline
+Used for:
+• DNS anomaly detection
+• TCP connectivity failures
+• TLS handshake disruptions
+• HTTP interference patterns
+• protocol-level censorship indicators
 
-bruin CLI can run the whole pipeline or any task with the downstreams:
+### ACLED
 
-```shell
+Used for:
+• protest activity
+• political unrest
+• conflict escalation
+• state-pressure indicators
 
-bruin run ./duckdb/pipeline.yml
-```
+### Google Transparency Signals
 
-You can also run a single task:
+Used for:
+• government request visibility
+• platform/legal restriction context
+• transparency-event overlays
 
-```shell
-bruin run assets/hello.py                            
-```
+### Legal / Platform Pressure Signals
 
-```shell
-Starting the pipeline execution...
+Modeled into:
+• legal pressure scores
+• institutional pressure indicators
+• composite repression signals
 
-[2023-03-16T18:25:59Z] [worker-0] Running: hello
-[2023-03-16T18:26:00Z] [worker-0] [hello] >> Hello, world!
-[2023-03-16T18:26:00Z] [worker-0] Completed: hello (103ms)
+---
 
+## Bruin Pipeline Usage
 
-Executed 1 tasks in 103ms
-```
+Bruin orchestrates the full analytical workflow:
+• Python ingestion assets
+• SQL transformation assets
+• validation and quality checks
+• dependency management
+• feature and intelligence materialization
+• reporting marts
+• BigQuery execution orchestration
 
-You can optionally pass a `--downstream` flag to run the task with all of its downstreams.
+### The repository includes:
 
-## Using Macros
+• staging assets
+• intermediate assets
+• marts
+• feature engineering layers
+• intelligence layers
+• reporting assets
+• Streamlit analytical services
 
-The `macros/` folder contains reusable Jinja macros that are automatically available in all your SQL assets. Here are some examples:
+---
 
-### Aggregation Macros
-```sql
--- Count records by a column
-{{ count_by('example', 'country') }}
+## Key Analytical Layers
 
--- Sum a column grouped by another
-{{ sum_by('sales', 'country', 'revenue') }}
+1. Feature Layer
+   Example:
+   features.protocol_daily_signals
+   This layer computes:
+   • protocol signal rates
+   • anomaly scores
+   • rolling baselines
+   • confidence-weighted interference
+   • sparsity flags
+   • low-sample guards
+   • statistical quality metrics
+   The feature layer intentionally avoids making intelligence claims.
 
--- Get top N records
-{{ top_n('example', 'id', 5) }}
-```
+---
 
-### Filter Macros
-```sql
--- Filter by date range
-{{ date_range('orders', 'created_at', '2024-01-01', '2024-12-31') }}
+2. Intelligence Layer
+   Example:
+   intelligence.protocol_relationships
+   This layer computes:
+   • protocol-pressure relationships
+   • lag analysis
+   • synchronized escalation states
+   • divergence states
+   • relationship confidence
+   • regime classifications
+   Outputs are explainable and confidence-weighted.
 
--- Get recent records
-{{ recent_records('events', 'timestamp', 30) }}
+---
 
--- Filter out nulls
-{{ filter_null('users', ['email', 'name']) }}
+## Dashboard Walkthrough
 
--- Filter by list of values
-{{ in_list('example', 'country', ['spain', 'germany']) }}
-```
+### National Stress Observatory
 
-### Transformation Macros
-```sql
--- Generate a surrogate key from multiple columns
-SELECT {{ generate_surrogate_key(['id', 'country']) }}, *
-FROM example
+High-level national observability surface showing:
+• censorship pressure windows
+• protocol instability
+• pressure escalation periods
+• historical stress trends
+What it demonstrates
+A country-scale analytical overview built from governed feature marts.
 
--- Safe division (avoids divide by zero)
-SELECT
-    country,
-    COUNT(*) as count,
-    {{ safe_divide('revenue', 'count') }} as avg_revenue
-FROM sales
-GROUP BY country
+---
 
--- Deduplicate records
-{{ deduplicate('events', 'user_id', 'timestamp') }}
-```
+### Protocol Regime Monitor
 
-Check out `assets/macro_example.sql` for more examples!
+Tracks protocol-specific behavior across:
+• DNS
+• HTTP
+• TCP
+• TLS
+Shows:
+• anomaly shifts
+• regime classifications
+• signal volatility
+• protocol escalation periods
+What it demonstrates
+Protocol-level intelligence modeling rather than simple aggregate dashboards.
 
-That's it, good luck!
+---
+
+### ASN Behavioral Intelligence
+
+Analyzes network/operator-level behavior:
+• anomalous ASNs
+• interference concentration
+• behavioral shifts
+• confidence-weighted protocol observations
+What it demonstrates
+Network-level analytical decomposition and operator observability.
+
+---
+
+### Protocol-Repression Correlation Engine
+
+Explores:
+• lag relationships
+• synchronized escalation
+• divergence states
+• pressure/censorship alignment
+Includes statistical guardrails:
+• sparse-window flags
+• confidence scoring
+• non-causality warnings
+• sample-quality controls
+What it demonstrates
+Explainable intelligence modeling with methodological safeguards.
+
+---
+
+### Finance Bill 2024 Incident Reconstruction
+
+A case-study reconstruction of digital-pressure dynamics during the Kenya Finance Bill protests.
+Combines:
+• protocol anomalies
+• pressure escalation
+• temporal alignment
+• analytical interpretation
+What it demonstrates
+Real-world applicability of the platform during major civic events.
+
+---
+
+### Methodological Guardrails
+
+The platform intentionally avoids overstating certainty.
+Important principles:
+• correlation is not causation
+• OONI anomalies are probabilistic signals
+• low-sample windows are confidence-adjusted
+• sparse observations are explicitly flagged
+• rolling metrics include statistical safeguards
+• protocol observations are weighted separately from measurements
+The goal is explainable observability, not unverifiable certainty claims.
+
+---
+
+Live Demo
+Streamlit deployment:
+https://civil-liberties-and-censorship-analysis-with-bruin-toafjdj5xoc.streamlit.app/
+Live Dashboard
+
+---
+
+### Why This Project Matters
+
+Internet censorship and digital repression are often opaque, fragmented, and difficult to interpret in real time.
+This project explores how reproducible data engineering, observability pipelines, and explainable intelligence layers can help reconstruct pressure dynamics from heterogeneous evidence sources while maintaining methodological transparency.
+
+By combining network measurements, political indicators, and transparency signals into a governed analytical workflow, we can produce interpretable intelligence outputs that inform civil liberties advocacy, policy analysis, and public awareness.
+The project also serves as a case study for how Bruin can orchestrate complex analytical pipelines that integrate multiple data sources, transformation layers, and reporting outputs while maintaining explainability and methodological rigor.

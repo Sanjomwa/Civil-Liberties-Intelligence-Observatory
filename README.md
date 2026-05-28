@@ -100,6 +100,36 @@ Methodology view documenting how sparse data, confidence weighting, variance che
 
 ---
 
+## Live Dashboard
+
+Streamlit deployment:
+
+https://civil-liberties-and-censorship-analysis-with-bruin-toafjdj5xoc.streamlit.app/
+
+Key intelligence surfaces:
+
+- National Stress Observatory
+- Protocol Regime Monitor
+- Protocol Stress Intelligence
+- ASN Behavioral Intelligence
+- Finance Bill 2024 Incident Report
+- Methodology & Statistical Guardrails
+
+---
+
+## How Bruin Is Used
+
+- Python ingestion assets
+- SQL transformation assets
+- Asset dependency orchestration
+- Feature and intelligence materialization
+- Validation and quality checks
+- Historical partition execution
+- BigQuery-backed marts
+- Streamlit-facing reporting assets
+
+---
+
 ## Architecture Overview
 
 ```mermaid
