@@ -50,7 +50,7 @@ latest = df.iloc[-1]
 
 st.title("🧭 Suppression Event Explorer")
 
-st.caption("""
+st.caption(f"""
 Investigate synchronized censorship escalation windows
 across {COUNTRY}'s protocol surface.
 
