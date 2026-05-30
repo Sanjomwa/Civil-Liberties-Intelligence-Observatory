@@ -61,7 +61,7 @@ WITH ooni AS (
             ELSE 'OTHER_PROTOCOL'
         END AS platform_category
 
-    FROM `encoded-joy-485413-k5.stg.ooni_measurements`
+    FROM `{{ var.project_id }}.stg.ooni_measurements`
 
     WHERE test_name IS NOT NULL
 ),
@@ -73,7 +73,7 @@ google AS (
         'GOOGLE_TRANSPARENCY' AS source,
         'PLATFORM_SERVICE' AS platform_category
 
-    FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
+    FROM `{{ var.project_id }}.stg.google_transparency_requests`
 
     WHERE product IS NOT NULL
 ),
@@ -85,7 +85,7 @@ lumen AS (
         'LUMEN' AS source,
         'CONTENT_PLATFORM' AS platform_category
 
-    FROM `encoded-joy-485413-k5.stg.lumen_requests`
+    FROM `{{ var.project_id }}.stg.lumen_requests`
 
     WHERE recipient IS NOT NULL
 ),

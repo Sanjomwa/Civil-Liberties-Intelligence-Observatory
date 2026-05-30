@@ -34,7 +34,7 @@ st.title("🧠 Methodology & Statistical Guardrails")
 
 st.caption("""
 Formal statistical controls, anomaly logic, confidence weighting,
-and inference protections used across Kenya's Digital Repression
+and inference protections used across {COUNTRY}'s Digital Repression
 Observability System.
 
 This page explains **how every signal is validated before entering

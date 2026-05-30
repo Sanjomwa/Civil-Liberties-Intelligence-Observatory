@@ -27,7 +27,7 @@ WITH daily AS (
         COUNT(DISTINCT recipient) AS platforms_targeted,
         COUNT(DISTINCT reason) AS legal_vectors
 
-    FROM `encoded-joy-485413-k5.stg.lumen_requests`
+    FROM `{{ var.project_id }}.stg.lumen_requests`
     GROUP BY measurement_date
 ),
 

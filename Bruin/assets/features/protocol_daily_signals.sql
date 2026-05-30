@@ -68,7 +68,7 @@ WITH source_events AS (
     is_blocking_signal,
     blocking_detail,
     SAFE_CAST(confidence_score AS FLOAT64) AS confidence_score
-  FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
+  FROM `{{ var.project_id }}.marts.fact_ooni_censorship_signals`
   WHERE measurement_date IS NOT NULL
     AND country IS NOT NULL
     AND protocol IS NOT NULL

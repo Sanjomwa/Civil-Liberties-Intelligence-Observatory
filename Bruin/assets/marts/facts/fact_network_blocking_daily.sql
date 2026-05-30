@@ -52,7 +52,7 @@ SELECT
 
     CURRENT_TIMESTAMP() AS snapshot_at
 
-FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
+FROM `{{ var.project_id }}.marts.fact_ooni_censorship_signals`
 
 GROUP BY
     measurement_date,

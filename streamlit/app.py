@@ -2,6 +2,7 @@
 
 import streamlit as st
 
+from core.config import COUNTRY
 from core.state import init_state
 from core.filters import render_sidebar
 
@@ -33,7 +34,7 @@ def _is_empty(records) -> bool:
 # ============================================================
 
 st.set_page_config(
-    page_title="Kenya Civil Liberties Observatory",
+    page_title=f"{COUNTRY} Civil Liberties Observatory",
     page_icon="🛰️",
     layout="wide",
 )
@@ -49,12 +50,12 @@ render_sidebar()
 # LANDING PAGE
 # ============================================================
 
-st.title("🛰️ Kenya Civil Liberties Observatory")
+st.title(f"🛰️ {COUNTRY} Civil Liberties Observatory")
 
 st.caption(
-    """
+    f"""
     Monitoring network interference, protocol suppression patterns,
-    and digital civil-liberties stress signals across Kenya
+    and digital civil-liberties stress signals across {COUNTRY}
     (June 2023 – June 2025).
     """
 )

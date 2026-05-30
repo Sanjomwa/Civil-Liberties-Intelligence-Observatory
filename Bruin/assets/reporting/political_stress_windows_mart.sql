@@ -49,7 +49,7 @@ WITH network AS (
         AVG(sample_quality_score)
             AS avg_sample_quality_score
 
-    FROM `encoded-joy-485413-k5.reporting.mart_protocol_interference_trends`
+    FROM `{{ var.project_id }}.reporting.mart_protocol_interference_trends`
 
     GROUP BY measurement_date
 ),
@@ -69,7 +69,7 @@ country_pressure AS (
         pressure_level
             AS source_pressure_level
 
-    FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
+    FROM `{{ var.project_id }}.marts.fact_country_pressure_daily`
 
     WHERE iso2 = 'KE'
 ),
@@ -112,7 +112,7 @@ base AS (
         COALESCE(n.avg_sample_quality_score, 0)
             AS avg_sample_quality_score
 
-    FROM `encoded-joy-485413-k5.marts.dim_dates` d
+    FROM `{{ var.project_id }}.marts.dim_dates` d
 
     LEFT JOIN country_pressure c
         ON d.date_key = c.measurement_date

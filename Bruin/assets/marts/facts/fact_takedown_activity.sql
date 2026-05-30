@@ -29,7 +29,7 @@ WITH google AS (
         detailed_total AS item_count,
         google_pressure_score AS pressure_score
 
-    FROM `encoded-joy-485413-k5.int.google_pressure_periodized`
+    FROM `{{ var.project_id }}.int.google_pressure_periodized`
 ),
 
 lumen AS (
@@ -44,7 +44,7 @@ lumen AS (
         request_count AS number_of_requests,
         item_count
 
-    FROM `encoded-joy-485413-k5.stg.lumen_requests`
+    FROM `{{ var.project_id }}.stg.lumen_requests`
 ),
 
 lumen_scored AS (
@@ -60,7 +60,7 @@ lumen_scored AS (
 
     FROM lumen l
     LEFT JOIN
-    `encoded-joy-485413-k5.int.lumen_pressure_daily` d
+    `{{ var.project_id }}.int.lumen_pressure_daily` d
     USING (measurement_date)
 )
 

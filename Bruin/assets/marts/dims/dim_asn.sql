@@ -32,7 +32,7 @@ WITH base AS (
 
     SELECT DISTINCT
         CAST(probe_asn AS INT64) AS asn_numeric
-    FROM `encoded-joy-485413-k5.stg.ooni_measurements`
+    FROM `{{ var.project_id }}.stg.ooni_measurements`
     WHERE probe_asn IS NOT NULL
 
 )

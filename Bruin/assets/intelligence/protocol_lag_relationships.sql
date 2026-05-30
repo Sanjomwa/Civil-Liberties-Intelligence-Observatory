@@ -61,7 +61,7 @@ features AS (
     low_sample_flag,
     sparse_window_flag,
     zero_variance_flag
-  FROM `encoded-joy-485413-k5.features.protocol_daily_signals`
+  FROM `{{ var.project_id }}.features.protocol_daily_signals`
 ),
 
 paired AS (

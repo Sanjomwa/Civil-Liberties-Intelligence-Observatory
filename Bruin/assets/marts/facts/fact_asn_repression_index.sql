@@ -48,7 +48,7 @@ WITH ooni AS (
         AVG(confidence_weighted_blocking)
             AS confidence_weighted_blocking
 
-    FROM `encoded-joy-485413-k5.marts.fact_network_blocking_daily`
+    FROM `{{ var.project_id }}.marts.fact_network_blocking_daily`
 
     WHERE country = 'KE'
 
@@ -79,7 +79,7 @@ country_pressure AS (
             0
         ) AS country_pressure_score
 
-    FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
+    FROM `{{ var.project_id }}.marts.fact_country_pressure_daily`
 
     WHERE iso2 = 'KE'
 ),
@@ -92,7 +92,7 @@ quality AS (
     SELECT
         weight AS quality_weight
 
-    FROM `encoded-joy-485413-k5.marts.dim_measurement_quality`
+    FROM `{{ var.project_id }}.marts.dim_measurement_quality`
 
     WHERE quality_level = 'PARTIAL'
 

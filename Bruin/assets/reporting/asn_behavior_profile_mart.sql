@@ -27,7 +27,7 @@ WITH observation_horizon AS (
         COUNT(DISTINCT measurement_date)
             AS expected_observation_days
 
-    FROM `encoded-joy-485413-k5.features.protocol_daily_signals`
+    FROM `{{ var.project_id }}.features.protocol_daily_signals`
 
     WHERE country = 'KE'
 ),
@@ -45,7 +45,7 @@ protocol_averages AS (
         SUM(blocked_events)
             AS protocol_blocked_events
 
-    FROM `encoded-joy-485413-k5.features.protocol_daily_signals`
+    FROM `{{ var.project_id }}.features.protocol_daily_signals`
 
     WHERE country = 'KE'
 
@@ -150,7 +150,7 @@ feature_metrics AS (
             AS feature_version
 
     FROM
-        `encoded-joy-485413-k5.features.protocol_daily_signals`
+        `{{ var.project_id }}.features.protocol_daily_signals`
 
     WHERE country = 'KE'
 
@@ -193,7 +193,7 @@ intelligence_metrics AS (
             AS intelligence_version
 
     FROM
-        `encoded-joy-485413-k5.intelligence.protocol_relationships`
+        `{{ var.project_id }}.intelligence.protocol_relationships`
 
     WHERE country = 'KE'
 
@@ -343,7 +343,7 @@ final_scores AS (
 
     FROM scored s
 
-    LEFT JOIN `encoded-joy-485413-k5.marts.dim_asn` d
+    LEFT JOIN `{{ var.project_id }}.marts.dim_asn` d
         ON CAST(s.asn AS STRING)
         = CAST(d.asn_numeric AS STRING)
 

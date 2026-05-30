@@ -43,7 +43,7 @@ WITH daily AS (
             )
         ) AS pressure_score
 
-    FROM `encoded-joy-485413-k5.marts.fact_takedown_activity`
+    FROM `{{ var.project_id }}.marts.fact_takedown_activity`
 
     GROUP BY
         source,

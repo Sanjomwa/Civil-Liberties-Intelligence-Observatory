@@ -3,6 +3,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 
+from core.config import COUNTRY
 from core.state import init_state
 from core.filters import render_sidebar
 from core.theme import apply_layout, stress_color
@@ -60,8 +61,8 @@ latest = df[
 st.title("Protocol Regime Monitor")
 
 st.caption(
-    "Protocol-level censorship regime classification "
-    "across Kenya (June 2023 – June 2025)"
+    f"Protocol-level censorship regime classification "
+    f"across {COUNTRY} (June 2023 – June 2025)"
 )
 
 

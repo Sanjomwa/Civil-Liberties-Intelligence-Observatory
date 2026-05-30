@@ -30,7 +30,7 @@ materialization:
 WITH dates AS (
 
     SELECT date_key AS measurement_date
-    FROM `encoded-joy-485413-k5.marts.dim_dates`
+    FROM `{{ var.project_id }}.marts.dim_dates`
 
 ),
 
@@ -40,7 +40,7 @@ acled AS (
         event_date AS measurement_date,
         SUM(events) AS conflict_events,
         SUM(fatalities) AS fatalities
-    FROM `encoded-joy-485413-k5.stg.acled_conflict_events`
+    FROM `{{ var.project_id }}.stg.acled_conflict_events`
     WHERE country = 'Kenya'
     GROUP BY event_date
 
@@ -52,7 +52,7 @@ lumen AS (
         measurement_date,
         SUM(request_count) AS takedown_requests,
         SUM(item_count) AS takedown_items
-    FROM `encoded-joy-485413-k5.stg.lumen_requests`
+    FROM `{{ var.project_id }}.stg.lumen_requests`
     GROUP BY measurement_date
 
 ),
@@ -60,7 +60,7 @@ lumen AS (
 google AS (
 
     SELECT *
-    FROM `encoded-joy-485413-k5.int.google_pressure_periodized`
+    FROM `{{ var.project_id }}.int.google_pressure_periodized`
 
 ),
 

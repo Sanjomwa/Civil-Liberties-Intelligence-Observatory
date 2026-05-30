@@ -50,7 +50,7 @@ WITH base AS (
         observation_id,
         experiment_result_id
 
-    FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
+    FROM `{{ var.project_id }}.marts.fact_ooni_censorship_signals`
 ),
 
 aggregated AS (

@@ -25,7 +25,7 @@ WITH base AS (
     admin1 AS county,
     centroid_latitude,
     centroid_longitude
-  FROM `encoded-joy-485413-k5.stg.acled_conflict_events`
+  FROM `{{ var.project_id }}.stg.acled_conflict_events`
   WHERE country = 'Kenya'
     AND admin1 IS NOT NULL
 ),

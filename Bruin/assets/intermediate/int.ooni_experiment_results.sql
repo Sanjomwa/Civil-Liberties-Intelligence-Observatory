@@ -70,7 +70,7 @@ WITH dns AS (
       WHEN answer IS NOT NULL THEN 0.70
       ELSE 0.40
     END AS confidence_score
-  FROM `encoded-joy-485413-k5.stg.ooni_dns_observations`
+  FROM `{{ var.project_id }}.stg.ooni_dns_observations`
 ),
 
 tcp AS (
@@ -109,7 +109,7 @@ tcp AS (
       WHEN connect_success IS TRUE THEN 0.70
       ELSE 0.45
     END AS confidence_score
-  FROM `encoded-joy-485413-k5.stg.ooni_tcp_observations`
+  FROM `{{ var.project_id }}.stg.ooni_tcp_observations`
 ),
 
 tls AS (
@@ -149,7 +149,7 @@ tls AS (
       WHEN handshake_success IS TRUE THEN 0.70
       ELSE 0.45
     END AS confidence_score
-  FROM `encoded-joy-485413-k5.stg.ooni_tls_observations`
+  FROM `{{ var.project_id }}.stg.ooni_tls_observations`
 ),
 
 http AS (
@@ -188,7 +188,7 @@ http AS (
       WHEN status_code BETWEEN 200 AND 399 THEN 0.70
       ELSE 0.40
     END AS confidence_score
-  FROM `encoded-joy-485413-k5.stg.ooni_http_observations`
+  FROM `{{ var.project_id }}.stg.ooni_http_observations`
 ),
 
 unioned AS (

@@ -50,5 +50,5 @@ SELECT
   failure_reason,
   confidence_score,
   int_extracted_at
-FROM `encoded-joy-485413-k5.int.ooni_experiment_results`;
+FROM `{{ var.project_id }}.int.ooni_experiment_results`;
 

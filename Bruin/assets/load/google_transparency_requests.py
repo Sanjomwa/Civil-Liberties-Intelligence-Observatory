@@ -38,7 +38,10 @@ def require_cloud_env(env: str) -> None:
             f"This load asset supports only staging/prod. Got ENV={env!r}.")
 
 
-PROJECT_ID = "encoded-joy-485413-k5"
+PROJECT_ID = os.getenv(
+    "GOOGLE_CLOUD_PROJECT",
+    "encoded-joy-485413-k5"
+)
 GCS_BUCKET = "civil-liberties-data"
 LOCAL_FILE = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google/google_transparency_requests.parquet"
 TABLE = "google_transparency_requests"

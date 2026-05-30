@@ -3,6 +3,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from core.state import init_state
+from core.config import COUNTRY
 from core.filters import render_sidebar
 from core.theme import apply_layout
 from services.marts import get_asn_behavior
@@ -47,8 +48,8 @@ latest = df.iloc[0]
 
 st.title("🛰️ ASN Behavioral Intelligence")
 
-st.caption("""
-Behavioral observability profiles across Kenyan networks.
+st.caption(f"""
+Behavioral observability profiles across {COUNTRY} networks.
 
 This reveals:
 
@@ -167,8 +168,8 @@ apply_layout(
 
 st.plotly_chart(fig2, use_container_width=True)
 
-st.markdown("""
-This ranks Kenyan networks by strategic censorship signal importance.
+st.markdown(f"""
+This ranks {COUNTRY} networks by strategic censorship signal importance.
 """)
 
 st.divider()

@@ -1,8 +1,7 @@
 # core/constants.py
 
 """
-Global system constants for the
-Kenya Civil Liberties Observatory
+Global system constants for the Civil Liberties Observatory
 
 Single source of truth for:
 
@@ -23,12 +22,12 @@ from core.config import COUNTRY, DATASETS, DEFAULT_END, DEFAULT_START, ISO2, PRO
 # APP METADATA
 # ============================================================
 
-APP_NAME = "Kenya Civil Liberties Observatory"
+APP_NAME = f"{COUNTRY} Civil Liberties Observatory"
 
 APP_TAGLINE = (
     "Historical observability into censorship, "
     "network interference, and civil liberties pressure "
-    "(Kenya, Jun 2023 – Jun 2025)"
+    f"({COUNTRY}, Jun 2023 – Jun 2025)"
 )
 
 APP_VERSION = "v1.0"

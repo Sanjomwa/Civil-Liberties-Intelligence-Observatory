@@ -70,7 +70,7 @@ feature_daily AS (
     COUNTIF(sparse_window_flag) AS sparse_window_feature_rows,
     COUNTIF(zero_variance_flag) AS zero_variance_feature_rows,
     ANY_VALUE(feature_version) AS feature_version
-  FROM `encoded-joy-485413-k5.features.protocol_daily_signals`
+  FROM `{{ var.project_id }}.features.protocol_daily_signals`
   WHERE country = 'KE'
   GROUP BY measurement_date, protocol
 ),
@@ -85,7 +85,7 @@ regime_cell AS (
     protocol_stress_score,
     observation_count,
     intelligence_version
-  FROM `encoded-joy-485413-k5.intelligence.protocol_signal_regimes`
+  FROM `{{ var.project_id }}.intelligence.protocol_signal_regimes`
   WHERE country = 'KE'
 ),
 
@@ -191,7 +191,7 @@ SELECT
   f.feature_version,
   r.intelligence_version,
   CURRENT_TIMESTAMP() AS snapshot_at
-FROM `encoded-joy-485413-k5.marts.dim_dates` AS d
+FROM `{{ var.project_id }}.marts.dim_dates` AS d
 LEFT JOIN feature_daily AS f
   ON d.date_key = f.measurement_date
 LEFT JOIN regime_daily AS r

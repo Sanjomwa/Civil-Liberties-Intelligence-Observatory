@@ -33,7 +33,7 @@ WITH google AS (
         LOWER(reason) AS raw_reason,
         'GOOGLE_TRANSPARENCY' AS source
 
-    FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
+    FROM `{{ var.project_id }}.stg.google_transparency_requests`
 
     WHERE reason IS NOT NULL
 ),
@@ -44,7 +44,7 @@ lumen AS (
         LOWER(reason) AS raw_reason,
         'LUMEN' AS source
 
-    FROM `encoded-joy-485413-k5.stg.lumen_requests`
+    FROM `{{ var.project_id }}.stg.lumen_requests`
 
     WHERE reason IS NOT NULL
 ),
@@ -62,7 +62,7 @@ ooni AS (
 
         'OONI' AS source
 
-    FROM `encoded-joy-485413-k5.marts.fact_ooni_censorship_signals`
+    FROM `{{ var.project_id }}.marts.fact_ooni_censorship_signals`
 ),
 
 unioned AS (

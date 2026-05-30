@@ -26,7 +26,7 @@ WITH calendar_bounds AS (
     SELECT
         MIN(date_key) AS min_date,
         MAX(date_key) AS max_date
-    FROM `encoded-joy-485413-k5.marts.dim_dates`
+    FROM `{{ var.project_id }}.marts.dim_dates`
 ),
 
 -- normalize request snapshots
@@ -40,7 +40,7 @@ requests AS (
         SUM(items_removed_legal) AS legal_removed,
         SUM(items_removed_policy) AS policy_removed
 
-    FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
+    FROM `{{ var.project_id }}.stg.google_transparency_requests`
 
     GROUP BY period_start
 ),
@@ -59,7 +59,7 @@ detailed AS (
 
         SUM(total) AS detailed_total
 
-    FROM `encoded-joy-485413-k5.stg.google_transparency_detailed`
+    FROM `{{ var.project_id }}.stg.google_transparency_detailed`
 
     GROUP BY period_start
 ),
@@ -103,7 +103,7 @@ expanded AS (
     FROM periods p
     CROSS JOIN calendar_bounds cb
 
-    JOIN `encoded-joy-485413-k5.marts.dim_dates` dd
+    JOIN `{{ var.project_id }}.marts.dim_dates` dd
       ON dd.date_key >= GREATEST(p.period_start,cb.min_date)
      AND dd.date_key <
         COALESCE(

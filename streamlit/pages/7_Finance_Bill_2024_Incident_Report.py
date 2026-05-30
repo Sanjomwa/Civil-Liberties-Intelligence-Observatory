@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 
+from core.config import COUNTRY
 from core.state import init_state
 from core.filters import render_sidebar
 from core.theme import apply_layout
@@ -47,9 +48,9 @@ latest = df.iloc[-1]
 
 st.title("📘 Finance Bill 2024 Incident Report")
 
-st.caption("""
+st.caption(f"""
 A forensic reconstruction of protocol-level suppression behavior
-during Kenya's Finance Bill 2024 protest period.
+during {COUNTRY}'s Finance Bill 2024 protest period.
 
 This report analyzes:
 
@@ -266,7 +267,7 @@ fig4 = px.bar(
 
 apply_layout(
     fig4,
-    "Major Kenyan Provider Suppression Signal Intensity"
+    f"Major {COUNTRY} Provider Suppression Signal Intensity"
 )
 
 st.plotly_chart(
@@ -274,8 +275,8 @@ st.plotly_chart(
     use_container_width=True
 )
 
-st.markdown("""
-These are large Kenyan network providers showing
+st.markdown(f"""
+These are large {COUNTRY} network providers showing
 elevated blocking behavior during the Finance Bill
 suppression window.
 """)

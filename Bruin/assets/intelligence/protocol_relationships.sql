@@ -33,7 +33,7 @@ columns:
 
 WITH regimes AS (
   SELECT *
-  FROM `encoded-joy-485413-k5.intelligence.protocol_signal_regimes`
+  FROM `{{ var.project_id }}.intelligence.protocol_signal_regimes`
 ),
 
 ranked_relationships AS (
@@ -46,7 +46,7 @@ ranked_relationships AS (
         relationship_confidence_score DESC NULLS LAST,
         lag_days ASC
     ) AS relationship_rank
-  FROM `encoded-joy-485413-k5.intelligence.protocol_lag_relationships`
+  FROM `{{ var.project_id }}.intelligence.protocol_lag_relationships`
   WHERE guarded_lag_correlation IS NOT NULL
 ),
 

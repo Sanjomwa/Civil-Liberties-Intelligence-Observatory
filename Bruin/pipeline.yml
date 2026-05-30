@@ -10,3 +10,19 @@ variables:
   bq_dataset:
     type: string
     default: "civil_liberties_staging"
+
+  project_id:
+    type: string
+    default: "encoded-joy-485413-k5"
+
+  country:
+    type: string
+    default: "Kenya"
+
+  start_date:
+    type: string
+    default: "2023-06-01"
+
+  end_date:
+    type: string
+    default: "2025-06-30"

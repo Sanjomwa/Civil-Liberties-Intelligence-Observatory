@@ -53,7 +53,7 @@ WITH normalized AS (
         month,
         day
 
-    FROM `encoded-joy-485413-k5.stg.acled_conflict_events`
+    FROM `{{ var.project_id }}.stg.acled_conflict_events`
 
     WHERE event_date IS NOT NULL
 ),

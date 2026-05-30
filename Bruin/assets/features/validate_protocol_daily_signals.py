@@ -23,13 +23,17 @@ materialization:
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 
 import pandas as pd
 from google.cloud import bigquery
 
 
-PROJECT_ID = "encoded-joy-485413-k5"
+PROJECT_ID = os.getenv(
+    "GOOGLE_CLOUD_PROJECT",
+    "encoded-joy-485413-k5"
+)
 TABLE_ID = f"{PROJECT_ID}.features.protocol_daily_signals"
 
 REQUIRED_COLUMNS = {

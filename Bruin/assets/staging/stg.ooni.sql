@@ -69,6 +69,6 @@ SELECT
   SAFE_CAST(extracted_at AS TIMESTAMP) AS extracted_at,
   raw_test_keys,
   raw_measurement
-FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.ooni_measurements`
+FROM `{{ var.project_id }}.{{ var.bq_dataset }}.ooni_measurements`
 WHERE probe_cc = 'KE'
   AND COALESCE(measurement_id, raw_measurement) IS NOT NULL;

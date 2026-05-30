@@ -32,7 +32,7 @@ columns:
 
 WITH measurements AS (
   SELECT *
-  FROM `encoded-joy-485413-k5.stg.ooni_measurements`
+  FROM `{{ var.project_id }}.stg.ooni_measurements`
 ),
 
 queries AS (

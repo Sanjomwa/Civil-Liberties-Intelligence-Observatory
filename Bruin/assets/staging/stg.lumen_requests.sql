@@ -25,7 +25,7 @@ WITH base AS (
         item_count,
         TIMESTAMP(extracted_at) AS extracted_at
 
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.lumen_requests`
+    FROM `{{ var.project_id }}.{{ var.bq_dataset }}.lumen_requests`
 
     WHERE LOWER(country) IN ('ke','kenya')
       AND date_submitted IS NOT NULL

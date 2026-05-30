@@ -36,7 +36,7 @@ WITH base AS (
                 THEN DATE(CAST(REGEXP_EXTRACT(time_period, r'(\d{4})') AS INT64), 12, 1)
             ELSE SAFE.PARSE_DATE('%Y-%m', time_period)
         END AS period_date
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.google_transparency_requests`
+    FROM `{{ var.project_id }}.{{ var.bq_dataset }}.google_transparency_requests`
     WHERE country = 'Kenya'
        OR cldr_territory = 'KE'
 ),

@@ -43,7 +43,7 @@ WITH pressure_windowed AS (
             )
         ) AS z_pressure
 
-    FROM `encoded-joy-485413-k5.marts.fact_country_pressure_daily`
+    FROM `{{ var.project_id }}.marts.fact_country_pressure_daily`
 
     WHERE iso2 = 'KE'
 ),
@@ -93,7 +93,7 @@ protocol_relationships AS (
             AS intelligence_version
 
     FROM
-        `encoded-joy-485413-k5.intelligence.protocol_relationships`
+        `{{ var.project_id }}.intelligence.protocol_relationships`
 
     WHERE country = 'KE'
 
@@ -137,7 +137,7 @@ joined AS (
         pv.pressure_window_stddev
 
     FROM
-        `encoded-joy-485413-k5.reporting.mart_protocol_interference_trends` p
+        `{{ var.project_id }}.reporting.mart_protocol_interference_trends` p
 
     LEFT JOIN pressure_variance pv
         ON p.date_key = pv.measurement_date

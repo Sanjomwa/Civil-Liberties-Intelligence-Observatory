@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.express as px
 
 from core.state import init_state
+from core.config import COUNTRY
 from core.filters import render_sidebar
 from core.theme import apply_layout
 from services.marts import get_event_explorer
@@ -51,7 +52,7 @@ st.title("🧭 Suppression Event Explorer")
 
 st.caption("""
 Investigate synchronized censorship escalation windows
-across Kenya's protocol surface.
+across {COUNTRY}'s protocol surface.
 
 This page reconstructs suppression episodes by aligning:
 

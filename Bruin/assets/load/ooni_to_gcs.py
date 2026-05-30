@@ -31,7 +31,10 @@ import pandas as pd
 from google.cloud import bigquery, storage
 
 
-PROJECT_ID = "encoded-joy-485413-k5"
+PROJECT_ID = os.getenv(
+    "GOOGLE_CLOUD_PROJECT",
+    "encoded-joy-485413-k5"
+)
 GCS_BUCKET = "civil-liberties-data"
 LOCAL_FILE = Path(
     "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/ooni/ooni_measurements.parquet"

@@ -36,7 +36,7 @@ columns:
 
 WITH features AS (
   SELECT *
-  FROM `encoded-joy-485413-k5.features.protocol_daily_signals`
+  FROM `{{ var.project_id }}.features.protocol_daily_signals`
 ),
 
 guardrails AS (

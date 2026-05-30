@@ -3,6 +3,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 
+from core.config import COUNTRY
 from core.state import init_state
 from core.filters import render_sidebar
 from core.theme import apply_layout, stress_color
@@ -59,7 +60,7 @@ latest = df.iloc[-1]
 st.title("National Stress Observatory")
 
 st.caption(
-    "Country-level digital suppression pressure across Kenya "
+    f"Country-level digital suppression pressure across {COUNTRY} "
     "(June 2023 – June 2025)"
 )
 
@@ -117,8 +118,8 @@ if latest["baseline_days_30d"] < 14:
 
 st.subheader("National Digital Pressure Trend")
 
-st.markdown("""
-This chart compares Kenya's **observed national digital pressure**
+st.markdown(f"""
+This chart compares {COUNTRY}'s **observed national digital pressure**
 against its **historical baseline trend**.
 
 **How to read this**
@@ -238,8 +239,8 @@ st.plotly_chart(
 )
 
 st.caption(
-    "Higher values indicate stronger evidence that observed "
-    "network conditions diverge from Kenya's normal baseline."
+    f"Higher values indicate stronger evidence that observed "
+    f"network conditions diverge from {COUNTRY}'s normal baseline."
 )
 
 st.divider()

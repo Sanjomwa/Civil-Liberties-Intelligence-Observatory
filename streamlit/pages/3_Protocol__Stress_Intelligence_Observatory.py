@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from components.trust import render_trust_strip
+from core.config import COUNTRY
 from core.filters import render_sidebar
 from core.state import init_state
 from core.theme import apply_layout
@@ -79,9 +80,9 @@ latest = df.iloc[-1]
 st.title("🔗 Protocol Stress Intelligence Observatory")
 
 st.caption(
-    """
+    f"""
 Tracks protocol-level anomaly pressure, escalation behavior,
-and statistical confidence across Kenya's censorship surface.
+and statistical confidence across {COUNTRY}'s censorship surface.
 """
 )
 

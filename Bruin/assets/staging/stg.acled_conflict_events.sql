@@ -45,7 +45,7 @@ WITH parsed AS (
             week
         ) AS event_date
 
-    FROM `encoded-joy-485413-k5.{{ var.bq_dataset }}.acled_conflict_events`
+    FROM `{{ var.project_id }}.{{ var.bq_dataset }}.acled_conflict_events`
 )
 
 SELECT

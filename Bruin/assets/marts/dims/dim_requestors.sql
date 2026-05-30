@@ -33,7 +33,7 @@ WITH all_requestors AS (
     SELECT
         TRIM(requestor) AS requestor_name,
         'GOOGLE_TRANSPARENCY' AS source
-    FROM `encoded-joy-485413-k5.stg.google_transparency_requests`
+    FROM `{{ var.project_id }}.stg.google_transparency_requests`
     WHERE requestor IS NOT NULL
 
     UNION DISTINCT
@@ -41,7 +41,7 @@ WITH all_requestors AS (
     SELECT
         TRIM(sender) AS requestor_name,
         'LUMEN' AS source
-    FROM `encoded-joy-485413-k5.stg.lumen_requests`
+    FROM `{{ var.project_id }}.stg.lumen_requests`
     WHERE sender IS NOT NULL
 ),
 
