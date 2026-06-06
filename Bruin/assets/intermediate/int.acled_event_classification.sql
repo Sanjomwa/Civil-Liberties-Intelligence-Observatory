@@ -459,9 +459,12 @@ classified AS (
         -- Separated from classification_confidence. See Principle 5.
         -- ────────────────────────────────────────────────────────────────────
         CASE
-            WHEN event_type = 'Strategic developments' THEN 'HIGH'
-            WHEN event_type = 'UNCLASSIFIED'           THEN 'HIGH'
-            ELSE                                            'LOW'
+            WHEN event_type IN ('Protests', 'Riots', 'Battles', 'Violence against civilians', 'Explosions/Remote violence')
+                THEN 'LOW'
+            WHEN event_type IN ('Strategic developments', 'UNCLASSIFIED')
+                THEN 'HIGH'
+            ELSE
+                'HIGH' -- default to HIGH for any unexpected cases
         END AS methodology_risk_level,
 
         -- ────────────────────────────────────────────────────────────────────
