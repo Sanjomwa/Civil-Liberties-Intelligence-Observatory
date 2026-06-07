@@ -453,21 +453,6 @@ classified AS (
         END AS classification_confidence,
 
         -- ────────────────────────────────────────────────────────────────────
-        -- METHODOLOGY RISK LEVEL
-        -- Cross-country ACLED methodology variation risk.
-        -- Operationalises ACLED-RQ-004 at row level.
-        -- Separated from classification_confidence. See Principle 5.
-        -- ────────────────────────────────────────────────────────────────────
-        CASE
-            WHEN event_type IN ('Protests', 'Riots', 'Battles', 'Violence against civilians', 'Explosions/Remote violence')
-                THEN 'LOW'
-            WHEN event_type IN ('Strategic developments', 'UNCLASSIFIED')
-                THEN 'HIGH'
-            ELSE
-                'HIGH' -- default to HIGH for any unexpected cases
-        END AS methodology_risk_level,
-
-        -- ────────────────────────────────────────────────────────────────────
         -- CLASSIFICATION NOTE
         -- Explains what happened in this specific classification.
         -- NULL for unambiguous single-contribution rows.
@@ -500,12 +485,33 @@ classified AS (
 
 ),
 
--- Derive is_ambiguous_event after full classification is complete
-with_ambiguity AS (
+-- Derive methodology_risk_level and is_ambiguous_event after classified CTE
+-- so that methodology_risk_level can correctly reference pressure_domain.
+-- Fix: WHEN pressure_domain = 'UNCLASSIFIED' (not event_type = 'UNCLASSIFIED',
+-- which could never match — UNCLASSIFIED is a KCLIO value, not an ACLED value).
+with_risk AS (
 
     SELECT
         *,
-        (classification_confidence = 'LOW') AS is_ambiguous_event
+
+        -- ────────────────────────────────────────────────────────────────────
+        -- METHODOLOGY RISK LEVEL
+        -- Cross-country ACLED methodology variation risk.
+        -- Operationalises ACLED-RQ-004 at row level.
+        -- Separated from classification_confidence. See Principle 5.
+        -- Computed here (not in classified CTE) so it can reference
+        -- pressure_domain, which is derived in classified.
+        -- ────────────────────────────────────────────────────────────────────
+        CASE
+            WHEN event_type     = 'Strategic developments' THEN 'HIGH'
+            WHEN pressure_domain = 'UNCLASSIFIED'          THEN 'HIGH'
+            ELSE                                                'LOW'
+        END AS methodology_risk_level,
+
+        -- Derived after classification_confidence is available.
+        -- Mirrors high_unknown_flag pattern in OONI pipeline.
+        (classification_confidence = 'LOW')                AS is_ambiguous_event
+
     FROM classified
 
 )
@@ -570,4 +576,4 @@ SELECT
     month,
     day
 
-FROM with_ambiguity;
+FROM with_risk;
