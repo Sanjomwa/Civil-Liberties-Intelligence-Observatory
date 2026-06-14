@@ -19,6 +19,10 @@ variables:
     type: string
     default: "Kenya"
 
+  iso2:
+    type: string
+    default: "KE"
+
   start_date:
     type: string
     default: "2023-06-01"
