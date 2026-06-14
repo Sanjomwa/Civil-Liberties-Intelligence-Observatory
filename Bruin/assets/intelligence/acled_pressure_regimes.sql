@@ -125,6 +125,9 @@ columns:
     checks:
       - name: not_null
 
+  - name: data_grain
+    type: string
+
   - name: primary_regime
     type: string
     description: |
@@ -139,15 +142,108 @@ columns:
     checks:
       - name: not_null
 
+  - name: methodology_caveat_required
+    type: boolean
+
   - name: transition_detected
     type: boolean
     checks:
       - name: not_null
 
+  - name: previous_regime
+    type: string
+
+  - name: regime_duration_weeks
+    type: integer
+
+  - name: transition_type
+    type: string
+
+  - name: transition_significance
+    type: string
+
+  - name: transition_confidence
+    type: string
+
+  - name: escalation_entry_pathway
+    type: string
+
+  - name: secondary_regime_characteristics
+    type: string
+
+  - name: pre_transition_flag
+    type: boolean
+
+  - name: pre_transition_target
+    type: string
+
+  - name: regime_continuation_flag
+    type: boolean
+
+  - name: regime_held_by_exit_persistence
+    type: boolean
+
+  - name: protest_band
+    type: string
+
+  - name: violence_band
+    type: string
+
+  - name: suppression_band
+    type: string
+
+  - name: disorder_band
+    type: string
+
+  - name: velocity_band
+    type: string
+
+  - name: conversion_band
+    type: string
+
+  - name: classification_reason
+    type: string
+
+  - name: regime_explanation
+    type: string
+
+  - name: supporting_signal_summary
+    type: string
+
+  - name: thresholds_active_json
+    type: string
+
+  - name: fallback_used
+    type: boolean
+
+  - name: consecutive_lower_weeks
+    type: integer
+
+  - name: consecutive_invalid_weeks
+    type: integer
+
+  - name: is_first_observation_week
+    type: boolean
+
+  - name: weeks_in_current_regime
+    type: integer
+
   - name: regime_methodology_version
     type: string
     checks:
       - name: not_null
+
+  - name: feature_version
+    type: string
+
+  - name: classification_methodology_version
+    type: string
+
+  - name: severity_methodology_version
+    type: string
+
+  - name: computed_at
+    type: timestamp
 @bruin */
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -1633,12 +1729,16 @@ SELECT
     sa.is_first_observation_week,
 
     -- ── PERSISTENCE STATE FOR NEXT WEEK'S LAG JOIN ──────────────────────
-    -- These must match the column names read by persistence_context (CTE-03)
+    -- weeks_in_current_regime is the only column needed here that is not
+    -- already emitted above under its own name/alias. pre_transition_flag,
+    -- pre_transition_target, consecutive_lower_weeks, and
+    -- consecutive_invalid_weeks are each emitted exactly once already
+    -- (PERSISTENCE FLAGS / AUDIT FIELDS sections above) and map 1:1 to the
+    -- single corresponding column in the merge target DDL. Re-emitting them
+    -- here would duplicate column names in the SELECT output, which causes
+    -- positional column misalignment against the merge target (observed as
+    -- a null-majority materialised table).
     sa.weeks_in_current_regime,                   -- raw column for self-join (same value as regime_duration_weeks)
-    sa.pre_transition_flag,
-    sa.pre_transition_target,
-    sa.consecutive_lower_weeks,
-    sa.consecutive_invalid_weeks,
 
     -- ── VERSION ──────────────────────────────────────────────────────────
     sa.regime_methodology_version,
