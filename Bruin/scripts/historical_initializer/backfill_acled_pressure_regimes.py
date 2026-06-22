@@ -68,7 +68,6 @@ authenticated against the target project before running.
 """
 
 import argparse
-import json
 import logging
 import subprocess
 import sys
