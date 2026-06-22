@@ -98,6 +98,13 @@ description: |
     coexistence of exit-persistence and validity-gap continuation flags,
     the intentionally-redundant OR in the duration computation, and the
     persistence/execution-contract assumptions.
+  - CTE-02 (source_features): added optional target_week filter to support
+    sequential historical backfill via backfill_acled_pressure_regimes.py.
+    When target_week = '' (the default), behaviour is IDENTICAL to all
+    prior versions of this asset. No classification logic changes.
+    target_week is declared in pipeline.yml (variables block) — NOT in
+    this asset's @bruin header (Bruin does not support per-asset variable
+    declarations; variables are pipeline-scoped).
 
 depends:
   - features.acled_pressure_signals
@@ -290,6 +297,13 @@ WITH regime_thresholds AS (
 -- Single read from features.acled_pressure_signals for target country.
 -- All feature-layer fields are consumed as authoritative.
 -- The intelligence layer DOES NOT recompute any z-score or baseline.
+--
+-- TARGET_WEEK FILTER: when target_week = '' (default, steady-state), the
+-- second condition is always TRUE — the filter is a no-op and behaviour is
+-- identical to all prior versions of this asset. When target_week is set
+-- (sequential backfill mode), exactly one week's row is returned, which is
+-- the precondition for correct single-week persistence chaining. This is
+-- the ONLY part of this asset that is aware of the backfill variable.
 -- ═══════════════════════════════════════════════════════════════════════════
 source_features AS (
     SELECT
@@ -339,6 +353,10 @@ source_features AS (
 
     FROM `{{ var.project_id }}.features.acled_pressure_signals`
     WHERE country = '{{ var.country }}'
+      AND (
+            '{{ var.target_week }}' = ''
+            OR week_start_date = SAFE.PARSE_DATE('%Y-%m-%d', '{{ var.target_week }}')
+          )
 ),
 
 -- ═══════════════════════════════════════════════════════════════════════════

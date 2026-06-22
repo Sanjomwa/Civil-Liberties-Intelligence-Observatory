@@ -30,3 +30,14 @@ variables:
   end_date:
     type: string
     default: "2025-06-30"
+
+  target_week:
+    type: string
+    default: ""
+    # Optional. Used exclusively by backfill_acled_pressure_regimes.py for
+    # sequential historical replay of intelligence.acled_pressure_regimes.
+    # When "" (the default), the asset processes all available weeks for the
+    # target country — identical to all prior behaviour. When set to an ISO
+    # date string (e.g. "2024-06-22"), CTE-02 returns exactly that one week,
+    # satisfying the single-week-per-execution persistence contract.
+    # MUST be left as "" for all normal steady-state weekly pipeline runs.
