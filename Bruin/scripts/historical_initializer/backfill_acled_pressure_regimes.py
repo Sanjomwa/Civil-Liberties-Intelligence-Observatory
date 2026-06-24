@@ -50,7 +50,7 @@ USAGE
         --project-id encoded-joy-485413-k5 \\
         --country Kenya \\
         --iso2 KE \\
-        --asset-path pipelines/civil_liberties_pipeline/assets/intelligence/acled_pressure_regimes.sql \\
+        --asset-path assets/intelligence/acled_pressure_regimes.sql \\
         --mode HISTORICAL_BACKFILL
 
     # Dry run (no Bruin invocations, no BigQuery writes):
@@ -63,12 +63,13 @@ DEPENDENCIES
 ------------
     pip install google-cloud-bigquery
 
-The script shells out to `bruin` CLI — ensure `bruin` is on PATH and
+The script shells out to `bruin` CLI -- ensure `bruin` is on PATH and
 authenticated against the target project before running.
 """
 
 import argparse
 import logging
+import os
 import subprocess
 import sys
 import uuid
@@ -77,7 +78,7 @@ from typing import Optional
 
 from google.cloud import bigquery
 
-# ─── Constants ────────────────────────────────────────────────────────────────
+# --- Constants ----------------------------------------------------------------
 
 METHODOLOGY_VERSION = "ACLED_REGIME_ENGINE_V1"  # Must match CTE-01 literal
 STATUS_TABLE = "intelligence.country_initialization_status"
@@ -85,10 +86,14 @@ INTELLIGENCE_TABLE = "intelligence.acled_pressure_regimes"
 FEATURES_TABLE = "features.acled_pressure_signals"
 
 # A lock is considered stale if last_updated_at is older than this (seconds).
-# Set generously: 2 hours >> expected per-week Bruin invocation time.
 STALE_LOCK_THRESHOLD_SECONDS = 7200
 
-# Logging format includes timestamp, level, and message.
+# Debug SQL log: every MERGE statement is written here before execution.
+# Allows inspection of the exact SQL BigQuery rejects on a type error.
+# Set to None to disable file logging once debugging is complete.
+DEBUG_SQL_LOG = os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), "debug_sql.log")
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(message)s",
@@ -97,7 +102,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-# ─── SQL Queries ──────────────────────────────────────────────────────────────
+# --- SQL Queries --------------------------------------------------------------
 
 def sql_get_status(project_id: str, country: str) -> str:
     """Read current initialization status for a country."""
@@ -137,9 +142,7 @@ def sql_get_max_committed_week(project_id: str, country: str) -> str:
     """
 
 
-def sql_confirm_week_committed(
-    project_id: str, country: str, week: str
-) -> str:
+def sql_confirm_week_committed(project_id: str, country: str, week: str) -> str:
     """Check whether a specific week exists in the intelligence table."""
     return f"""
         SELECT COUNT(*) AS row_count
@@ -158,7 +161,7 @@ def sql_upsert_status(
     mode: str,
     earliest_week: Optional[str],
     total_weeks: Optional[int],
-    latest_week_backfilled: Optional[str] = None,
+    latest_week_backfilled=None,
     weeks_completed: Optional[int] = None,
     started_at: Optional[str] = None,
     initialized_at: Optional[str] = None,
@@ -167,55 +170,51 @@ def sql_upsert_status(
 ) -> str:
     """
     Upsert (MERGE) a country row into country_initialization_status.
-    Used for all status transitions: lock acquisition, per-week checkpoint,
-    completion, and failure.
 
     TYPE CASTING NOTE:
-    BigQuery's MERGE...USING clause infers column types from the SELECT
-    expressions. Plain quoted string literals are typed as STRING, which
-    BigQuery will not implicitly cast to DATE or TIMESTAMP. All DATE and
-    TIMESTAMP columns must be wrapped in explicit DATE() / TIMESTAMP()
-    casts. STRING and INT64 columns use plain literals.
+    BigQuery MERGE...USING infers column types from SELECT expressions.
+    Plain quoted strings are typed STRING -- BigQuery will NOT implicitly
+    cast STRING to DATE or TIMESTAMP in a MERGE USING clause.
+    Each column type uses an explicit typed helper below.
     """
     now = datetime.now(timezone.utc).isoformat()
 
     def str_val(v) -> str:
-        """STRING column: single-quoted literal or NULL."""
+        """STRING: single-quoted literal or NULL."""
         if v is None:
             return "NULL"
         escaped = str(v).replace("'", "\\'")
         return f"'{escaped}'"
 
     def date_val(v) -> str:
-        """DATE column: DATE('YYYY-MM-DD') or NULL.
-        Accepts str, datetime.date, or None.
-        BigQuery client returns DATE columns as datetime.date objects,
-        not strings — both are handled here.
+        """DATE: DATE('YYYY-MM-DD') or NULL.
+        Handles str, datetime.date (returned by BigQuery client), or None.
         """
         if v is None:
             return "NULL"
-        if hasattr(v, 'isoformat'):
-            date_str = v.isoformat()
+        # BigQuery client returns DATE columns as datetime.date objects
+        if hasattr(v, "isoformat"):
+            s = v.isoformat()
         else:
-            date_str = str(v)
-        escaped = date_str.replace("'", "\\'")
+            s = str(v)
+        escaped = s.replace("'", "\\'")
         return f"DATE('{escaped}')"
 
     def ts_val(v) -> str:
-        """TIMESTAMP column: TIMESTAMP('...') or NULL.
-        Accepts str, datetime.datetime, or None.
+        """TIMESTAMP: TIMESTAMP('...') or NULL.
+        Handles str, datetime.datetime, or None.
         """
         if v is None:
             return "NULL"
-        if hasattr(v, 'isoformat'):
-            ts_str = v.isoformat()
+        if hasattr(v, "isoformat"):
+            s = v.isoformat()
         else:
-            ts_str = str(v)
-        escaped = ts_str.replace("'", "\\'")
+            s = str(v)
+        escaped = s.replace("'", "\\'")
         return f"TIMESTAMP('{escaped}')"
 
-    def int_val(v: Optional[int]) -> str:
-        """INT64 column: bare integer literal or NULL."""
+    def int_val(v) -> str:
+        """INT64: bare integer literal or NULL."""
         if v is None:
             return "NULL"
         return str(int(v))
@@ -269,23 +268,39 @@ def sql_upsert_status(
     """
 
 
-# ─── BigQuery helpers ─────────────────────────────────────────────────────────
+# --- BigQuery helpers ---------------------------------------------------------
 
 def bq_query(client: bigquery.Client, sql: str) -> list[dict]:
-    """Execute a query and return all rows as a list of dicts."""
+    """Execute a SELECT query and return all rows as a list of dicts."""
     result = client.query(sql).result()
     return [dict(row) for row in result]
 
 
 def bq_execute(client: bigquery.Client, sql: str, dry_run: bool = False) -> None:
-    """Execute a DML statement (INSERT/MERGE/UPDATE). No-op in dry_run mode."""
+    """Execute a DML statement (MERGE/INSERT/UPDATE). No-op in dry_run mode.
+
+    DEBUG: writes every SQL statement to debug_sql.log before submitting
+    to BigQuery. This lets you inspect the exact MERGE text that BigQuery
+    rejects on a type error. Remove the logging block once stable.
+    """
     if dry_run:
         log.info("[DRY RUN] Would execute:\n%s", sql.strip()[:300])
         return
+
+    # -- DEBUG SQL logging -----------------------------------------------------
+    if DEBUG_SQL_LOG:
+        with open(DEBUG_SQL_LOG, "a") as f:
+            f.write("\n" + "=" * 70 + "\n")
+            f.write(f"TIMESTAMP: {datetime.now(timezone.utc).isoformat()}\n")
+            f.write(sql)
+            f.write("\n" + "=" * 70 + "\n")
+        log.info("SQL logged to %s", DEBUG_SQL_LOG)
+    # -- END DEBUG -------------------------------------------------------------
+
     client.query(sql).result()
 
 
-# ─── Lock acquisition ─────────────────────────────────────────────────────────
+# --- Lock acquisition ---------------------------------------------------------
 
 def acquire_lock(
     client: bigquery.Client,
@@ -301,9 +316,8 @@ def acquire_lock(
 ) -> dict:
     """
     Acquire the IN_PROGRESS lock for this country.
-
     Returns the existing status row (or empty dict if no row existed).
-    Raises RuntimeError if lock cannot be acquired safely.
+    Raises RuntimeError if the lock cannot be acquired safely.
     """
     rows = bq_query(client, sql_get_status(project_id, country))
     existing = rows[0] if rows else {}
@@ -312,15 +326,14 @@ def acquire_lock(
 
     if status == "IN_PROGRESS":
         if last_updated:
-            age_seconds = (
-                datetime.now(timezone.utc) - last_updated
-            ).total_seconds()
+            age_seconds = (datetime.now(timezone.utc) -
+                           last_updated).total_seconds()
             if age_seconds < STALE_LOCK_THRESHOLD_SECONDS and not force_recover:
                 raise RuntimeError(
                     f"Country '{country}' is already IN_PROGRESS "
                     f"(run_id={existing.get('initialization_run_id')}, "
                     f"last_updated={last_updated}). "
-                    f"If this is a stale lock, re-run with --force-recover-stale-lock."
+                    f"If stale, re-run with --force-recover-stale-lock."
                 )
             log.warning(
                 "Recovering stale IN_PROGRESS lock for '%s' "
@@ -335,10 +348,8 @@ def acquire_lock(
                     f"Use --force-recover-stale-lock to override."
                 )
 
-    log.info(
-        "Acquiring lock for '%s' (run_id=%s, mode=%s).",
-        country, run_id, mode,
-    )
+    log.info("Acquiring lock for '%s' (run_id=%s, mode=%s).",
+             country, run_id, mode)
 
     started_at = datetime.now(timezone.utc).isoformat()
     bq_execute(
@@ -358,11 +369,10 @@ def acquire_lock(
         ),
         dry_run=dry_run,
     )
-
     return existing
 
 
-# ─── Resume point determination ───────────────────────────────────────────────
+# --- Resume point determination -----------------------------------------------
 
 def determine_resume_point(
     client: bigquery.Client,
@@ -374,17 +384,13 @@ def determine_resume_point(
 ) -> int:
     """
     Determine which index in ordered_weeks to start (or resume) from.
-
-    Uses latest_week_backfilled from the status table as the primary checkpoint,
-    cross-checked against MAX(week_start_date) from the intelligence table.
-    Returns the index of the first week that has NOT yet been committed.
+    Returns the index of the first week NOT yet committed.
     """
     status_checkpoint = existing_status.get("latest_week_backfilled")
-
     rows = bq_query(client, sql_get_max_committed_week(project_id, country))
     table_max = rows[0]["max_week"] if rows else None
 
-    # Normalise to string for comparison (BigQuery returns datetime.date objects)
+    # Normalise to string (BigQuery returns datetime.date objects)
     status_str = str(status_checkpoint) if status_checkpoint else None
     table_str = str(table_max) if table_max else None
 
@@ -395,14 +401,10 @@ def determine_resume_point(
 
     if status_str != table_str:
         log.warning(
-            "CHECKPOINT MISMATCH: status table says '%s', "
-            "intelligence table says '%s'. "
-            "This may indicate the intelligence table was truncated or "
-            "externally modified after the last checkpoint write. "
-            "Trusting intelligence table max as the authoritative state.",
+            "CHECKPOINT MISMATCH: status table='%s', intelligence table='%s'. "
+            "Trusting intelligence table as authoritative.",
             status_str, table_str,
         )
-        # Use intelligence table as ground truth — it's the actual output.
         authoritative = table_str
     else:
         authoritative = status_str
@@ -411,7 +413,6 @@ def determine_resume_point(
         log.info("No prior progress found. Starting from week 1.")
         return 0
 
-    # Find index of the authoritative checkpoint in ordered_weeks
     try:
         idx = ordered_weeks.index(authoritative)
     except ValueError:
@@ -422,16 +423,18 @@ def determine_resume_point(
         )
 
     resume_idx = idx + 1
-    log.info(
-        "Resuming from week %d/%d (%s).",
-        resume_idx + 1, len(ordered_weeks),
-        ordered_weeks[resume_idx] if resume_idx < len(
-            ordered_weeks) else "N/A",
-    )
+    if resume_idx < len(ordered_weeks):
+        log.info(
+            "Resuming from week %d/%d (%s).",
+            resume_idx + 1, len(ordered_weeks), ordered_weeks[resume_idx],
+        )
+    else:
+        log.info("All %d weeks already present in intelligence table.",
+                 len(ordered_weeks))
     return resume_idx
 
 
-# ─── Bruin invocation ─────────────────────────────────────────────────────────
+# --- Bruin invocation ---------------------------------------------------------
 
 def invoke_bruin(
     asset_path: str,
@@ -444,10 +447,6 @@ def invoke_bruin(
     """
     Invoke `bruin run <asset> --var ...` for a single week.
     Returns True on success (exit code 0), False on failure.
-
-    NOTE on --var quoting: Bruin requires JSON-quoted strings for string
-    variables, e.g. --var country='"Kenya"' (the value must be a JSON string,
-    not a bare word). This is documented in Bruin's variable override docs.
     """
     cmd = [
         "bruin", "run", asset_path,
@@ -462,17 +461,12 @@ def invoke_bruin(
         return True
 
     log.info("Invoking Bruin for week %s ...", week)
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-    )
+    result = subprocess.run(cmd, capture_output=True, text=True)
 
     if result.returncode != 0:
         log.error(
             "Bruin FAILED for week %s (exit=%d).\nSTDOUT:\n%s\nSTDERR:\n%s",
             week, result.returncode,
-            # Truncate to last 2000 chars for log sanity
             result.stdout[-2000:],
             result.stderr[-2000:],
         )
@@ -482,7 +476,7 @@ def invoke_bruin(
     return True
 
 
-# ─── Per-week commit confirmation ─────────────────────────────────────────────
+# --- Per-week commit confirmation ---------------------------------------------
 
 def confirm_week_committed(
     client: bigquery.Client,
@@ -491,32 +485,24 @@ def confirm_week_committed(
     week: str,
     dry_run: bool,
 ) -> bool:
-    """
-    Verify that the week's row now exists in intelligence.acled_pressure_regimes.
-    This closes the gap between 'Bruin exited 0' and 'the MERGE actually wrote'.
-    """
+    """Verify the week's row exists in intelligence.acled_pressure_regimes."""
     if dry_run:
         return True
 
-    rows = bq_query(
-        client,
-        sql_confirm_week_committed(project_id, country, week)
-    )
+    rows = bq_query(client, sql_confirm_week_committed(
+        project_id, country, week))
     count = rows[0]["row_count"] if rows else 0
 
     if count == 0:
         log.error(
-            "COMMIT CONFIRMATION FAILED: week %s not found in "
-            "intelligence.acled_pressure_regimes after Bruin exit=0. "
-            "Possible BigQuery merge failure or schema mismatch.",
+            "COMMIT CONFIRMATION FAILED: week %s not found after Bruin exit=0.",
             week,
         )
         return False
-
     return True
 
 
-# ─── Main loop ────────────────────────────────────────────────────────────────
+# --- Main loop ----------------------------------------------------------------
 
 def run_backfill(
     project_id: str,
@@ -530,21 +516,8 @@ def run_backfill(
 ) -> None:
     """
     Main backfill orchestration loop.
-
-    Responsibilities (in order):
-      1. Connect to BigQuery.
-      2. Fetch ordered week list.
-      3. Acquire lock (with stale-lock recovery if needed).
-      4. Determine resume point; sync status checkpoint if mismatched.
-      5. Iterate: invoke Bruin, confirm commit, checkpoint.
-      6. Write COMPLETE on success or max_weeks reached, FAILED on any error.
-
-    max_weeks (int | None):
-      When set, the driver stops after total weeks_completed reaches this
-      value (cumulative across runs). The status is written as IN_PROGRESS
-      (not COMPLETE) when stopping mid-backfill via --max-weeks, so a
-      subsequent run picks up correctly. COMPLETE is only written when all
-      weeks have been processed.
+    max_weeks: stop after this many cumulative weeks (staged rollout support).
+    COMPLETE is only written when all weeks are processed.
     """
     client = bigquery.Client(project=project_id)
     run_id = str(uuid.uuid4())
@@ -554,25 +527,21 @@ def run_backfill(
         country, iso2, mode, run_id, dry_run,
     )
 
-    # ── 1. Fetch ordered weeks ────────────────────────────────────────────────
+    # 1. Fetch ordered weeks
     log.info("Fetching ordered week list from features table ...")
     week_rows = bq_query(client, sql_get_ordered_weeks(project_id, country))
     if not week_rows:
         raise RuntimeError(
-            f"No weeks found in {FEATURES_TABLE} for country='{country}'. "
-            f"Verify the feature table is populated before running backfill."
+            f"No weeks found in {FEATURES_TABLE} for country='{country}'."
         )
     ordered_weeks = [str(r["week_start_date"]) for r in week_rows]
     total_weeks = len(ordered_weeks)
     earliest_week = ordered_weeks[0]
     latest_week = ordered_weeks[-1]
+    log.info("Found %d weeks: %s -> %s.",
+             total_weeks, earliest_week, latest_week)
 
-    log.info(
-        "Found %d weeks: %s → %s.",
-        total_weeks, earliest_week, latest_week,
-    )
-
-    # ── 2. Acquire lock ───────────────────────────────────────────────────────
+    # 2. Acquire lock
     existing_status = acquire_lock(
         client=client,
         project_id=project_id,
@@ -586,7 +555,7 @@ def run_backfill(
         dry_run=dry_run,
     )
 
-    # ── 3. Determine resume point ─────────────────────────────────────────────
+    # 3. Determine resume point
     resume_idx = determine_resume_point(
         client=client,
         project_id=project_id,
@@ -599,11 +568,9 @@ def run_backfill(
     weeks_to_process = ordered_weeks[resume_idx:]
     weeks_already_done = resume_idx
 
-    # ── Checkpoint sync (Q1 fix) ──────────────────────────────────────────────
-    # If determine_resume_point resolved a mismatch by trusting the intelligence
-    # table over the status table, sync the status table now before entering the
-    # loop — so a second crash produces a clean resume rather than another mismatch.
-    # This is a no-op when both checkpoints already agree.
+    # Checkpoint sync: if mismatch was resolved by trusting the intelligence
+    # table, write the corrected checkpoint before entering the loop so a
+    # second crash resumes cleanly without another mismatch warning.
     if resume_idx > 0:
         authoritative_checkpoint = ordered_weeks[resume_idx - 1]
         bq_execute(
@@ -623,55 +590,45 @@ def run_backfill(
             dry_run=dry_run,
         )
         log.info(
-            "Checkpoint synced to '%s' (%d weeks) before entering loop.",
+            "Checkpoint synced to '%s' (%d weeks) before loop.",
             authoritative_checkpoint, resume_idx,
         )
 
     if not weeks_to_process:
-        log.info(
-            "All %d weeks already committed. Nothing to do. "
-            "Setting status to COMPLETE.",
-            total_weeks,
-        )
+        log.info("All %d weeks committed. Setting status to COMPLETE.", total_weeks)
         _write_complete(
             client, project_id, country, iso2, run_id, mode,
             earliest_week, latest_week, total_weeks, total_weeks, dry_run,
         )
         return
 
-    # Apply max_weeks ceiling (cumulative across runs).
-    # If max_weeks=100 and 25 weeks are already done, process 75 more.
+    # Apply max_weeks ceiling (cumulative across runs)
     if max_weeks is not None:
         remaining_budget = max_weeks - weeks_already_done
         if remaining_budget <= 0:
             log.info(
-                "max_weeks=%d already reached (%d done). Nothing to do this run.",
+                "max_weeks=%d already reached (%d done). Nothing to do.",
                 max_weeks, weeks_already_done,
             )
             return
         weeks_to_process = weeks_to_process[:remaining_budget]
         log.info(
-            "max_weeks=%d: will process up to %d weeks this run "
-            "(budget: %d, already done: %d).",
+            "max_weeks=%d: processing %d weeks this run (budget=%d, done=%d).",
             max_weeks, len(
                 weeks_to_process), remaining_budget, weeks_already_done,
         )
 
     log.info(
-        "%d weeks already done, %d to process this run (total expected: %d).",
+        "%d weeks already done, %d to process (total expected: %d).",
         weeks_already_done, len(weeks_to_process), total_weeks,
     )
 
-    # ── 4. Sequential loop ────────────────────────────────────────────────────
+    # 4. Sequential loop
     try:
         for i, week in enumerate(weeks_to_process):
-            global_idx = weeks_already_done + i + 1  # 1-based for logging
-            log.info(
-                "--- Week %d/%d | %s ---",
-                global_idx, total_weeks, week,
-            )
+            global_idx = weeks_already_done + i + 1
+            log.info("--- Week %d/%d | %s ---", global_idx, total_weeks, week)
 
-            # 4a. Invoke Bruin
             success = invoke_bruin(
                 asset_path=asset_path,
                 project_id=project_id,
@@ -681,12 +638,8 @@ def run_backfill(
                 dry_run=dry_run,
             )
             if not success:
-                raise RuntimeError(
-                    f"Bruin invocation failed for week {week}. "
-                    f"See error logs above."
-                )
+                raise RuntimeError(f"Bruin invocation failed for week {week}.")
 
-            # 4b. Confirm the row is committed
             committed = confirm_week_committed(
                 client=client,
                 project_id=project_id,
@@ -700,7 +653,6 @@ def run_backfill(
                     f"Bruin exited 0 but row not found in intelligence table."
                 )
 
-            # 4c. Write checkpoint
             bq_execute(
                 client,
                 sql_upsert_status(
@@ -717,10 +669,8 @@ def run_backfill(
                 ),
                 dry_run=dry_run,
             )
-            log.info(
-                "Checkpoint written: %d/%d weeks complete.",
-                global_idx, total_weeks,
-            )
+            log.info("Checkpoint written: %d/%d weeks complete.",
+                     global_idx, total_weeks)
 
     except Exception as exc:
         log.error("BACKFILL FAILED: %s", exc)
@@ -739,17 +689,13 @@ def run_backfill(
             ),
             dry_run=dry_run,
         )
-        log.error(
-            "=== BACKFILL FAILED | country=%s run_id=%s ===", country, run_id
-        )
+        log.error("=== BACKFILL FAILED | country=%s run_id=%s ===",
+                  country, run_id)
         sys.exit(1)
 
-    # ── 5. Write status after loop ────────────────────────────────────────────
+    # 5. Write final status
     final_weeks_done = weeks_already_done + len(weeks_to_process)
-    all_weeks_done = final_weeks_done >= total_weeks
-
-    if all_weeks_done:
-        # Every week has been committed — write COMPLETE.
+    if final_weeks_done >= total_weeks:
         _write_complete(
             client, project_id, country, iso2, run_id, mode,
             earliest_week, latest_week, total_weeks, final_weeks_done, dry_run,
@@ -759,10 +705,6 @@ def run_backfill(
             country, total_weeks, run_id,
         )
     else:
-        # Stopped early via --max-weeks. Status remains IN_PROGRESS so the
-        # next run picks up correctly. The last checkpoint write in the loop
-        # already recorded latest_week_backfilled; this log makes the
-        # staged-stop explicit.
         log.info(
             "=== STAGED STOP | country=%s weeks_done=%d/%d run_id=%s ===\n"
             "    Re-run without --max-weeks (or with a higher value) to continue.",
@@ -795,53 +737,27 @@ def _write_complete(
     )
 
 
-# ─── CLI ──────────────────────────────────────────────────────────────────────
+# --- CLI ----------------------------------------------------------------------
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Sequential historical backfill for intelligence.acled_pressure_regimes."
     )
-    parser.add_argument(
-        "--project-id", required=True,
-        help="GCP project ID (e.g. encoded-joy-485413-k5).",
-    )
-    parser.add_argument(
-        "--country", required=True,
-        help="Country name as it appears in features.acled_pressure_signals (e.g. Kenya).",
-    )
-    parser.add_argument(
-        "--iso2", required=True,
-        help="ISO 3166-1 alpha-2 country code (e.g. KE).",
-    )
-    parser.add_argument(
-        "--asset-path", required=True,
-        help="Relative path to acled_pressure_regimes.sql from the repo root "
-             "(e.g. pipelines/civil_liberties_pipeline/assets/intelligence/acled_pressure_regimes.sql).",
-    )
+    parser.add_argument("--project-id", required=True)
+    parser.add_argument("--country", required=True)
+    parser.add_argument("--iso2", required=True)
+    parser.add_argument("--asset-path", required=True)
     parser.add_argument(
         "--mode",
         choices=["HISTORICAL_BACKFILL",
                  "REBUILD_AFTER_METHOD_CHANGE", "REPAIR_AFTER_FAILURE"],
         default="HISTORICAL_BACKFILL",
-        help="Initialization mode recorded in country_initialization_status.",
     )
-    parser.add_argument(
-        "--dry-run", action="store_true",
-        help="Print all actions without executing Bruin invocations or BigQuery writes.",
-    )
-    parser.add_argument(
-        "--force-recover-stale-lock", action="store_true",
-        help="Override an existing IN_PROGRESS lock without checking staleness threshold.",
-    )
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--force-recover-stale-lock", action="store_true")
     parser.add_argument(
         "--max-weeks", type=int, default=None,
-        help=(
-            "Stop after this many weeks have been committed in total (cumulative "
-            "across runs, not just this run). Used for staged rollout. "
-            "Example: --max-weeks 25 stops when weeks_completed reaches 25. "
-            "A subsequent run with --max-weeks 100 resumes and stops at 100. "
-            "Omit to run to completion."
-        ),
+        help="Stop after this many cumulative weeks (staged rollout).",
     )
     return parser.parse_args()
 
