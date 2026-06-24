@@ -169,37 +169,75 @@ def sql_upsert_status(
     Upsert (MERGE) a country row into country_initialization_status.
     Used for all status transitions: lock acquisition, per-week checkpoint,
     completion, and failure.
+
+    TYPE CASTING NOTE:
+    BigQuery's MERGE...USING clause infers column types from the SELECT
+    expressions. Plain quoted string literals are typed as STRING, which
+    BigQuery will not implicitly cast to DATE or TIMESTAMP. All DATE and
+    TIMESTAMP columns must be wrapped in explicit DATE() / TIMESTAMP()
+    casts. STRING and INT64 columns use plain literals.
     """
     now = datetime.now(timezone.utc).isoformat()
 
-    def val(v, quote=True, nullable=True):
-        if v is None and nullable:
+    def str_val(v) -> str:
+        """STRING column: single-quoted literal or NULL."""
+        if v is None:
             return "NULL"
-        if quote:
-            escaped = str(v).replace("'", "\\'")
-            return f"'{escaped}'"
-        return str(v)
+        escaped = str(v).replace("'", "\\'")
+        return f"'{escaped}'"
+
+    def date_val(v) -> str:
+        """DATE column: DATE('YYYY-MM-DD') or NULL.
+        Accepts str, datetime.date, or None.
+        BigQuery client returns DATE columns as datetime.date objects,
+        not strings — both are handled here.
+        """
+        if v is None:
+            return "NULL"
+        if hasattr(v, 'isoformat'):
+            date_str = v.isoformat()
+        else:
+            date_str = str(v)
+        escaped = date_str.replace("'", "\\'")
+        return f"DATE('{escaped}')"
+
+    def ts_val(v) -> str:
+        """TIMESTAMP column: TIMESTAMP('...') or NULL.
+        Accepts str, datetime.datetime, or None.
+        """
+        if v is None:
+            return "NULL"
+        if hasattr(v, 'isoformat'):
+            ts_str = v.isoformat()
+        else:
+            ts_str = str(v)
+        escaped = ts_str.replace("'", "\\'")
+        return f"TIMESTAMP('{escaped}')"
+
+    def int_val(v: Optional[int]) -> str:
+        """INT64 column: bare integer literal or NULL."""
+        if v is None:
+            return "NULL"
+        return str(int(v))
 
     return f"""
         MERGE `{project_id}.{STATUS_TABLE}` T
         USING (
             SELECT
-                {val(country)}                      AS country,
-                {val(iso2)}                         AS iso2,
-                {val(status)}                       AS initialization_status,
-                {val(earliest_week)}                AS earliest_week_available,
-                {val(latest_week_backfilled)}       AS latest_week_backfilled,
-                {val(total_weeks, quote=False) if total_weeks is not None else "NULL"}
-                                                    AS total_weeks_expected,
-                {val(weeks_completed, quote=False) if weeks_completed is not None else "NULL"}
-                                                    AS weeks_completed,
-                {val(started_at)}                   AS started_at,
-                {val(initialized_at)}               AS initialized_at,
-                {val(now)}                          AS last_updated_at,
-                {val(initialized_under_version)}    AS initialized_under_version,
-                {val(mode)}                         AS initialization_mode,
-                {val(run_id)}                       AS initialization_run_id,
-                {val(error_message)}                AS error_message
+                {str_val(country)}                      AS country,
+                {str_val(iso2)}                         AS iso2,
+                {str_val(status)}                       AS initialization_status,
+                {date_val(earliest_week)}               AS earliest_week_available,
+                {date_val(latest_week_backfilled)}      AS latest_week_backfilled,
+                {int_val(total_weeks)}                  AS total_weeks_expected,
+                {int_val(weeks_completed)}              AS weeks_completed,
+                {ts_val(started_at)}                    AS started_at,
+                {ts_val(initialized_at)}                AS initialized_at,
+                {ts_val(now)}                           AS last_updated_at,
+                {str_val(initialized_under_version)}    AS initialized_under_version,
+                {str_val(mode)}                         AS initialization_mode,
+                {str_val(run_id)}                       AS initialization_run_id,
+                {str_val(error_message)}                AS error_message
         ) S ON T.country = S.country
         WHEN MATCHED THEN UPDATE SET
             initialization_status       = S.initialization_status,
