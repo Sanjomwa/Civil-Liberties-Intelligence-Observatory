@@ -34,7 +34,8 @@ EXECUTION MODEL
    c. Confirm the week's row now exists in intelligence.acled_pressure_regimes.
    d. Write checkpoint to country_initialization_status.
 5. On completion: write COMPLETE + initialized_under_version.
-6. On failure: write FAILED + error_message.
+6. On clean staged stop (--max-weeks): write PAUSED.
+7. On failure: write FAILED + error_message.
 
 RESUMABILITY
 ------------
@@ -180,18 +181,20 @@ def sql_upsert_status(
     now = datetime.now(timezone.utc).isoformat()
 
     def str_val(v) -> str:
-        """STRING: single-quoted literal or NULL."""
+        """STRING: single-quoted literal or CAST(NULL AS STRING)."""
         if v is None:
-            return "NULL"
+            return "CAST(NULL AS STRING)"
         escaped = str(v).replace("'", "\\'")
         return f"'{escaped}'"
 
     def date_val(v) -> str:
-        """DATE: DATE('YYYY-MM-DD') or NULL.
+        """DATE: DATE('YYYY-MM-DD') or CAST(NULL AS DATE).
         Handles str, datetime.date (returned by BigQuery client), or None.
+        Bare NULL is inferred as INT64 by BigQuery in a MERGE USING subquery,
+        which then fails assignment to a DATE column. Explicit CAST required.
         """
         if v is None:
-            return "NULL"
+            return "CAST(NULL AS DATE)"
         # BigQuery client returns DATE columns as datetime.date objects
         if hasattr(v, "isoformat"):
             s = v.isoformat()
@@ -201,11 +204,11 @@ def sql_upsert_status(
         return f"DATE('{escaped}')"
 
     def ts_val(v) -> str:
-        """TIMESTAMP: TIMESTAMP('...') or NULL.
+        """TIMESTAMP: TIMESTAMP('...') or CAST(NULL AS TIMESTAMP).
         Handles str, datetime.datetime, or None.
         """
         if v is None:
-            return "NULL"
+            return "CAST(NULL AS TIMESTAMP)"
         if hasattr(v, "isoformat"):
             s = v.isoformat()
         else:
@@ -214,9 +217,9 @@ def sql_upsert_status(
         return f"TIMESTAMP('{escaped}')"
 
     def int_val(v) -> str:
-        """INT64: bare integer literal or NULL."""
+        """INT64: bare integer literal or CAST(NULL AS INT64)."""
         if v is None:
-            return "NULL"
+            return "CAST(NULL AS INT64)"
         return str(int(v))
 
     return f"""
@@ -318,13 +321,30 @@ def acquire_lock(
     Acquire the IN_PROGRESS lock for this country.
     Returns the existing status row (or empty dict if no row existed).
     Raises RuntimeError if the lock cannot be acquired safely.
+
+    Lock acquisition rules:
+      PENDING / no row  → start fresh, no check needed.
+      PAUSED            → safe to resume immediately (intentional staged stop).
+                          No staleness check — PAUSED is never written by a
+                          crash, only by a clean staged stop via --max-weeks.
+      IN_PROGRESS       → check staleness. Refuse if recent (concurrent
+                          protection). Recover if stale or --force-recover.
+      FAILED            → require --force-recover (human acknowledgement).
+      COMPLETE          → nothing to do (caller handles this before lock).
     """
     rows = bq_query(client, sql_get_status(project_id, country))
     existing = rows[0] if rows else {}
     status = existing.get("initialization_status")
     last_updated = existing.get("last_updated_at")
 
-    if status == "IN_PROGRESS":
+    if status == "PAUSED":
+        # Clean intentional stop — always safe to resume immediately.
+        log.info(
+            "Country '%s' is PAUSED at week %s. Resuming.",
+            country, existing.get("latest_week_backfilled"),
+        )
+
+    elif status == "IN_PROGRESS":
         if last_updated:
             age_seconds = (datetime.now(timezone.utc) -
                            last_updated).total_seconds()
@@ -347,6 +367,19 @@ def acquire_lock(
                     f"Country '{country}' is IN_PROGRESS with no last_updated_at. "
                     f"Use --force-recover-stale-lock to override."
                 )
+
+    elif status == "FAILED":
+        if not force_recover:
+            raise RuntimeError(
+                f"Country '{country}' has status FAILED "
+                f"(error: {existing.get('error_message', 'unknown')}). "
+                f"Investigate the failure, then re-run with --force-recover-stale-lock "
+                f"to resume from the last checkpoint."
+            )
+        log.warning(
+            "Force-recovering FAILED run for '%s'. Prior error: %s",
+            country, existing.get("error_message"),
+        )
 
     log.info("Acquiring lock for '%s' (run_id=%s, mode=%s).",
              country, run_id, mode)
@@ -705,9 +738,31 @@ def run_backfill(
             country, total_weeks, run_id,
         )
     else:
+        # Stopped early via --max-weeks. Write PAUSED so the next run resumes
+        # immediately without requiring --force-recover-stale-lock.
+        # PAUSED is always safe to resume — it is only written by a clean
+        # staged stop, never by a crash. The last per-week checkpoint already
+        # recorded latest_week_backfilled; this call updates only the status.
+        bq_execute(
+            client,
+            sql_upsert_status(
+                project_id=project_id,
+                country=country,
+                iso2=iso2,
+                status="PAUSED",
+                run_id=run_id,
+                mode=mode,
+                earliest_week=earliest_week,
+                total_weeks=total_weeks,
+                latest_week_backfilled=ordered_weeks[final_weeks_done - 1],
+                weeks_completed=final_weeks_done,
+            ),
+            dry_run=dry_run,
+        )
         log.info(
             "=== STAGED STOP | country=%s weeks_done=%d/%d run_id=%s ===\n"
-            "    Re-run without --max-weeks (or with a higher value) to continue.",
+            "    Status set to PAUSED. Re-run without --max-weeks "
+            "(or with a higher value) to continue without any flags.",
             country, final_weeks_done, total_weeks, run_id,
         )
 
