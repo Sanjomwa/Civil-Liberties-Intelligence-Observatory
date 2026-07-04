@@ -92,6 +92,27 @@ CONFIDENCE_LEVELS = {
     "HIGH": "#2FA36B",
     "MEDIUM": "#F0B34A",
     "LOW": "#E8593C",
+    "INSUFFICIENT_DATA": "#6B7280",
+}
+
+
+# ============================================================
+# ACLED PATH A REGIME STATES (ADR-0002 step (e))
+# ============================================================
+# Deliberately a separate map from STRESS_LEVELS: primary_regime is
+# intelligence.acled_pressure_regimes' own weekly categorical taxonomy,
+# not path B's suppression_window_class. Ordered by the regime engine's
+# own hierarchy (CRISIS=7 ... STABLE=1, see acled_pressure_regimes.sql
+# CTE-11) from least to most severe.
+
+REGIME_STATES = {
+    "STABLE": "#2FA36B",
+    "MOBILISATION": "#5B8DEF",
+    "CONFLICT": "#A855F7",
+    "REPRESSION": "#F0B34A",
+    "CONTESTATION": "#EF9F27",
+    "ESCALATION": "#E8593C",
+    "CRISIS": "#B42318",
 }
 
 

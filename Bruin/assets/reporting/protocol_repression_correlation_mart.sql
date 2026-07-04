@@ -34,6 +34,18 @@ WITH pressure_windowed AS (
         composite_pressure_score,
         pressure_level,
 
+        -- ADR-0002 step (e): additive ACLED path A passthrough. Not
+        -- consumed by this mart's own correlation/z-score arithmetic below.
+        regime_primary_regime,
+        regime_confidence_level,
+        regime_transition_detected,
+        regime_transition_type,
+        regime_previous_regime,
+        regime_protest_band,
+        regime_violence_band,
+        regime_suppression_band,
+        regime_disorder_band,
+
         SAFE_DIVIDE(
             composite_pressure_score
             - AVG(composite_pressure_score) OVER (),
@@ -134,7 +146,17 @@ joined AS (
         pv.composite_pressure_score,
         pv.pressure_level,
         pv.z_pressure,
-        pv.pressure_window_stddev
+        pv.pressure_window_stddev,
+
+        pv.regime_primary_regime,
+        pv.regime_confidence_level,
+        pv.regime_transition_detected,
+        pv.regime_transition_type,
+        pv.regime_previous_regime,
+        pv.regime_protest_band,
+        pv.regime_violence_band,
+        pv.regime_suppression_band,
+        pv.regime_disorder_band
 
     FROM
         `{{ var.project_id }}.reporting.mart_protocol_interference_trends` p
@@ -283,6 +305,16 @@ SELECT
     legal_pressure_score,
     platform_pressure_score,
     composite_pressure_score,
+
+    regime_primary_regime,
+    regime_confidence_level,
+    regime_transition_detected,
+    regime_transition_type,
+    regime_previous_regime,
+    regime_protest_band,
+    regime_violence_band,
+    regime_suppression_band,
+    regime_disorder_band,
 
     raw_corr,
     rolling_pressure_corr,

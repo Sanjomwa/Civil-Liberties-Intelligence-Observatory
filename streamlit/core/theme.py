@@ -5,7 +5,8 @@ import plotly.graph_objects as go
 from core.constants import (
     STRESS_LEVELS,
     PROTOCOL_STATES,
-    CONFIDENCE_LEVELS
+    CONFIDENCE_LEVELS,
+    REGIME_STATES
 )
 
 
@@ -61,3 +62,7 @@ def protocol_color(state):
 
 def confidence_color(level):
     return CONFIDENCE_LEVELS.get(level, PALETTE["muted"])
+
+
+def regime_color(regime):
+    return REGIME_STATES.get(regime, PALETTE["muted"])

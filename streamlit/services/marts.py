@@ -86,6 +86,73 @@ def get_national_stress(start_date, end_date):
 
 
 @st.cache_data(ttl=3600)
+def get_regime_classification(start_date, end_date):
+    """ACLED path A (intelligence.acled_pressure_regimes) classification,
+    surfaced additively via mart_political_stress_windows (ADR-0002 step (e)).
+    Weekly-grain values repeat across each day of their week; regime_*
+    columns are nullable where no classification exists for that date.
+    """
+    sql = f"""
+        SELECT
+            date_key,
+            regime_primary_regime,
+            regime_confidence_level,
+            regime_transition_detected,
+            regime_transition_type,
+            regime_previous_regime,
+            regime_protest_band,
+            regime_violence_band,
+            regime_suppression_band,
+            regime_disorder_band,
+            reporting_version,
+            snapshot_at
+        FROM `{REPORTING}.mart_political_stress_windows`
+        WHERE date_key BETWEEN DATE('{start_date}')
+        AND DATE('{end_date}')
+        ORDER BY date_key
+    """
+
+    df = run_query(sql)
+    return _validate_mart_response(
+        df,
+        required_columns=[
+            "date_key",
+            "regime_primary_regime",
+            "regime_confidence_level",
+            "regime_transition_detected",
+            "regime_transition_type",
+            "regime_previous_regime",
+            "regime_protest_band",
+            "regime_violence_band",
+            "regime_suppression_band",
+            "regime_disorder_band",
+            "reporting_version",
+            "snapshot_at",
+        ],
+        dtype_hints={
+            "date_key": "datetime",
+            "regime_primary_regime": "string",
+            "regime_confidence_level": "string",
+            "regime_transition_detected": "any",
+            "regime_transition_type": "string",
+            "regime_previous_regime": "string",
+            "regime_protest_band": "string",
+            "regime_violence_band": "string",
+            "regime_suppression_band": "string",
+            "regime_disorder_band": "string",
+            "reporting_version": "string",
+            "snapshot_at": "datetime",
+        },
+        non_nullable=[
+            "date_key",
+            "reporting_version",
+            "snapshot_at",
+        ],
+        title="get_regime_classification",
+    )
+
+
+@st.cache_data(ttl=3600)
 def get_protocol_regimes(start_date, end_date):
     sql = f"""
         SELECT

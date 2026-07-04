@@ -67,7 +67,20 @@ country_pressure AS (
             AS source_composite_pressure_score,
 
         pressure_level
-            AS source_pressure_level
+            AS source_pressure_level,
+
+        -- ADR-0002 step (e): additive ACLED path A passthrough.
+        -- Not consumed by this mart's own composite-score/baseline
+        -- arithmetic below -- surfaced for reporting only.
+        regime_primary_regime,
+        regime_confidence_level,
+        regime_transition_detected,
+        regime_transition_type,
+        regime_previous_regime,
+        regime_protest_band,
+        regime_violence_band,
+        regime_suppression_band,
+        regime_disorder_band
 
     FROM `{{ var.project_id }}.marts.fact_country_pressure_daily`
 
@@ -93,6 +106,20 @@ base AS (
 
         COALESCE(c.source_pressure_level, 'LOW')
             AS source_pressure_level,
+
+        -- ADR-0002 step (e): nullable passthrough, not COALESCEd --
+        -- NULL means no regime classification exists for this date
+        -- (e.g. outside the backfilled range), which is a different
+        -- and more honest signal than a fabricated default.
+        c.regime_primary_regime,
+        c.regime_confidence_level,
+        c.regime_transition_detected,
+        c.regime_transition_type,
+        c.regime_previous_regime,
+        c.regime_protest_band,
+        c.regime_violence_band,
+        c.regime_suppression_band,
+        c.regime_disorder_band,
 
         COALESCE(n.signal_rate, 0)
             AS signal_rate,
@@ -199,6 +226,16 @@ SELECT
 
     source_composite_pressure_score,
     source_pressure_level,
+
+    regime_primary_regime,
+    regime_confidence_level,
+    regime_transition_detected,
+    regime_transition_type,
+    regime_previous_regime,
+    regime_protest_band,
+    regime_violence_band,
+    regime_suppression_band,
+    regime_disorder_band,
 
     signal_rate,
     weighted_blocking,

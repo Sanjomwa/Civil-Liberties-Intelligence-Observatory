@@ -21,11 +21,23 @@ depends:
   - stg.acled_conflict_events
   - stg.lumen_requests
   - int.google_pressure_periodized
+  - intelligence.acled_pressure_regimes
 
 materialization:
   type: table
   strategy: create+replace
 @bruin */
+
+-- ADR-0002 step (e): additive ACLED path A join.
+-- intelligence.acled_pressure_regimes is grain country x week_start_date,
+-- anchored to Saturday (verified empirically against the materialized
+-- table -- the asset's own upstream staging comment claiming a Monday
+-- anchor does not match the actual parsed data). DATE_TRUNC(..., WEEK(SATURDAY))
+-- maps any calendar day back to the Saturday that starts its ACLED week.
+-- regime_* columns are a nullable passthrough, not COALESCEd: NULL here
+-- means no regime classification exists yet for that week (e.g. before
+-- backfill start or after the latest processed week), which is a
+-- different and more honest signal than a fabricated default.
 
 WITH dates AS (
 
@@ -64,6 +76,26 @@ google AS (
 
 ),
 
+regime AS (
+
+    SELECT
+        week_start_date,
+        primary_regime,
+        confidence_level,
+        transition_detected,
+        transition_type,
+        previous_regime,
+        protest_band,
+        violence_band,
+        suppression_band,
+        disorder_band,
+        weeks_in_current_regime,
+        regime_methodology_version
+    FROM `{{ var.project_id }}.intelligence.acled_pressure_regimes`
+    WHERE country = 'Kenya'
+
+),
+
 joined AS (
 
     SELECT
@@ -79,12 +111,26 @@ joined AS (
         COALESCE(g.requested_items,0) AS requested_items,
         COALESCE(g.legal_removed,0) AS legal_removed,
         COALESCE(g.policy_removed,0) AS policy_removed,
-        COALESCE(g.detailed_total,0) AS detailed_total
+        COALESCE(g.detailed_total,0) AS detailed_total,
+
+        r.primary_regime              AS regime_primary_regime,
+        r.confidence_level            AS regime_confidence_level,
+        r.transition_detected         AS regime_transition_detected,
+        r.transition_type             AS regime_transition_type,
+        r.previous_regime             AS regime_previous_regime,
+        r.protest_band                AS regime_protest_band,
+        r.violence_band               AS regime_violence_band,
+        r.suppression_band            AS regime_suppression_band,
+        r.disorder_band               AS regime_disorder_band,
+        r.weeks_in_current_regime     AS regime_weeks_in_current_regime,
+        r.regime_methodology_version  AS regime_methodology_version
 
     FROM dates d
     LEFT JOIN acled a USING(measurement_date)
     LEFT JOIN lumen l USING(measurement_date)
     LEFT JOIN google g USING(measurement_date)
+    LEFT JOIN regime r
+        ON DATE_TRUNC(d.measurement_date, WEEK(SATURDAY)) = r.week_start_date
 
 ),
 
@@ -127,6 +173,18 @@ SELECT
     conflict_pressure_score,
     legal_pressure_score,
     platform_pressure_score,
+
+    regime_primary_regime,
+    regime_confidence_level,
+    regime_transition_detected,
+    regime_transition_type,
+    regime_previous_regime,
+    regime_protest_band,
+    regime_violence_band,
+    regime_suppression_band,
+    regime_disorder_band,
+    regime_weeks_in_current_regime,
+    regime_methodology_version,
 
     ROUND(
           (conflict_pressure_score * 0.60)
