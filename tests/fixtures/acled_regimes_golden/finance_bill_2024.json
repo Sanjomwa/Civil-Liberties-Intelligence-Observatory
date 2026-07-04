@@ -1,0 +1,14 @@
+{
+  "2024-05-04": {"primary_regime": "ESCALATION", "confidence_level": "MEDIUM", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "ESCALATION"},
+  "2024-05-11": {"primary_regime": "MOBILISATION", "confidence_level": "HIGH", "transition_detected": true, "transition_type": "DE_ESCALATION", "previous_regime": "ESCALATION"},
+  "2024-05-18": {"primary_regime": "MOBILISATION", "confidence_level": "HIGH", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "MOBILISATION"},
+  "2024-05-25": {"primary_regime": "STABLE", "confidence_level": "HIGH", "transition_detected": true, "transition_type": "DE_ESCALATION", "previous_regime": "MOBILISATION"},
+  "2024-06-01": {"primary_regime": "STABLE", "confidence_level": "HIGH", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "STABLE"},
+  "2024-06-08": {"primary_regime": "STABLE", "confidence_level": "HIGH", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "STABLE"},
+  "2024-06-15": {"primary_regime": "STABLE", "confidence_level": "HIGH", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "STABLE"},
+  "2024-06-22": {"primary_regime": "CRISIS", "confidence_level": "HIGH", "transition_detected": true, "transition_type": "ESCALATION", "previous_regime": "STABLE"},
+  "2024-06-29": {"primary_regime": "CRISIS", "confidence_level": "HIGH", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "CRISIS"},
+  "2024-07-06": {"primary_regime": "CRISIS", "confidence_level": "HIGH", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "CRISIS"},
+  "2024-07-13": {"primary_regime": "STABLE", "confidence_level": "HIGH", "transition_detected": true, "transition_type": "DE_ESCALATION", "previous_regime": "CRISIS"},
+  "2024-07-20": {"primary_regime": "ESCALATION", "confidence_level": "MEDIUM", "transition_detected": true, "transition_type": "ESCALATION", "previous_regime": "STABLE"}
+}

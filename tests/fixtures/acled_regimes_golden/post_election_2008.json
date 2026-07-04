@@ -1,0 +1,11 @@
+{
+  "2008-01-05": {"primary_regime": "STABLE", "confidence_level": "INSUFFICIENT_DATA", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "STABLE"},
+  "2008-01-12": {"primary_regime": "STABLE", "confidence_level": "INSUFFICIENT_DATA", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "STABLE"},
+  "2008-01-19": {"primary_regime": "ESCALATION", "confidence_level": "MEDIUM", "transition_detected": true, "transition_type": "ESCALATION", "previous_regime": "STABLE"},
+  "2008-01-26": {"primary_regime": "ESCALATION", "confidence_level": "HIGH", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "ESCALATION"},
+  "2008-02-02": {"primary_regime": "ESCALATION", "confidence_level": "INSUFFICIENT_DATA", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "ESCALATION"},
+  "2008-02-09": {"primary_regime": "ESCALATION", "confidence_level": "INSUFFICIENT_DATA", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "ESCALATION"},
+  "2008-02-16": {"primary_regime": "STABLE", "confidence_level": "HIGH", "transition_detected": true, "transition_type": "DE_ESCALATION", "previous_regime": "ESCALATION"},
+  "2008-02-23": {"primary_regime": "STABLE", "confidence_level": "INSUFFICIENT_DATA", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "STABLE"},
+  "2008-03-01": {"primary_regime": "STABLE", "confidence_level": "HIGH", "transition_detected": false, "transition_type": "PERSISTENCE", "previous_regime": "STABLE"}
+}
