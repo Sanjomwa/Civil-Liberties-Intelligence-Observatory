@@ -8,8 +8,11 @@ if ! command -v gcloud >/dev/null 2>&1; then
   echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
     | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list >/dev/null
   curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
-    | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
-  sudo apt-get update -y
+    | sudo gpg --yes --dearmor -o /usr/share/keyrings/cloud.google.gpg
+  # Scope the update to just the list we added: unrelated pre-existing repos
+  # on the base image (e.g. yarnpkg) can have broken signing keys and would
+  # otherwise fail the whole `apt-get update`.
+  sudo apt-get update -y -o Dir::Etc::sourcelist="sources.list.d/google-cloud-sdk.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
   sudo apt-get install -y google-cloud-cli
 fi
 
