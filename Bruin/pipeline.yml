@@ -34,10 +34,23 @@ variables:
   target_week:
     type: string
     default: ""
-    # Optional. Used exclusively by backfill_acled_pressure_regimes.py for
-    # sequential historical replay of intelligence.acled_pressure_regimes.
-    # When "" (the default), the asset processes all available weeks for the
-    # target country — identical to all prior behaviour. When set to an ISO
-    # date string (e.g. "2024-06-22"), CTE-02 returns exactly that one week,
-    # satisfying the single-week-per-execution persistence contract.
-    # MUST be left as "" for all normal steady-state weekly pipeline runs.
+    # Optional. When "" (the default), the asset processes all available
+    # weeks for the target country. When set to an ISO date string (e.g.
+    # "2024-06-22"), CTE-02 returns exactly that one week, satisfying the
+    # single-week-per-execution persistence contract documented in the
+    # asset's EXECUTION CONTRACT (AUTHORITATIVE) comment block.
+    #
+    # For steady-state weekly runs, scripts/steady_state/run_acled_regime_week.py
+    # resolves this value itself -- it looks up the single next unprocessed
+    # week and invokes Bruin with that explicit week (see TD-38). It never
+    # invokes with target_week="" in steady state, since the upstream
+    # features.acled_pressure_signals asset is create+replace with no
+    # incremental filter and passing "" here would silently violate the
+    # regime asset's own execution contract.
+    #
+    # For historical replay, backfill_acled_pressure_regimes.py sets this
+    # explicitly per week, the same way.
+    #
+    # Any other manual/ad-hoc invocation of this pipeline must set
+    # target_week explicitly via --var target_week=... -- do not rely on
+    # the "" default outside of the two driver scripts above.
