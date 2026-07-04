@@ -21,9 +21,3 @@ jobs:
         with:
           workload_identity_provider: 'projects/245097041714/locations/global/workloadIdentityPools/clio-dev/providers/github'
           service_account: 'bruin-ci@encoded-joy-485413-k5.iam.gserviceaccount.com'
-      # Temporary verification step — remove once the very first successful
-      # run has confirmed the WIF auth chain works end to end.
-      - name: Verify auth
-        run: |
-          gcloud auth list
-          bq ls encoded-joy-485413-k5:reporting
