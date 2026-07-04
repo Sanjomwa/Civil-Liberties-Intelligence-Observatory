@@ -108,6 +108,7 @@ description: |
 
 depends:
   - features.acled_pressure_signals
+  - intelligence.acled_pressure_regimes_precondition_check
 
 materialization:
   type: table
