@@ -7,7 +7,7 @@ from core.state import init_state
 from core.filters import render_sidebar
 from core.theme import apply_layout
 from services.marts import get_finance_bill_incident
-from components.trust import render_trust_strip, synthetic_data_notice
+from components.trust import render_trust_strip
 
 
 # ============================================================
@@ -66,9 +66,6 @@ render_trust_strip(
     snapshot_at=latest["snapshot_at"],
     max_date=df["measurement_date"].max()
 )
-
-if df["legal_pressure_is_synthetic"].any():
-    synthetic_data_notice(["Lumen"])
 
 st.divider()
 
