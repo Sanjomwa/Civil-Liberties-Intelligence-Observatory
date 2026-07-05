@@ -48,13 +48,30 @@ WITH dates AS (
 
 acled AS (
 
+    -- TD-40 fix: event_date is hardcoded CAST(NULL AS DATE) for every row
+    -- in stg.acled_conflict_events.sql (weekly-aggregate source, reserved
+    -- for a future event-level pipeline that does not exist yet). The
+    -- real join key is week_start_date, Saturday-anchored (verified
+    -- empirically for ADR-0002 step (e); the staging header's own
+    -- Monday-anchor claim was stale and has been corrected).
+    --
+    -- This broadcasts one weekly ACLED value across all 7 days of that
+    -- week: conflict_events, fatalities, and therefore
+    -- conflict_pressure_score are CONSTANT within a calendar week and
+    -- only step at week boundaries. Despite this table's nominal daily
+    -- grain, ACLED's 60%-weighted contribution to composite_pressure_score
+    -- is NOT day-resolved -- only legal_pressure_score (25%) and
+    -- platform_pressure_score (15%) vary within a week. Do not assume
+    -- day-to-day movement in composite_pressure_score reflects daily
+    -- conflict data; it does not, 6 days out of 7.
+
     SELECT
-        event_date AS measurement_date,
+        week_start_date,
         SUM(events) AS conflict_events,
         SUM(fatalities) AS fatalities
     FROM `{{ var.project_id }}.stg.acled_conflict_events`
     WHERE country = 'Kenya'
-    GROUP BY event_date
+    GROUP BY week_start_date
 
 ),
 
@@ -126,7 +143,8 @@ joined AS (
         r.regime_methodology_version  AS regime_methodology_version
 
     FROM dates d
-    LEFT JOIN acled a USING(measurement_date)
+    LEFT JOIN acled a
+        ON DATE_TRUNC(d.measurement_date, WEEK(SATURDAY)) = a.week_start_date
     LEFT JOIN lumen l USING(measurement_date)
     LEFT JOIN google g USING(measurement_date)
     LEFT JOIN regime r

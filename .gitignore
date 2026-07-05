@@ -223,3 +223,7 @@ __marimo__/
 /workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/streamlit/.streamlit/secrets.toml.bak
 /workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/logs
 /workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/streamlit/.streamlit/secrets.tomlstreamlit/.streamlit/secrets.toml
+
+logs/runs
+logs/*.log
+*.py[cod]

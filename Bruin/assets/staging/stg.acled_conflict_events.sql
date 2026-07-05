@@ -26,7 +26,10 @@ description: |
   Each row represents aggregated events within a geographic unit
   (country + admin1) for one calendar week.
 
-  week_start_date is the Monday anchor of that week.
+  week_start_date is the Saturday anchor of that week (verified
+  empirically against the materialized table for ADR-0002 step (e) --
+  100% of rows fall on a Saturday; this comment previously and
+  incorrectly claimed Monday).
   It is NOT an individual event date.
   Minimum detectable lag in downstream analysis = 7 days.
   Day-level lead times within the same week are not distinguishable.
@@ -84,7 +87,8 @@ columns:
   - name: week_start_date
     type: date
     description: |
-      Monday anchor date of the aggregated week.
+      Saturday anchor date of the aggregated week (verified empirically;
+      previously and incorrectly documented here as Monday).
       NOT an individual event date.
       Grain is WEEKLY_AGGREGATE.
     checks:
