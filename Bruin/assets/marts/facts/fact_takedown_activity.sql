@@ -27,7 +27,10 @@ WITH google AS (
 
         google_requests AS number_of_requests,
         detailed_total AS item_count,
-        google_pressure_score AS pressure_score
+        google_pressure_score AS pressure_score,
+
+        -- TD-01: Google Transparency Report data is real, not fabricated.
+        FALSE AS is_synthetic
 
     FROM `{{ var.project_id }}.int.google_pressure_periodized`
 ),
@@ -42,7 +45,8 @@ lumen AS (
         measurement_date,
 
         request_count AS number_of_requests,
-        item_count
+        item_count,
+        is_synthetic
 
     FROM `{{ var.project_id }}.stg.lumen_requests`
 ),
@@ -56,7 +60,13 @@ lumen_scored AS (
         l.measurement_date,
         l.number_of_requests,
         l.item_count,
-        d.lumen_pressure_score AS pressure_score
+        d.lumen_pressure_score AS pressure_score,
+
+        -- TD-01: per-row passthrough from stg.lumen_requests, not the
+        -- daily-aggregated d.is_synthetic -- both are equivalent today
+        -- (100% synthetic) but this stays correct if real and synthetic
+        -- rows ever coexist on the same date.
+        l.is_synthetic
 
     FROM lumen l
     LEFT JOIN

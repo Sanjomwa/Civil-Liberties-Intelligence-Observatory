@@ -41,7 +41,11 @@ WITH daily AS (
                 SUM(number_of_requests),
                 0
             )
-        ) AS pressure_score
+        ) AS pressure_score,
+
+        -- TD-01: TRUE if any contributing row in this source/date bucket
+        -- is synthetic (always FALSE for the google source today).
+        LOGICAL_OR(is_synthetic) AS is_synthetic
 
     FROM `{{ var.project_id }}.marts.fact_takedown_activity`
 
@@ -64,6 +68,7 @@ SELECT
 
     total_requests,
     total_items_targeted,
+    is_synthetic,
 
     ROUND(
         pressure_score,

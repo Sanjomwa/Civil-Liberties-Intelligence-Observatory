@@ -25,7 +25,10 @@ WITH daily AS (
         SUM(item_count) AS item_count,
 
         COUNT(DISTINCT recipient) AS platforms_targeted,
-        COUNT(DISTINCT reason) AS legal_vectors
+        COUNT(DISTINCT reason) AS legal_vectors,
+
+        -- TD-01: TRUE if any contributing row this date is synthetic.
+        LOGICAL_OR(is_synthetic) AS is_synthetic
 
     FROM `{{ var.project_id }}.stg.lumen_requests`
     GROUP BY measurement_date
@@ -57,6 +60,7 @@ SELECT
     platforms_targeted,
     legal_vectors,
     items_per_request,
+    is_synthetic,
 
     ROUND(
         base_pressure

@@ -292,6 +292,49 @@ st.divider()
 
 
 # ============================================================
+# DATA SOURCES & KNOWN LIMITATIONS
+# ============================================================
+
+st.subheader("Data Sources & Known Limitations")
+
+st.dataframe(
+    pd.DataFrame({
+        "Source": [
+            "OONI",
+            "ACLED",
+            "Google Transparency Report",
+            "Lumen Database"
+        ],
+        "Status": [
+            "Real",
+            "Real",
+            "Real",
+            "Synthetic (fabricated)"
+        ],
+    }),
+    use_container_width=True,
+    hide_index=True
+)
+
+st.warning("""
+**Lumen Database data is currently entirely synthetic.** It is
+generated for development (`scripts/lumen_parquet.py`, a fixed random
+seed), not sourced from a real Lumen export. This feeds
+`legal_pressure_score` (25% of `composite_pressure_score`) on the
+National Stress Observatory, Suppression Event Explorer, and Finance
+Bill 2024 Incident Report pages.
+
+A real, per-row `is_synthetic` flag is carried from the staging layer
+through every downstream table, so any chart or KPI actually affected
+displays an explicit warning rather than relying on this page alone.
+This warning will stop being accurate -- and should be updated -- once
+a real Lumen export replaces the fabricated dataset.
+""")
+
+st.divider()
+
+
+# ============================================================
 # FINAL STATEMENT
 # ============================================================
 

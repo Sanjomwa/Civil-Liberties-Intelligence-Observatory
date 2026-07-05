@@ -4,6 +4,17 @@ tags:
 name: stg.lumen_requests
 type: bq.sql
 connection: bigquery-default
+
+description: |
+  TD-01: Lumen data is entirely synthetic. scripts/lumen_parquet.py
+  fabricates every row (np.random.seed(42), 5,000 rows) -- there is no
+  real Lumen Database export behind this table today. is_synthetic is
+  hardcoded TRUE here, at the source, so every downstream consumer can
+  key off real per-row data rather than tribal knowledge of which
+  script populated the table. The day a real Lumen export replaces the
+  fabricated set, flip this literal to FALSE (or compute it from actual
+  provenance metadata if a mixed real/synthetic feed is ever ingested).
+
 depends:
   - load.lumen_requests_to_gcs
 
@@ -78,7 +89,10 @@ final AS (
         measurement_date,
         year,
         month,
-        year_month
+        year_month,
+
+        -- TD-01: hardcoded, not inferred -- see header comment.
+        TRUE AS is_synthetic
 
     FROM normalized
 )

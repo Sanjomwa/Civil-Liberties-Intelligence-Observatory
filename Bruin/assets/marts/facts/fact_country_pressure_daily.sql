@@ -16,6 +16,9 @@ description: |
 
   Rebalanced so political stress dominates severity.
 
+  TD-01: Lumen data is entirely synthetic today. legal_pressure_is_synthetic
+  is a real, per-date column (not a static claim) -- see the lumen CTE.
+
 depends:
   - marts.dim_dates
   - stg.acled_conflict_events
@@ -77,10 +80,17 @@ acled AS (
 
 lumen AS (
 
+    -- TD-01: Lumen data is entirely synthetic (scripts/lumen_parquet.py,
+    -- np.random.seed(42)) -- stg.lumen_requests.is_synthetic is hardcoded
+    -- TRUE on every row today. Aggregated here to legal_pressure_is_synthetic
+    -- so legal_pressure_score's provenance is traceable per date, the same
+    -- way conflict_pressure_score's real weekly grain is documented above.
+
     SELECT
         measurement_date,
         SUM(request_count) AS takedown_requests,
-        SUM(item_count) AS takedown_items
+        SUM(item_count) AS takedown_items,
+        LOGICAL_OR(is_synthetic) AS legal_pressure_is_synthetic
     FROM `{{ var.project_id }}.stg.lumen_requests`
     GROUP BY measurement_date
 
@@ -123,6 +133,12 @@ joined AS (
 
         COALESCE(l.takedown_requests,0) AS takedown_requests,
         COALESCE(l.takedown_items,0) AS takedown_items,
+
+        -- TD-01: FALSE (not NULL) when no Lumen row exists this date --
+        -- a zero-contribution date is not synthetic-tainted, matching the
+        -- COALESCE(...,0) treatment of takedown_requests/items above.
+        COALESCE(l.legal_pressure_is_synthetic, FALSE)
+            AS legal_pressure_is_synthetic,
 
         COALESCE(g.google_requests,0) AS google_requests,
         COALESCE(g.requested_items,0) AS requested_items,
@@ -191,6 +207,7 @@ SELECT
     conflict_pressure_score,
     legal_pressure_score,
     platform_pressure_score,
+    legal_pressure_is_synthetic,
 
     regime_primary_regime,
     regime_confidence_level,

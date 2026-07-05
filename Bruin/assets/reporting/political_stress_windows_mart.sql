@@ -62,6 +62,7 @@ country_pressure AS (
         conflict_pressure_score,
         legal_pressure_score,
         platform_pressure_score,
+        legal_pressure_is_synthetic,
 
         composite_pressure_score
             AS source_composite_pressure_score,
@@ -97,6 +98,11 @@ base AS (
 
         COALESCE(c.legal_pressure_score, 0)
             AS legal_pressure,
+
+        -- TD-01: FALSE (not NULL) when this date has no country_pressure
+        -- row at all, matching the COALESCE(...,0) treatment above.
+        COALESCE(c.legal_pressure_is_synthetic, FALSE)
+            AS legal_pressure_is_synthetic,
 
         COALESCE(c.platform_pressure_score, 0)
             AS platform_pressure,
@@ -222,6 +228,7 @@ SELECT
 
     conflict_pressure,
     legal_pressure,
+    legal_pressure_is_synthetic,
     platform_pressure,
 
     source_composite_pressure_score,

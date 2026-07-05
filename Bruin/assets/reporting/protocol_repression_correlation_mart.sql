@@ -31,6 +31,7 @@ WITH pressure_windowed AS (
         conflict_pressure_score,
         legal_pressure_score,
         platform_pressure_score,
+        legal_pressure_is_synthetic,
         composite_pressure_score,
         pressure_level,
 
@@ -143,6 +144,7 @@ joined AS (
         pv.conflict_pressure_score,
         pv.legal_pressure_score,
         pv.platform_pressure_score,
+        pv.legal_pressure_is_synthetic,
         pv.composite_pressure_score,
         pv.pressure_level,
         pv.z_pressure,
@@ -304,6 +306,7 @@ SELECT
     conflict_pressure_score,
     legal_pressure_score,
     platform_pressure_score,
+    legal_pressure_is_synthetic,
     composite_pressure_score,
 
     regime_primary_regime,

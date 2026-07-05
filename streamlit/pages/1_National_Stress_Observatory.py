@@ -13,7 +13,8 @@ from services.marts import get_national_stress, get_regime_classification
 from components.kpis import metric_row
 from components.trust import (
     render_trust_strip,
-    insufficient_history_notice
+    insufficient_history_notice,
+    synthetic_data_notice
 )
 
 
@@ -74,6 +75,9 @@ render_trust_strip(
     snapshot_at=latest["snapshot_at"],
     max_date=df["date_key"].max()
 )
+
+if df["legal_pressure_is_synthetic"].any():
+    synthetic_data_notice(["Lumen"])
 
 st.divider()
 
