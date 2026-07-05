@@ -88,11 +88,15 @@ aggregated AS (
         COUNT(DISTINCT observation_id) AS distinct_observations,
         COUNT(DISTINCT probe_asn) AS distinct_asns,
 
-        -- evidence types
-        COUNTIF(blocking_detail = 'dns') AS dns_blocking_events,
-        COUNTIF(blocking_detail = 'tcp') AS tcp_blocking_events,
-        COUNTIF(blocking_detail = 'tls') AS tls_blocking_events,
-        COUNTIF(blocking_detail = 'http') AS http_blocking_events,
+        -- evidence types: blocking_detail is always a compound 'layer.cause'
+        -- string (e.g. 'dns.nxdomain', 'tls.ok') that includes non-blocking
+        -- outcomes in the same field, so a prefix match alone would count
+        -- every observation of that layer, not just the blocked ones -- must
+        -- also require is_blocking_signal (TD-52).
+        COUNTIF(STARTS_WITH(blocking_detail, 'dns.') AND is_blocking_signal) AS dns_blocking_events,
+        COUNTIF(STARTS_WITH(blocking_detail, 'tcp.') AND is_blocking_signal) AS tcp_blocking_events,
+        COUNTIF(STARTS_WITH(blocking_detail, 'tls.') AND is_blocking_signal) AS tls_blocking_events,
+        COUNTIF(STARTS_WITH(blocking_detail, 'http.') AND is_blocking_signal) AS http_blocking_events,
 
         -- confidence bands (thresholds from marts.dim_censorship_confidence, per ADR-0001)
         COUNTIF(confidence_level = 'HIGH') AS high_confidence_events,

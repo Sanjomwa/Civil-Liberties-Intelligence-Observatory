@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from core.constants import REPORTING
+from core.constants import MARTS, REPORTING
 from core.contracts import guard_dataframe_schema
 from services.bq import run_query
 
@@ -595,3 +595,81 @@ def get_finance_bill_incident():
     )
 
     return correlation_df, asn_df
+
+
+@st.cache_data(ttl=3600)
+def get_protocol_blocking_summary(start_date, end_date):
+    """marts.fact_protocol_blocking_summary (TD-51): the one asset in the
+    pipeline where per-app (test_name) attribution survives uncoarsened,
+    alongside protocol layer, at monthly grain. Has no reporting_version /
+    intelligence_version (it's a marts.facts table, not a reporting mart) --
+    callers should pass its own extracted_at to render_trust_strip instead.
+    """
+    sql = f"""
+        SELECT
+            month_date,
+            test_name,
+            protocol,
+            total_experiment_results,
+            blocking_signal_count,
+            dns_blocking_events,
+            tcp_blocking_events,
+            tls_blocking_events,
+            http_blocking_events,
+            high_confidence_events,
+            medium_confidence_events,
+            low_confidence_events,
+            blocking_signal_rate,
+            protocol_interference_intensity,
+            extracted_at
+        FROM `{MARTS}.fact_protocol_blocking_summary`
+        WHERE month_date BETWEEN DATE('{start_date}')
+        AND DATE('{end_date}')
+        ORDER BY month_date, test_name, protocol
+    """
+
+    df = run_query(sql)
+    return _validate_mart_response(
+        df,
+        required_columns=[
+            "month_date",
+            "test_name",
+            "protocol",
+            "total_experiment_results",
+            "blocking_signal_count",
+            "dns_blocking_events",
+            "tcp_blocking_events",
+            "tls_blocking_events",
+            "http_blocking_events",
+            "high_confidence_events",
+            "medium_confidence_events",
+            "low_confidence_events",
+            "blocking_signal_rate",
+            "protocol_interference_intensity",
+            "extracted_at",
+        ],
+        dtype_hints={
+            "month_date": "datetime",
+            "test_name": "string",
+            "protocol": "string",
+            "total_experiment_results": "numeric",
+            "blocking_signal_count": "numeric",
+            "dns_blocking_events": "numeric",
+            "tcp_blocking_events": "numeric",
+            "tls_blocking_events": "numeric",
+            "http_blocking_events": "numeric",
+            "high_confidence_events": "numeric",
+            "medium_confidence_events": "numeric",
+            "low_confidence_events": "numeric",
+            "blocking_signal_rate": "numeric",
+            "protocol_interference_intensity": "numeric",
+            "extracted_at": "datetime",
+        },
+        non_nullable=[
+            "month_date",
+            "test_name",
+            "protocol",
+            "extracted_at",
+        ],
+        title="get_protocol_blocking_summary",
+    )

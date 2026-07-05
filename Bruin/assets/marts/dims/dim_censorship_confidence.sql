@@ -16,7 +16,7 @@ description: |
   from features.protocol_daily_signals.sql's thresholds, which independently agreed
   with the (now-retired) bucketing in int.ooni_signals.sql. See ADR-0001 for why
   0.80/0.60 was chosen over the disagreeing 0.90/0.70 that
-  marts.fact_platform_blocking_summary used to hardcode.
+  marts.fact_protocol_blocking_summary used to hardcode.
 
 materialization:
   type: table

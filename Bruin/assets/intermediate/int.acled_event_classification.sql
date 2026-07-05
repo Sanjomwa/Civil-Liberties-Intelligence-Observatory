@@ -264,7 +264,9 @@ columns:
       MEDIUM: clear event_type, sub_event_type has some variability.
       LOW:    sub_event_type = Other, or vocabulary is inherently
               ambiguous for this row.
-      Mirrors HIGH/MEDIUM/LOW in int.ooni_signals.sql.
+      Mirrors the HIGH/MEDIUM/LOW tiers in marts.dim_censorship_confidence,
+      OONI's own confidence-bucketing scheme (unified there under ADR-0001).
+      Computed independently -- this is not a functional dependency.
     checks:
       - name: not_null
       - name: accepted_values

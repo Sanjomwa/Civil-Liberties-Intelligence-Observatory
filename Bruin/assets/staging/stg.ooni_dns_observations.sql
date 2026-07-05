@@ -53,7 +53,17 @@ queries AS (
     JSON_VALUE(query_json, '$.engine') AS resolver_engine,
     JSON_VALUE(query_json, '$.failure') AS dns_failure
   FROM measurements AS m,
-  UNNEST(IFNULL(JSON_QUERY_ARRAY(m.raw_test_keys, '$.queries'), ARRAY<STRING>[])) AS query_json
+  UNNEST(IFNULL(
+    -- dnscheck has no top-level $.queries array; its equivalent
+    -- (one system-resolver DNS lookup) lives at $.bootstrap.queries.
+    -- Confirmed live (TD-47): every dnscheck row has exactly one of the
+    -- two paths populated, never both, never neither -- COALESCE is safe.
+    COALESCE(
+      JSON_QUERY_ARRAY(m.raw_test_keys, '$.queries'),
+      JSON_QUERY_ARRAY(m.raw_test_keys, '$.bootstrap.queries')
+    ),
+    ARRAY<STRING>[]
+  )) AS query_json
   WITH OFFSET AS query_offset
 ),
 

@@ -8,7 +8,7 @@ from core.config import COUNTRY
 from core.filters import render_sidebar
 from core.state import init_state
 from core.theme import apply_layout
-from services.marts import get_protocol_stress_intelligence
+from services.marts import get_protocol_blocking_summary, get_protocol_stress_intelligence
 
 
 st.set_page_config(
@@ -221,3 +221,80 @@ st.dataframe(
     width="stretch",
     hide_index=True,
 )
+
+
+st.divider()
+
+st.subheader("Per-App, Per-Protocol-Layer Blocking Breakdown")
+
+st.markdown(
+    """
+Full-resolution breakdown by individual app (`test_name`) and protocol
+layer, at monthly grain -- the one place in the pipeline where per-app
+attribution (Telegram vs. WhatsApp vs. Signal vs. Psiphon) survives without
+being collapsed into a coarser family label.
+"""
+)
+
+blocking_df = get_protocol_blocking_summary(
+    st.session_state.start_date,
+    st.session_state.end_date,
+)
+
+if blocking_df.empty:
+    st.warning("No per-app protocol blocking data available.")
+else:
+    render_trust_strip(
+        snapshot_at=blocking_df["extracted_at"].max(),
+        max_date=blocking_df["month_date"].max(),
+    )
+
+    app_protocol_summary = blocking_df.groupby(
+        ["test_name", "protocol"], as_index=False
+    ).agg(
+        total_experiment_results=("total_experiment_results", "sum"),
+        blocking_signal_count=("blocking_signal_count", "sum"),
+        dns_blocking_events=("dns_blocking_events", "sum"),
+        tcp_blocking_events=("tcp_blocking_events", "sum"),
+        tls_blocking_events=("tls_blocking_events", "sum"),
+        http_blocking_events=("http_blocking_events", "sum"),
+    )
+    app_protocol_summary["blocking_signal_rate"] = (
+        app_protocol_summary["blocking_signal_count"]
+        / app_protocol_summary["total_experiment_results"]
+    )
+
+    fig4 = px.bar(
+        app_protocol_summary,
+        x="test_name",
+        y="blocking_signal_count",
+        color="protocol",
+        barmode="group",
+    )
+
+    apply_layout(fig4, "Blocking Signals by App and Protocol Layer")
+
+    st.plotly_chart(fig4, width="stretch")
+
+    st.info(
+        "Counts real blocking events (not just observations) per app and "
+        "per protocol layer -- DNS, TCP, TLS, HTTP."
+    )
+
+    st.dataframe(
+        app_protocol_summary[
+            [
+                "test_name",
+                "protocol",
+                "total_experiment_results",
+                "blocking_signal_count",
+                "dns_blocking_events",
+                "tcp_blocking_events",
+                "tls_blocking_events",
+                "http_blocking_events",
+                "blocking_signal_rate",
+            ]
+        ].sort_values(["test_name", "protocol"]),
+        width="stretch",
+        hide_index=True,
+    )
