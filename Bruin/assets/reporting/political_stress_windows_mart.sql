@@ -15,6 +15,17 @@ description: |
   corroboration overweighting between protocol stress and elevated
   protocol count.
 
+  ADR-0004 / TD-44 / TD-45 (2026-07-05, v5): source_composite_pressure_score
+  (read from marts.fact_country_pressure_daily) no longer includes a Lumen
+  legal-pressure term -- see that asset's header. legal_pressure_score and
+  legal_pressure_is_synthetic are still passed through below for
+  transparency/provenance, but neither feeds this mart's own
+  composite_pressure_score, rolling_baseline_pressure, pressure_delta, or
+  suppression_window_probability/class -- those were already derived from
+  source_composite_pressure_score, not from legal_pressure_score directly,
+  so the only change here is that source_composite_pressure_score's own
+  value shifted upstream.
+
 depends:
   - reporting.mart_protocol_interference_trends
   - marts.fact_country_pressure_daily
@@ -60,6 +71,12 @@ country_pressure AS (
         measurement_date,
 
         conflict_pressure_score,
+
+        -- ADR-0004 / TD-44 / TD-45: passthrough only, as of 2026-07-05 --
+        -- legal_pressure_score is no longer a term in
+        -- source_composite_pressure_score below (see fact_country_pressure_daily
+        -- header). Kept here for transparency/provenance, not consumed by
+        -- this mart's own arithmetic.
         legal_pressure_score,
         platform_pressure_score,
         legal_pressure_is_synthetic,
@@ -276,7 +293,7 @@ SELECT
         ELSE 'NORMAL'
     END AS suppression_window_class,
 
-    'political_stress_windows_mart_v4'
+    'political_stress_windows_mart_v5'
         AS reporting_version,
 
     CURRENT_TIMESTAMP()

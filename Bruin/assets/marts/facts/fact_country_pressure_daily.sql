@@ -11,13 +11,24 @@ description: |
 
   Blends:
   - ACLED political conflict intensity
-  - Lumen legal takedown activity
   - Google transparency pressure
 
   Rebalanced so political stress dominates severity.
 
-  TD-01: Lumen data is entirely synthetic today. legal_pressure_is_synthetic
-  is a real, per-date column (not a static claim) -- see the lumen CTE.
+  ADR-0004 / TD-44 / TD-45 (2026-07-05): composite_pressure_score no
+  longer includes a Lumen legal-pressure term. Lumen is formally benched
+  (ADR-0004) as a fabricated, non-evidentiary source (TD-01); rather than
+  continue averaging in a value both documents agree isn't evidence,
+  composite_pressure_score is renormalized across conflict (0.75) and
+  platform (0.25) only. legal_pressure_score, legal_pressure_is_synthetic,
+  and the lumen CTE all remain -- ADR-0004 deliberately keeps the schema,
+  CTE, and provenance-flag machinery in place for a future real
+  Lumen-equivalent -- they are simply no longer arithmetic inputs to the
+  composite. Pre-reweighting behavior (0.60/0.25/0.15, Lumen included) is
+  documented as historical fact in TD-01's technical-debt-inventory.md row
+  and in ADR-0002's "5-6 floor" citation; neither has been rewritten to
+  look retroactively wrong -- both are annotated as describing the state
+  before this change.
 
 depends:
   - marts.dim_dates
@@ -62,9 +73,10 @@ acled AS (
     -- week: conflict_events, fatalities, and therefore
     -- conflict_pressure_score are CONSTANT within a calendar week and
     -- only step at week boundaries. Despite this table's nominal daily
-    -- grain, ACLED's 60%-weighted contribution to composite_pressure_score
-    -- is NOT day-resolved -- only legal_pressure_score (25%) and
-    -- platform_pressure_score (15%) vary within a week. Do not assume
+    -- grain, ACLED's 75%-weighted contribution to composite_pressure_score
+    -- (ADR-0004 / TD-44 / TD-45: 0.75 as of 2026-07-05, was 0.60 before
+    -- Lumen's term was dropped) is NOT day-resolved -- only
+    -- platform_pressure_score (25%) varies within a week. Do not assume
     -- day-to-day movement in composite_pressure_score reflects daily
     -- conflict data; it does not, 6 days out of 7.
 
@@ -184,6 +196,29 @@ scored AS (
 
     FROM joined
 
+),
+
+composite AS (
+
+    -- ADR-0004 / TD-44 / TD-45: legal_pressure_score (Lumen) is
+    -- deliberately not a term here -- see the asset header. Computed as
+    -- its own CTE step (not inline in the final SELECT) so pressure_level
+    -- below can reference the composite_pressure_score column directly
+    -- instead of re-deriving the formula in each CASE branch -- BigQuery
+    -- does not allow a SELECT-list alias to be referenced by another
+    -- expression in that same SELECT list.
+
+    SELECT
+        *,
+
+        ROUND(
+              (conflict_pressure_score * 0.75)
+            + (platform_pressure_score * 0.25),
+            4
+        ) AS composite_pressure_score
+
+    FROM scored
+
 )
 
 SELECT
@@ -221,33 +256,16 @@ SELECT
     regime_weeks_in_current_regime,
     regime_methodology_version,
 
-    ROUND(
-          (conflict_pressure_score * 0.60)
-        + (legal_pressure_score * 0.25)
-        + (platform_pressure_score * 0.15),
-        4
-    ) AS composite_pressure_score,
+    composite_pressure_score,
 
     CASE
-        WHEN (
-              (conflict_pressure_score * 0.60)
-            + (legal_pressure_score * 0.25)
-            + (platform_pressure_score * 0.15)
-        ) >= 6.5
+        WHEN composite_pressure_score >= 6.5
             THEN 'SEVERE'
 
-        WHEN (
-              (conflict_pressure_score * 0.60)
-            + (legal_pressure_score * 0.25)
-            + (platform_pressure_score * 0.15)
-        ) >= 4.0
+        WHEN composite_pressure_score >= 4.0
             THEN 'ELEVATED'
 
-        WHEN (
-              (conflict_pressure_score * 0.60)
-            + (legal_pressure_score * 0.25)
-            + (platform_pressure_score * 0.15)
-        ) >= 2.0
+        WHEN composite_pressure_score >= 2.0
             THEN 'MODERATE'
 
         ELSE 'LOW'
@@ -255,5 +273,5 @@ SELECT
 
     CURRENT_TIMESTAMP() AS snapshot_at
 
-FROM scored
+FROM composite
 ORDER BY measurement_date

@@ -13,6 +13,19 @@ description: |
   v3 recalibrates correlation confidence weighting and suppresses synthetic
   variance amplification from low-confidence protocol windows.
 
+  ADR-0004 / TD-44 / TD-45 (2026-07-05, v4): composite_pressure_score (read
+  from marts.fact_country_pressure_daily) no longer includes a Lumen
+  legal-pressure term -- see that asset's header. Because z_pressure below
+  is a global, unpartitioned AVG/STDDEV_SAMP OVER () normalization against
+  composite_pressure_score, this shifts the mean/stddev basis for every
+  row in this mart's full history, not just rows where legal_pressure_score
+  was previously nonzero -- verified via a live before/after query against
+  correlation_state/alignment_state/divergence_state distributions before
+  this version was materialized (see technical-debt-inventory.md TD-44/
+  TD-45 and ADR-0004's Consequences section for the actual numbers).
+  legal_pressure_score and legal_pressure_is_synthetic are still passed
+  through for transparency/provenance only.
+
 depends:
   - reporting.mart_protocol_interference_trends
   - intelligence.protocol_relationships
@@ -29,6 +42,11 @@ WITH pressure_windowed AS (
         measurement_date,
 
         conflict_pressure_score,
+
+        -- ADR-0004 / TD-44 / TD-45: passthrough only, as of 2026-07-05 --
+        -- legal_pressure_score is no longer a term in
+        -- composite_pressure_score (see fact_country_pressure_daily
+        -- header), so it is not an input to z_pressure below either.
         legal_pressure_score,
         platform_pressure_score,
         legal_pressure_is_synthetic,
@@ -399,7 +417,7 @@ SELECT
     'PRESSURE_FACT_V1'
         AS pressure_context_status,
 
-    'protocol_repression_correlation_mart_v3'
+    'protocol_repression_correlation_mart_v4'
         AS reporting_version,
 
     intelligence_version,

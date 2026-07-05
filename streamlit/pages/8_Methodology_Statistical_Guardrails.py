@@ -317,18 +317,23 @@ st.dataframe(
 )
 
 st.warning("""
-**Lumen Database data is currently entirely synthetic.** It is
+**Lumen Database data is currently entirely synthetic, and has been
+formally benched from this pipeline's scoring (ADR-0004).** It is
 generated for development (`scripts/lumen_parquet.py`, a fixed random
-seed), not sourced from a real Lumen export. This feeds
-`legal_pressure_score` (25% of `composite_pressure_score`) on the
-National Stress Observatory, Suppression Event Explorer, and Finance
-Bill 2024 Incident Report pages.
+seed), not sourced from a real Lumen export.
 
-A real, per-row `is_synthetic` flag is carried from the staging layer
-through every downstream table, so any chart or KPI actually affected
-displays an explicit warning rather than relying on this page alone.
-This warning will stop being accurate -- and should be updated -- once
-a real Lumen export replaces the fabricated dataset.
+As of 2026-07-05, `legal_pressure_score` is no longer a term in
+`composite_pressure_score` -- the composite is computed from
+`conflict_pressure_score` (75%) and `platform_pressure_score` (25%)
+only. `legal_pressure_score` and `legal_pressure_is_synthetic` remain
+in the underlying tables (schema, CTE, and provenance-flag machinery
+kept in place for a future real Lumen-equivalent), but no longer affect
+any figure on the National Stress Observatory, Suppression Event
+Explorer, or Finance Bill 2024 Incident Report pages.
+
+A real, per-row `is_synthetic` flag is still carried from the staging
+layer through every downstream table. Lumen will be reconsidered for
+inclusion once a real Lumen export replaces the fabricated dataset.
 """)
 
 st.divider()
