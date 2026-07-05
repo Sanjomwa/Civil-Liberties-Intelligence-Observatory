@@ -1,0 +1,74 @@
+[
+  {
+    "downstream": "intelligence.protocol_signal_regimes",
+    "upstream": "features.protocol_daily_signals",
+    "td_ref": "TD-49",
+    "reason": "TD-54 hold: do not cascade post-TD-47 dnscheck volume until TD-49 ships family-separated share denominators (simulated dilution flips secondary Finance Bill ELEVATED days to NORMAL)"
+  },
+  {
+    "downstream": "intelligence.protocol_lag_relationships",
+    "upstream": "features.protocol_daily_signals",
+    "td_ref": "TD-49",
+    "reason": "Same TD-54 hold boundary: downstream of features.protocol_daily_signals, not rematerialized until TD-49 resolves the family-pooling question"
+  },
+  {
+    "downstream": "reporting.mart_protocol_interference_trends",
+    "upstream": "features.protocol_daily_signals",
+    "td_ref": "TD-49",
+    "reason": "Same TD-54 hold boundary: this mart's regime_agg/regime_daily share rollup is the exact count-weighted logic the hold protects from dilution"
+  },
+  {
+    "downstream": "reporting.asn_behavior_profile_mart",
+    "upstream": "features.protocol_daily_signals",
+    "td_ref": "TD-49",
+    "reason": "Same TD-54 hold boundary: downstream of features.protocol_daily_signals, not rematerialized until TD-49 resolves the family-pooling question"
+  },
+  {
+    "downstream": "int.ooni_signals",
+    "upstream": "int.ooni_experiment_results",
+    "td_ref": "TD-56",
+    "reason": "Not included in the Tier 1 (TD-47/TD-52) cascade of 2026-07-05; disposition (rematerialize vs retire, only dim_country reads it) deferred to TD-56"
+  },
+  {
+    "downstream": "marts.dim_platforms",
+    "upstream": "stg.lumen_requests",
+    "td_ref": "TD-56",
+    "reason": "Pre-existing silent staleness (last built 2026-05-09) surfaced by this check's first run; per-asset disposition deferred to TD-56"
+  },
+  {
+    "downstream": "marts.dim_reasons",
+    "upstream": "marts.fact_ooni_censorship_signals",
+    "td_ref": "TD-56",
+    "reason": "Pre-existing silent staleness (last built 2026-05-09) surfaced by this check's first run; per-asset disposition deferred to TD-56"
+  },
+  {
+    "downstream": "marts.dim_reasons",
+    "upstream": "stg.lumen_requests",
+    "td_ref": "TD-56",
+    "reason": "Pre-existing silent staleness (last built 2026-05-09) surfaced by this check's first run; per-asset disposition deferred to TD-56"
+  },
+  {
+    "downstream": "marts.dim_regions",
+    "upstream": "stg.acled_conflict_events",
+    "td_ref": "TD-56",
+    "reason": "Pre-existing silent staleness; last built 2026-04-18, BEFORE commit 6dbe7ab's upstream schema rename (the TD-40/TD-41 root cause) -- rematerialize only after checking it against the renamed columns"
+  },
+  {
+    "downstream": "marts.dim_requestors",
+    "upstream": "stg.lumen_requests",
+    "td_ref": "TD-56",
+    "reason": "Pre-existing silent staleness (last built 2026-05-09) surfaced by this check's first run; per-asset disposition deferred to TD-56"
+  },
+  {
+    "downstream": "marts.fact_asn_repression_index",
+    "upstream": "marts.fact_country_pressure_daily",
+    "td_ref": "TD-56",
+    "reason": "Pre-existing silent staleness (last built 2026-05-11, upstream reworked by TD-40/ADR-0004 since); feeds pages 5/7 via asn_behavior_profile_mart, so disposition needs a real look -- deferred to TD-56"
+  },
+  {
+    "downstream": "marts.fact_network_blocking_daily",
+    "upstream": "marts.fact_ooni_censorship_signals",
+    "td_ref": "TD-56",
+    "reason": "Pre-existing silent staleness (last built 2026-05-09) surfaced by this check's first run; per-asset disposition deferred to TD-56"
+  }
+]
