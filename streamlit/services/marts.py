@@ -471,35 +471,39 @@ def get_event_explorer(start_date, end_date):
 
 @st.cache_data(ttl=3600)
 def get_finance_bill_incident():
-    sql = f"""
+    """
+    Returns (correlation_df, asn_df).
+
+    TD-02: protocol_repression_correlation_mart (real measurement_date x
+    protocol grain) and asn_behavior_profile_mart (one row per ASN,
+    full-history snapshot, no date dimension at all) do not share a join
+    key -- the mart has nothing to join a specific date/protocol row to.
+    The former CROSS JOIN fabricated one, silently multiplying every
+    correlation row once per qualifying ASN (3x at last count). Returned
+    as two separate, ungrouped dataframes instead of one fabricated join.
+    """
+    correlation_sql = f"""
         SELECT
-            c.measurement_date,
-            c.protocol,
-            c.rolling_pressure_corr,
-            c.alignment_state,
-            c.correlation_state,
-            c.divergence_state,
-            c.protocol_stress_score,
-            c.composite_pressure_score,
-            c.pressure_level,
-            a.display_asn,
-            a.network_class,
-            a.behavioral_priority_score,
-            a.avg_weighted_blocking,
-            c.reporting_version,
-            c.snapshot_at
-        FROM `{REPORTING}.protocol_repression_correlation_mart` c
-        CROSS JOIN `{REPORTING}.asn_behavior_profile_mart` a
-        WHERE c.measurement_date BETWEEN
+            measurement_date,
+            protocol,
+            rolling_pressure_corr,
+            alignment_state,
+            correlation_state,
+            divergence_state,
+            protocol_stress_score,
+            composite_pressure_score,
+            pressure_level,
+            reporting_version,
+            snapshot_at
+        FROM `{REPORTING}.protocol_repression_correlation_mart`
+        WHERE measurement_date BETWEEN
             DATE('2024-06-15')
             AND DATE('2024-07-15')
-        AND a.network_class = 'MAJOR_KENYA_PROVIDER'
-        ORDER BY c.measurement_date, c.protocol
+        ORDER BY measurement_date, protocol
     """
 
-    df = run_query(sql)
-    return _validate_mart_response(
-        df,
+    correlation_df = _validate_mart_response(
+        run_query(correlation_sql),
         required_columns=[
             "measurement_date",
             "protocol",
@@ -510,10 +514,6 @@ def get_finance_bill_incident():
             "protocol_stress_score",
             "composite_pressure_score",
             "pressure_level",
-            "display_asn",
-            "network_class",
-            "behavioral_priority_score",
-            "avg_weighted_blocking",
             "reporting_version",
             "snapshot_at",
         ],
@@ -527,10 +527,6 @@ def get_finance_bill_incident():
             "protocol_stress_score": "numeric",
             "composite_pressure_score": "numeric",
             "pressure_level": "string",
-            "display_asn": "string",
-            "network_class": "string",
-            "behavioral_priority_score": "numeric",
-            "avg_weighted_blocking": "numeric",
             "reporting_version": "string",
             "snapshot_at": "datetime",
         },
@@ -540,5 +536,50 @@ def get_finance_bill_incident():
             "reporting_version",
             "snapshot_at",
         ],
-        title="get_finance_bill_incident",
+        title="get_finance_bill_incident.correlation",
     )
+
+    # asn_behavior_profile_mart has no date dimension (TD-28, confirmed
+    # during TD-02's investigation) -- no WHERE on measurement_date is
+    # possible or appropriate here, only its own network_class filter.
+    asn_sql = f"""
+        SELECT
+            display_asn,
+            network_class,
+            behavioral_priority_score,
+            avg_weighted_blocking,
+            reporting_version,
+            snapshot_at
+        FROM `{REPORTING}.asn_behavior_profile_mart`
+        WHERE network_class = 'MAJOR_KENYA_PROVIDER'
+        ORDER BY behavioral_priority_score DESC
+    """
+
+    asn_df = _validate_mart_response(
+        run_query(asn_sql),
+        required_columns=[
+            "display_asn",
+            "network_class",
+            "behavioral_priority_score",
+            "avg_weighted_blocking",
+            "reporting_version",
+            "snapshot_at",
+        ],
+        dtype_hints={
+            "display_asn": "string",
+            "network_class": "string",
+            "behavioral_priority_score": "numeric",
+            "avg_weighted_blocking": "numeric",
+            "reporting_version": "string",
+            "snapshot_at": "datetime",
+        },
+        non_nullable=[
+            "display_asn",
+            "network_class",
+            "reporting_version",
+            "snapshot_at",
+        ],
+        title="get_finance_bill_incident.asn",
+    )
+
+    return correlation_df, asn_df

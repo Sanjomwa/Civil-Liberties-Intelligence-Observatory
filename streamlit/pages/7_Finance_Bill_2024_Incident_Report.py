@@ -33,7 +33,7 @@ render_sidebar()
 # DATA
 # ============================================================
 
-df = get_finance_bill_incident()
+df, asn_df = get_finance_bill_incident()
 
 if df.empty:
     st.warning("No Finance Bill 2024 intelligence available.")
@@ -246,17 +246,14 @@ st.divider()
 
 st.subheader("Major Provider ASN Spike Analysis")
 
-asn_spikes = (
-    df.groupby("display_asn")
-    .agg({
-        "behavioral_priority_score": "mean",
-        "avg_weighted_blocking": "mean"
-    })
-    .reset_index()
-)
+st.caption("""
+ASN behavior profile is a full-history snapshot (asn_behavior_profile_mart
+has no date dimension) -- not scoped to the Finance Bill 2024 window like
+the sections above.
+""")
 
 fig4 = px.bar(
-    asn_spikes.sort_values(
+    asn_df.sort_values(
         "behavioral_priority_score",
         ascending=False
     ),
@@ -277,8 +274,8 @@ st.plotly_chart(
 
 st.markdown(f"""
 These are large {COUNTRY} network providers showing
-elevated blocking behavior during the Finance Bill
-suppression window.
+elevated blocking behavior in their overall observed history,
+not specifically during the Finance Bill window above.
 """)
 
 # ============================================================
