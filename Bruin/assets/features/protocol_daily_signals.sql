@@ -17,6 +17,7 @@ description: |
 
 depends:
   - marts.fact_ooni_censorship_signals
+  - marts.dim_censorship_confidence
 
 materialization:
   type: table
@@ -74,6 +75,19 @@ WITH source_events AS (
     AND protocol IS NOT NULL
 ),
 
+source_events_with_confidence AS (
+  SELECT
+    e.*,
+    COALESCE(c.confidence_level, 'NONE') AS confidence_level
+  FROM source_events AS e
+  LEFT JOIN `{{ var.project_id }}.marts.dim_censorship_confidence` AS c
+    ON c.min_score IS NOT NULL AND e.confidence_score >= c.min_score
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY e.protocol, e.observation_id, e.measurement_id
+    ORDER BY c.ordinal_rank DESC
+  ) = 1
+),
+
 feature_thresholds AS (
   SELECT
     5 AS min_measurements_per_day,
@@ -94,7 +108,7 @@ measurement_rollup AS (
     measurement_id,
     MAX(IF(is_blocking_signal, 1, 0)) AS measurement_has_blocking_signal,
     AVG(COALESCE(confidence_score, 0.0)) AS measurement_avg_confidence
-  FROM source_events
+  FROM source_events_with_confidence
   GROUP BY
     measurement_date,
     country,
@@ -127,9 +141,9 @@ daily_observation_features AS (
     COUNTIF(blocking_detail = 'http.451') AS http_451_events,
     COUNTIF(STARTS_WITH(blocking_detail, 'http.') AND blocking_detail NOT IN ('http.ok', 'http.451')) AS http_error_events,
     AVG(COALESCE(confidence_score, 0.0)) AS avg_confidence_score,
-    COUNTIF(is_blocking_signal AND COALESCE(confidence_score, 0.0) >= 0.80) AS high_confidence_blocked_events,
-    COUNTIF(is_blocking_signal AND COALESCE(confidence_score, 0.0) >= 0.60 AND COALESCE(confidence_score, 0.0) < 0.80) AS medium_confidence_blocked_events,
-    COUNTIF(is_blocking_signal AND COALESCE(confidence_score, 0.0) > 0.0 AND COALESCE(confidence_score, 0.0) < 0.60) AS low_confidence_blocked_events,
+    COUNTIF(is_blocking_signal AND confidence_level = 'HIGH') AS high_confidence_blocked_events,
+    COUNTIF(is_blocking_signal AND confidence_level = 'MEDIUM') AS medium_confidence_blocked_events,
+    COUNTIF(is_blocking_signal AND confidence_level = 'LOW') AS low_confidence_blocked_events,
     SAFE_DIVIDE(COUNTIF(is_blocking_signal), COUNT(*)) AS blocked_rate_observation_weighted,
     SAFE_DIVIDE(COUNTIF(result_state = 'UNKNOWN'), COUNT(*)) AS unknown_rate,
     SAFE_DIVIDE(COUNTIF(result_state = 'DOWN'), COUNT(*)) AS down_rate,
@@ -137,7 +151,7 @@ daily_observation_features AS (
       SUM(IF(is_blocking_signal, COALESCE(confidence_score, 0.0), 0.0)),
       NULLIF(COUNT(*), 0)
     ) AS confidence_weighted_interference
-  FROM source_events
+  FROM source_events_with_confidence
   GROUP BY
     measurement_date,
     country,

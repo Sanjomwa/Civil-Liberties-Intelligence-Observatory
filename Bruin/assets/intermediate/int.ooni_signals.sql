@@ -41,12 +41,6 @@ SELECT
   result_state,
   is_blocking_signal AS is_blocked,
   blocking_detail AS blocking_signal_type,
-  CASE
-    WHEN confidence_score >= 0.80 THEN 'HIGH'
-    WHEN confidence_score >= 0.60 THEN 'MEDIUM'
-    WHEN confidence_score > 0 THEN 'LOW'
-    ELSE 'NONE'
-  END AS blocking_confidence,
   failure_reason,
   confidence_score,
   int_extracted_at

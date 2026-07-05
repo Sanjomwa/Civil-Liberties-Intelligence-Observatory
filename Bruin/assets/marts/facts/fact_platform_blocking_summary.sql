@@ -15,6 +15,7 @@ owner: civil-liberties-pipeline
 
 depends:
   - marts.fact_ooni_censorship_signals
+  - marts.dim_censorship_confidence
 
 materialization:
   type: table
@@ -48,9 +49,17 @@ WITH base AS (
 
         measurement_id,
         observation_id,
-        experiment_result_id
+        experiment_result_id,
 
-    FROM `{{ var.project_id }}.marts.fact_ooni_censorship_signals`
+        COALESCE(c.confidence_level, 'NONE') AS confidence_level
+
+    FROM `{{ var.project_id }}.marts.fact_ooni_censorship_signals` AS s
+    LEFT JOIN `{{ var.project_id }}.marts.dim_censorship_confidence` AS c
+        ON c.min_score IS NOT NULL AND s.confidence_score >= c.min_score
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY s.experiment_result_id
+        ORDER BY c.ordinal_rank DESC
+    ) = 1
 ),
 
 aggregated AS (
@@ -85,10 +94,10 @@ aggregated AS (
         COUNTIF(blocking_detail = 'tls') AS tls_blocking_events,
         COUNTIF(blocking_detail = 'http') AS http_blocking_events,
 
-        -- confidence bands
-        COUNTIF(confidence_score >= 0.90) AS high_confidence_events,
-        COUNTIF(confidence_score BETWEEN 0.70 AND 0.89) AS medium_confidence_events,
-        COUNTIF(confidence_score < 0.70) AS low_confidence_events,
+        -- confidence bands (thresholds from marts.dim_censorship_confidence, per ADR-0001)
+        COUNTIF(confidence_level = 'HIGH') AS high_confidence_events,
+        COUNTIF(confidence_level = 'MEDIUM') AS medium_confidence_events,
+        COUNTIF(confidence_level IN ('LOW', 'NONE')) AS low_confidence_events,
 
         SAFE_DIVIDE(
             COUNTIF(is_blocking_signal),
