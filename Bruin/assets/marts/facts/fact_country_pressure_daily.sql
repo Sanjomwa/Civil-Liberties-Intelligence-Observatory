@@ -85,7 +85,7 @@ acled AS (
         SUM(events) AS conflict_events,
         SUM(fatalities) AS fatalities
     FROM `{{ var.project_id }}.stg.acled_conflict_events`
-    WHERE country = 'Kenya'
+    WHERE country = '{{ var.country }}'
     GROUP BY week_start_date
 
 ),
@@ -131,7 +131,7 @@ regime AS (
         weeks_in_current_regime,
         regime_methodology_version
     FROM `{{ var.project_id }}.intelligence.acled_pressure_regimes`
-    WHERE country = 'Kenya'
+    WHERE country = '{{ var.country }}'
 
 ),
 
@@ -224,8 +224,8 @@ composite AS (
 SELECT
     measurement_date,
 
-    'Kenya' AS country,
-    'KE' AS iso2,
+    '{{ var.country }}' AS country,
+    '{{ var.iso2 }}' AS iso2,
 
     conflict_events,
     fatalities,

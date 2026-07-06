@@ -29,7 +29,7 @@ WITH observation_horizon AS (
 
     FROM `{{ var.project_id }}.features.protocol_daily_signals`
 
-    WHERE country = 'KE'
+    WHERE country = '{{ var.iso2 }}'
 ),
 
 
@@ -47,7 +47,7 @@ protocol_averages AS (
 
     FROM `{{ var.project_id }}.features.protocol_daily_signals`
 
-    WHERE country = 'KE'
+    WHERE country = '{{ var.iso2 }}'
 
     GROUP BY asn, protocol
 ),
@@ -152,7 +152,7 @@ feature_metrics AS (
     FROM
         `{{ var.project_id }}.features.protocol_daily_signals`
 
-    WHERE country = 'KE'
+    WHERE country = '{{ var.iso2 }}'
 
     GROUP BY asn
 ),
@@ -195,7 +195,7 @@ intelligence_metrics AS (
     FROM
         `{{ var.project_id }}.intelligence.protocol_relationships`
 
-    WHERE country = 'KE'
+    WHERE country = '{{ var.iso2 }}'
 
     GROUP BY asn
 ),

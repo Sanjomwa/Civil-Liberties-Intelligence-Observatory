@@ -38,7 +38,7 @@ WITH base AS (
 
     FROM `{{ var.project_id }}.{{ var.bq_dataset }}.lumen_requests`
 
-    WHERE LOWER(country) IN ('ke','kenya')
+    WHERE LOWER(country) IN (LOWER('{{ var.iso2 }}'), LOWER('{{ var.country }}'))
       AND date_submitted IS NOT NULL
 ),
 

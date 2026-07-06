@@ -1,0 +1,7 @@
+[
+  {
+    "file": "marts/dims/dim_country.sql",
+    "reason": "The designated single legitimate location for raw country literals: the normalized CTE maps raw source values ('KE', 'KENYA', 'CD', ...) to canonical name/iso2. This is normalization mapping data, not a scope filter -- adding a country means adding a mapping row here, by design.",
+    "reference": "decision-log.md 2026-07-06 multi-country scaffolding entry; TD-09"
+  }
+]

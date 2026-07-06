@@ -76,7 +76,7 @@ WITH pressure_windowed AS (
 
     FROM `{{ var.project_id }}.marts.fact_country_pressure_daily`
 
-    WHERE iso2 = 'KE'
+    WHERE iso2 = '{{ var.iso2 }}'
 ),
 
 pressure_variance AS (
@@ -126,7 +126,7 @@ protocol_relationships AS (
     FROM
         `{{ var.project_id }}.intelligence.protocol_relationships`
 
-    WHERE country = 'KE'
+    WHERE country = '{{ var.iso2 }}'
 
     GROUP BY
         measurement_date,

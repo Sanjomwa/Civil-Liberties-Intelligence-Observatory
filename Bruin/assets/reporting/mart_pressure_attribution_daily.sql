@@ -65,6 +65,21 @@ materialization:
   type: table
   strategy: create+replace
 
+# TD-57 follow-up (2026-07-06): the weights-drift alarm, enforced at
+# materialization time rather than display-side. attribution_residual is
+# ROUND()ed to 4dp and is rounding noise (<= 0.0001 verified live) while
+# the hardcoded 0.75/0.25 weights here agree with
+# marts.fact_country_pressure_daily's composite formula (ADR-0004). Any
+# row at or above 0.001 means the two sites have drifted -- fail the run
+# instead of waiting for a dashboard viewer to notice.
+custom_checks:
+  - name: attribution_residual_within_rounding
+    description: composite minus (conflict + platform contributions) must stay rounding-level; drift means the ADR-0004 weights are out of sync with fact_country_pressure_daily
+    query: |
+      SELECT COUNTIF(ABS(attribution_residual) >= 0.001)
+      FROM `{{ var.project_id }}.reporting.mart_pressure_attribution_daily`
+    value: 0
+
 columns:
   - name: measurement_date
     type: date

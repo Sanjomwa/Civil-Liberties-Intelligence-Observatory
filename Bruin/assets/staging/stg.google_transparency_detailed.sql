@@ -28,7 +28,7 @@ WITH raw AS (
         PARSE_DATE('%Y-%m-%d', period_ending)                    AS period_date,
         EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', period_ending)) AS year
     FROM `{{ var.project_id }}.{{ var.bq_dataset }}.google_transparency_detailed`
-    WHERE cldr_territory_code = 'KE'
+    WHERE cldr_territory_code = '{{ var.iso2 }}'
 )
 
 SELECT * FROM raw

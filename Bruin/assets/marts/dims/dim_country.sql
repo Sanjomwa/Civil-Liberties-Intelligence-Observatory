@@ -10,6 +10,15 @@ description: |
   Standardizes source country labels into normalized ISO-based geography keys
   and analytical scope classifications.
 
+  COUNTRY-LITERAL POLICY (2026-07-06): the normalized CTE below is the ONE
+  designated location in the SQL pipeline where raw country literals
+  ('KE', 'KENYA', 'CD', ...) may appear -- they are normalization mapping
+  DATA (raw source value -> canonical name/iso2), not scope filters.
+  Every scope filter elsewhere must use {{ var.country }} / {{ var.iso2 }}
+  from pipeline.yml. Enforced by
+  Bruin/scripts/country_literal_check/check_country_literals.py, whose
+  allowlist names this file.
+
 materialization:
   type: table
   strategy: create+replace
@@ -66,7 +75,7 @@ SELECT
     iso2,
 
     CASE
-        WHEN iso2 = 'KE' THEN 'PRIMARY_OBSERVATION_SCOPE'
+        WHEN iso2 = '{{ var.iso2 }}' THEN 'PRIMARY_OBSERVATION_SCOPE'
         WHEN iso2 IS NOT NULL THEN 'REGIONAL_CONTEXT'
         ELSE 'UNCLASSIFIED'
     END AS analytical_scope

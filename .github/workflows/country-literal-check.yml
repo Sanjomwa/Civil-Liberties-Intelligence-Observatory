@@ -1,0 +1,32 @@
+name: Country Literal Check
+
+# Companion to the 2026-07-06 multi-country scaffolding pass: every
+# country scope filter in SQL assets must route through the pipeline
+# variables ({{ var.country }} / {{ var.iso2 }}); raw literals are
+# legitimate only in dim_country.sql's normalization mapping (see the
+# TD/ADR-referenced allowlist next to the script). Unlike ADR-0005's
+# staleness check, this is a pure repo-state check -- no warehouse
+# access, no credentials -- so it runs on every push/PR like lint.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  country-literal-check:
+    name: No hardcoded country literals in SQL assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Check SQL assets for hardcoded country literals
+        run: python Bruin/scripts/country_literal_check/check_country_literals.py

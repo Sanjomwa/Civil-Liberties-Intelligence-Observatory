@@ -17,6 +17,13 @@ depends:
 materialization:
   type: table
   strategy: create+replace
+  # TD-58 (2026-07-06): same treatment as stg.ooni_measurements -- this
+  # table inherits the same ad-hoc query shape (filter by test type /
+  # date). Costs nothing beyond the rebuild; see that asset for rationale.
+  partition_by: measurement_date
+  cluster_by:
+    - country
+    - test_name
 
 columns:
   - name: observation_id

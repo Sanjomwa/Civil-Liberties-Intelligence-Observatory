@@ -104,7 +104,7 @@ feature_daily AS (
     COUNTIF(zero_variance_flag) AS zero_variance_feature_rows,
     ANY_VALUE(feature_version) AS feature_version
   FROM `{{ var.project_id }}.features.protocol_daily_signals`
-  WHERE country = 'KE'
+  WHERE country = '{{ var.iso2 }}'
   GROUP BY measurement_date, protocol
 ),
 
@@ -120,7 +120,7 @@ regime_cell AS (
     observation_count,
     intelligence_version
   FROM `{{ var.project_id }}.intelligence.protocol_signal_regimes`
-  WHERE country = 'KE'
+  WHERE country = '{{ var.iso2 }}'
 ),
 
 -- TD-49: aggregate WITHIN each test_family first. A family's shares are

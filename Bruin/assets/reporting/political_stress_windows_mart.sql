@@ -102,7 +102,7 @@ country_pressure AS (
 
     FROM `{{ var.project_id }}.marts.fact_country_pressure_daily`
 
-    WHERE iso2 = 'KE'
+    WHERE iso2 = '{{ var.iso2 }}'
 ),
 
 base AS (

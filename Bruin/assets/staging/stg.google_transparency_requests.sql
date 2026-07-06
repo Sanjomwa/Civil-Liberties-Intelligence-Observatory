@@ -37,8 +37,8 @@ WITH base AS (
             ELSE SAFE.PARSE_DATE('%Y-%m', time_period)
         END AS period_date
     FROM `{{ var.project_id }}.{{ var.bq_dataset }}.google_transparency_requests`
-    WHERE country = 'Kenya'
-       OR cldr_territory = 'KE'
+    WHERE country = '{{ var.country }}'
+       OR cldr_territory = '{{ var.iso2 }}'
 ),
 
 raw AS (
