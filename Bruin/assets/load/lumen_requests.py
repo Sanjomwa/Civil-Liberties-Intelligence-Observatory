@@ -10,8 +10,14 @@ description: |
   Uploads canonical Lumen requests parquet to env-isolated GCS path and
   refreshes BigQuery external table in staging/prod.
 
-depends:
-  - raw.lumen_requests
+  TD-42 (resolved 2026-07-06): this asset reads a local dev-fixture parquet
+  (LOCAL_FILE below), NOT a Bruin asset. Its former `depends: raw.lumen_requests`
+  declared a lineage that never existed -- the code has always ignored it, and
+  the `raw` dataset does not exist in BigQuery (see the staleness-check script's
+  mechanism notes). The false declaration is removed rather than reconciled:
+  Lumen is formally benched (ADR-0004), so this ingestion pathway is retained
+  but not being wired up. Any future real Lumen source should declare an
+  accurate upstream at that time.
 
 materialization:
   type: table

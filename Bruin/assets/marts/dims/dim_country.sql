@@ -16,7 +16,7 @@ materialization:
 
 depends:
   - stg.lumen_requests
-  - int.ooni_signals
+  - int.ooni_experiment_results
   - stg.acled_conflict_events
   - stg.google_transparency_requests
   - stg.google_transparency_detailed
@@ -26,7 +26,9 @@ WITH raw AS (
 
     SELECT country AS raw_country FROM `stg.lumen_requests`
     UNION DISTINCT
-    SELECT country FROM `int.ooni_signals`
+    -- Repointed off int.ooni_signals (retired 2026-07-06, TD-56) to the live
+    -- OONI interpretation table; both expose the same country values.
+    SELECT country FROM `int.ooni_experiment_results`
     UNION DISTINCT
     SELECT country FROM `stg.acled_conflict_events`
     UNION DISTINCT
