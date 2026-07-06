@@ -60,6 +60,7 @@ A diagnostic investigation (TD-47 through TD-52, `technical-debt-inventory.md`) 
 
 ## Step 4 — Portability and hygiene (parallel with Step 3, lower urgency)
 
+- **DONE (2026-07-05 script/allowlist, 2026-07-06 ADR + scheduled workflow): the materialization-staleness guardrail (ADR-0005).** A daily CI check (`.github/workflows/staleness-check.yml` → `Bruin/scripts/staleness_check/check_materialization_staleness.py`) that fails on any *new, undocumented* dependency edge where a downstream table's `last_modified_time` is older than its upstream's — the TD-38/TD-40/TD-54 failure category, mechanized. Deliberate gaps (currently the TD-54/TD-49 hold and TD-56's seven pre-existing stale marts) live in a TD-referenced allowlist next to the script; resolving those TDs must prune the matching entries in the same commit. **Follow-on work, open: TD-56** — per-asset disposition (rematerialize vs retire) for the seven previously-unknown stale marts the check's first run surfaced; see its inventory row for the two cautions (`dim_regions` predates the `6dbe7ab` rename; `fact_asn_repression_index` feeds dashboard pages 5/7).
 - Make the local-ingestion root path configurable rather than hardcoded to a Windows path in both `scripts/local_ingest_ooni.py` and `scripts/download_ooni.ps1` (TD-11).
 - Replace the manual resume-checkpoint literal in `download_ooni.ps1` with a persisted state file (TD-12).
 - Migrate away from long-lived downloadable service-account keys in `infra/setup-gcp.sh` toward Workload Identity Federation (TD-13).

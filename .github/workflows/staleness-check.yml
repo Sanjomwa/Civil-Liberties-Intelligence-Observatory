@@ -1,0 +1,52 @@
+name: Materialization Staleness Check
+
+# ADR-0005: detects downstream tables built from upstream state that has
+# since changed (the TD-38/TD-40/TD-54 failure category). Runs daily because
+# staleness is introduced by warehouse-side actions (manual bruin runs,
+# backfills), which do not correlate with pushes; the push trigger below is
+# path-filtered so that edits to the check itself or its allowlist are
+# validated at merge time, without blaming unrelated commits for
+# warehouse-state failures.
+
+"on":
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "Bruin/scripts/staleness_check/**"
+      - ".github/workflows/staleness-check.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GOOGLE_CLOUD_PROJECT: encoded-joy-485413-k5
+
+jobs:
+  staleness-check:
+    name: Detect undocumented materialization staleness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/245097041714/locations/global/workloadIdentityPools/clio-dev/providers/github'
+          service_account: 'bruin-ci@encoded-joy-485413-k5.iam.gserviceaccount.com'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-cloud-bigquery==3.41.0
+      - name: Install bruin CLI
+        run: |
+          curl -LsSf https://getbruin.com/install/cli | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Run staleness check
+        run: python Bruin/scripts/staleness_check/check_materialization_staleness.py
