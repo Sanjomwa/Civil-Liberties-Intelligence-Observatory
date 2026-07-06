@@ -166,4 +166,5 @@ PAGES = [
     "Suppression Event Explorer",
     "Finance Bill 2024 Incident Report",
     "Methodology & Statistical Guardrails",
+    "Pressure Attribution",
 ]
