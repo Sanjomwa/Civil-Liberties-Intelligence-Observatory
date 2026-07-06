@@ -132,7 +132,11 @@ daily_observation_features AS (
     COUNTIF(result_state = 'BLOCKED') AS blocked_events,
     COUNTIF(result_state = 'DOWN') AS down_events,
     COUNTIF(result_state = 'UNKNOWN') AS unknown_events,
-    COUNTIF(blocking_detail = 'dns.bogon') AS dns_bogon_events,
+    -- TD-55 (2026-07-06): 'dns.bogon_probe_reported' is the probe
+    -- engine's own bogon verdict (answers discarded by the probe, so the
+    -- upstream answer-regex path can't label it 'dns.bogon'). Both are
+    -- bogon evidence; count both.
+    COUNTIF(blocking_detail IN ('dns.bogon', 'dns.bogon_probe_reported')) AS dns_bogon_events,
     COUNTIF(blocking_detail = 'dns.nxdomain') AS dns_nxdomain_events,
     COUNTIF(blocking_detail = 'tcp.rst') AS tcp_reset_events,
     COUNTIF(blocking_detail = 'tcp.timeout') AS tcp_timeout_events,

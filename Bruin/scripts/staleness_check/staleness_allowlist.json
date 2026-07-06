@@ -1,29 +1,5 @@
 [
   {
-    "downstream": "intelligence.protocol_signal_regimes",
-    "upstream": "features.protocol_daily_signals",
-    "td_ref": "TD-49",
-    "reason": "TD-54 hold: do not cascade post-TD-47 dnscheck volume until TD-49 ships family-separated share denominators (simulated dilution flips secondary Finance Bill ELEVATED days to NORMAL)"
-  },
-  {
-    "downstream": "intelligence.protocol_lag_relationships",
-    "upstream": "features.protocol_daily_signals",
-    "td_ref": "TD-49",
-    "reason": "Same TD-54 hold boundary: downstream of features.protocol_daily_signals, not rematerialized until TD-49 resolves the family-pooling question"
-  },
-  {
-    "downstream": "reporting.mart_protocol_interference_trends",
-    "upstream": "features.protocol_daily_signals",
-    "td_ref": "TD-49",
-    "reason": "Same TD-54 hold boundary: this mart's regime_agg/regime_daily share rollup is the exact count-weighted logic the hold protects from dilution"
-  },
-  {
-    "downstream": "reporting.asn_behavior_profile_mart",
-    "upstream": "features.protocol_daily_signals",
-    "td_ref": "TD-49",
-    "reason": "Same TD-54 hold boundary: downstream of features.protocol_daily_signals, not rematerialized until TD-49 resolves the family-pooling question"
-  },
-  {
     "downstream": "int.ooni_signals",
     "upstream": "int.ooni_experiment_results",
     "td_ref": "TD-56",

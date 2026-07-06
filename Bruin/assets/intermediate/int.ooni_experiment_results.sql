@@ -51,8 +51,23 @@ WITH dns AS (
     answer AS endpoint_ip,
     CAST(NULL AS INT64) AS endpoint_port,
     dns_failure AS failure_reason,
+    -- TD-55 (2026-07-06): 'dns_bogon_error' is the probe engine's OWN
+    -- bogon verdict -- it detected bogon answers, discarded them, and
+    -- reported only this failure string (verified in raw JSON: answers is
+    -- null on every such row, so the answer-field regex below can never
+    -- fire). Live evidence established these are real interference
+    -- signatures, not artifacts: all 9,046 rows are dnscheck bootstrap
+    -- lookups of public DoH/DoT resolver hostnames where EVERY resolver
+    -- domain in the session bogoned at once (4,523/4,523 measurements,
+    -- zero mixed) while messaging apps' DNS on the same network-days
+    -- resolved normally (whatsapp 24,553 OK vs 2 DOWN) -- the selective
+    -- anti-encrypted-DNS enforcement signature, exactly what dnscheck
+    -- exists to detect. Kept as a distinct blocking_detail
+    -- ('dns.bogon_probe_reported' vs the regex path's 'dns.bogon') to
+    -- preserve verdict provenance; downstream counts both.
     CASE
       WHEN REGEXP_CONTAINS(LOWER(COALESCE(answer, '')), r'^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|0\.0\.0\.0$|::1$|fc|fd|fe80)') THEN 'BLOCKED'
+      WHEN LOWER(COALESCE(dns_failure, '')) = 'dns_bogon_error' THEN 'BLOCKED'
       WHEN LOWER(COALESCE(dns_failure, '')) IN ('nxdomain', 'dns_nxdomain_error') THEN 'DOWN'
       WHEN dns_failure IS NOT NULL THEN 'UNKNOWN'
       WHEN answer IS NOT NULL THEN 'OK'
@@ -60,6 +75,7 @@ WITH dns AS (
     END AS result_state,
     CASE
       WHEN REGEXP_CONTAINS(LOWER(COALESCE(answer, '')), r'^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|0\.0\.0\.0$|::1$|fc|fd|fe80)') THEN 'dns.bogon'
+      WHEN LOWER(COALESCE(dns_failure, '')) = 'dns_bogon_error' THEN 'dns.bogon_probe_reported'
       WHEN LOWER(COALESCE(dns_failure, '')) IN ('nxdomain', 'dns_nxdomain_error') THEN 'dns.nxdomain'
       WHEN dns_failure IS NOT NULL THEN CONCAT('dns.', LOWER(dns_failure))
       WHEN answer IS NOT NULL THEN 'dns.ok'
@@ -67,6 +83,8 @@ WITH dns AS (
     END AS blocking_detail,
     CASE
       WHEN REGEXP_CONTAINS(LOWER(COALESCE(answer, '')), r'^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|0\.0\.0\.0$|::1$|fc|fd|fe80)') THEN 0.90
+      -- Probe-engine bogon verdict: same strength as the regex path.
+      WHEN LOWER(COALESCE(dns_failure, '')) = 'dns_bogon_error' THEN 0.90
       WHEN answer IS NOT NULL THEN 0.70
       ELSE 0.40
     END AS confidence_score

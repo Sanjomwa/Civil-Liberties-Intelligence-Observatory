@@ -176,6 +176,7 @@ st.dataframe(
         [
             "protocol",
             "protocol_state",
+            "state_driving_family",
             "protocol_stress_score",
             "regime_confidence",
             "severe_obs_share",
@@ -186,6 +187,16 @@ st.dataframe(
     ],
     use_container_width=True,
     hide_index=True
+)
+
+st.caption(
+    "state_driving_family names which test family (dns = dedicated "
+    "dnscheck resolver testing; messaging / circumvention = DNS/TCP/TLS/"
+    "HTTP checks embedded in app-specific tests) triggered the protocol "
+    "state. Shares are computed within each family's own volume, never "
+    "pooled across families (TD-49) — a high-volume quiet family cannot "
+    "mask a small loud one, and confidence describes the driving "
+    "family's evidence."
 )
 
 st.divider()
