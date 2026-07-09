@@ -253,8 +253,8 @@ These controls are intended to keep the observatory stable across local developm
 ### 1. Clone
 
 ```bash
-git clone https://github.com/Sanjomwa/Civil-Liberties-and-Censorship-Analysis-with-Bruin.git
-cd Civil-Liberties-and-Censorship-Analysis-with-Bruin
+git clone https://github.com/Sanjomwa/Civil-Liberties-Intelligence-Observatory.git
+cd Civil-Liberties-Intelligence-Observatory
 ```
 
 ### 2. Create a Python Environment
