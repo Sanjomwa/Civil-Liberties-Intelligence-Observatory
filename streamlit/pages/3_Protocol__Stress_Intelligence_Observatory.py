@@ -3,11 +3,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+from components.status import render_state_badge, render_confidence_badge
 from components.trust import render_trust_strip, attribution_footer
 from core.config import COUNTRY
 from core.filters import render_sidebar
 from core.state import init_state
-from core.theme import apply_layout
+from core.theme import apply_layout, protocol_color, confidence_color, inject_css
 from services.marts import get_protocol_blocking_summary, get_protocol_stress_intelligence
 
 
@@ -16,6 +17,8 @@ st.set_page_config(
     page_icon="🔗",
     layout="wide",
 )
+
+inject_css()
 
 
 def _ensure_protocol_intelligence_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -112,15 +115,19 @@ c1.metric(
     _format_number(latest_protocol["protocol_stress_score"]),
 )
 
-c2.metric(
-    "Current State",
-    str(latest_protocol["protocol_state"]),
-)
+with c2:
+    render_state_badge(
+        "Current State",
+        latest_protocol["protocol_state"],
+        protocol_color(latest_protocol["protocol_state"]),
+    )
 
-c3.metric(
-    "Confidence",
-    str(latest_protocol["confidence_level"]),
-)
+with c3:
+    render_confidence_badge(
+        "Confidence",
+        latest_protocol["confidence_level"],
+        confidence_color(latest_protocol["confidence_level"]),
+    )
 
 c4.metric(
     "Regime Confidence",

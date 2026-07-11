@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from core.state import init_state
 from core.config import COUNTRY
 from core.filters import render_sidebar
-from core.theme import apply_layout
+from core.theme import apply_layout, inject_css
 from services.marts import get_asn_behavior
 from components.trust import render_trust_strip, attribution_footer
 
@@ -19,6 +19,8 @@ st.set_page_config(
     page_icon="🛰️",
     layout="wide"
 )
+
+inject_css()
 
 
 # ============================================================

@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from core.config import COUNTRY
 from core.state import init_state
 from core.filters import render_sidebar
-from core.theme import apply_layout, stress_color
+from core.theme import apply_layout, stress_color, inject_css
 
 from services.marts import get_protocol_regimes
 
@@ -23,6 +23,8 @@ st.set_page_config(
     page_icon="🛰️",
     layout="wide"
 )
+
+inject_css()
 
 
 # ============================================================

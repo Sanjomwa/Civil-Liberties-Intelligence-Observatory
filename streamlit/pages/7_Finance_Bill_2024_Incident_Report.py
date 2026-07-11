@@ -5,8 +5,9 @@ import plotly.graph_objects as go
 from core.config import COUNTRY
 from core.state import init_state
 from core.filters import render_sidebar
-from core.theme import apply_layout
+from core.theme import apply_layout, confidence_color, inject_css
 from services.marts import get_finance_bill_incident
+from components.status import render_confidence_badge
 from components.trust import render_trust_strip, attribution_footer
 
 
@@ -19,6 +20,8 @@ st.set_page_config(
     page_icon="📘",
     layout="wide"
 )
+
+inject_css()
 
 
 # ============================================================
@@ -288,9 +291,9 @@ st.success("""
 The Finance Bill 2024 observation window exhibits multiple
 high-confidence synchronized escalation intervals consistent
 with coordinated digital suppression behavior.
-
-Confidence level: HIGH
 """)
+
+render_confidence_badge("Confidence level", "HIGH", confidence_color("HIGH"))
 
 st.divider()
 

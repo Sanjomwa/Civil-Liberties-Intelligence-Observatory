@@ -4,8 +4,9 @@ import plotly.graph_objects as go
 
 from core.state import init_state
 from core.filters import render_sidebar
-from core.theme import apply_layout
+from core.theme import apply_layout, correlation_color, alignment_color, confidence_color, inject_css
 from services.marts import get_protocol_correlation
+from components.status import render_state_badge, render_confidence_badge
 from components.trust import render_trust_strip, attribution_footer
 
 
@@ -18,6 +19,8 @@ st.set_page_config(
     page_icon="📡",
     layout="wide"
 )
+
+inject_css()
 
 
 # ============================================================
@@ -93,20 +96,26 @@ c1.metric(
     else "N/A"
 )
 
-c2.metric(
-    "Alignment State",
-    latest_protocol["alignment_state"]
-)
+with c2:
+    render_state_badge(
+        "Alignment State",
+        latest_protocol["alignment_state"],
+        alignment_color(latest_protocol["alignment_state"]),
+    )
 
-c3.metric(
-    "Correlation Strength",
-    latest_protocol["correlation_state"]
-)
+with c3:
+    render_state_badge(
+        "Correlation Strength",
+        latest_protocol["correlation_state"],
+        correlation_color(latest_protocol["correlation_state"]),
+    )
 
-c4.metric(
-    "Confidence",
-    latest_protocol["final_confidence_level"]
-)
+with c4:
+    render_confidence_badge(
+        "Confidence",
+        latest_protocol["final_confidence_level"],
+        confidence_color(latest_protocol["final_confidence_level"]),
+    )
 
 st.divider()
 

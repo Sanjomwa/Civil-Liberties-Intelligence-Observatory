@@ -6,11 +6,12 @@ import plotly.graph_objects as go
 from core.config import COUNTRY
 from core.state import init_state
 from core.filters import render_sidebar
-from core.theme import apply_layout, stress_color, regime_color
+from core.theme import apply_layout, stress_color, regime_color, confidence_color, inject_css
 
 from services.marts import get_national_stress, get_regime_classification
 
 from components.kpis import metric_row
+from components.status import render_state_badge, render_confidence_badge
 from components.trust import (
     render_trust_strip,
     insufficient_history_notice,
@@ -27,6 +28,8 @@ st.set_page_config(
     page_icon="📈",
     layout="wide"
 )
+
+inject_css()
 
 
 # ============================================================
@@ -321,24 +324,33 @@ else:
     regime_valid = regime_df[regime_df["regime_primary_regime"].notna()]
     latest_regime = regime_valid.iloc[-1]
 
-    metric_row([
-        (
+    b1, b2, b3, b4 = st.columns(4)
+
+    with b1:
+        render_state_badge(
             "Current Regime",
-            latest_regime["regime_primary_regime"]
-        ),
-        (
+            latest_regime["regime_primary_regime"],
+            regime_color(latest_regime["regime_primary_regime"]),
+        )
+
+    with b2:
+        render_confidence_badge(
             "Confidence",
-            latest_regime["regime_confidence_level"]
-        ),
-        (
+            latest_regime["regime_confidence_level"],
+            confidence_color(latest_regime["regime_confidence_level"]),
+        )
+
+    with b3:
+        st.metric(
             "Transition Detected",
             "Yes" if latest_regime["regime_transition_detected"] else "No"
-        ),
-        (
+        )
+
+    with b4:
+        st.metric(
             "Transition Type",
             latest_regime["regime_transition_type"] or "—"
-        ),
-    ])
+        )
 
     fig_regime = go.Figure()
 

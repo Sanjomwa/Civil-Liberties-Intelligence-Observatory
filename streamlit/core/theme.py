@@ -1,12 +1,16 @@
 # core/theme.py
 
 import plotly.graph_objects as go
+import streamlit as st
 
 from core.constants import (
     STRESS_LEVELS,
     PROTOCOL_STATES,
     CONFIDENCE_LEVELS,
-    REGIME_STATES
+    REGIME_STATES,
+    CORRELATION_STATES,
+    ALIGNMENT_STATES,
+    DIVERGENCE_STATES,
 )
 
 
@@ -66,3 +70,105 @@ def confidence_color(level):
 
 def regime_color(regime):
     return REGIME_STATES.get(regime, PALETTE["muted"])
+
+
+def correlation_color(state):
+    return CORRELATION_STATES.get(state, PALETTE["muted"])
+
+
+def alignment_color(state):
+    return ALIGNMENT_STATES.get(state, PALETTE["muted"])
+
+
+def divergence_color(state):
+    return DIVERGENCE_STATES.get(state, PALETTE["muted"])
+
+
+# ============================================================
+# GLOBAL CSS
+# ============================================================
+# Visual-only: typography/spacing/status treatment, applied uniformly
+# across all 9 pages. Adds no new information and changes no page
+# structure, navigation, chart, table, or threshold -- purely how
+# existing values are presented.
+
+_CSS = """
+<style>
+/* Tighten and add breathing room around section headers */
+h2, h3 {
+    margin-top: 0.35rem !important;
+    letter-spacing: -0.01em;
+}
+
+/* Metric labels/values: slightly calmer default treatment */
+div[data-testid="stMetric"] {
+    background: #16161A;
+    border: 1px solid #232329;
+    border-radius: 10px;
+    padding: 0.85rem 1rem 0.7rem 1rem;
+}
+
+div[data-testid="stMetricLabel"] {
+    opacity: 0.8;
+}
+
+/* Category/status badges -- filled pill, encodes SEVERITY/state */
+.clio-badge-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.clio-badge-label {
+    font-size: 0.8rem;
+    color: #9CA3AF;
+}
+
+.clio-badge {
+    display: inline-block;
+    font-weight: 600;
+    font-size: 1.05rem;
+    padding: 0.18rem 0.65rem;
+    border-radius: 999px;
+    width: fit-content;
+    line-height: 1.4;
+}
+
+/* Filled vs. outlined variants are applied via inline style (background/
+   border/color computed per-value in Python -- see components/status.py)
+   rather than CSS custom properties, to avoid depending on color-mix()
+   browser support. The two variants exist so severity/state badges
+   (filled) and confidence/certainty badges (dashed outline) stay
+   distinguishable in SHAPE, not just color -- a shared hue (e.g. green)
+   should never let "this is fine" (severity) and "we are sure"
+   (confidence) read as the same kind of claim. */
+.clio-badge-severity {
+    font-weight: 700;
+}
+
+.clio-badge-confidence {
+    background: transparent !important;
+    border-style: dashed;
+    border-width: 1.5px;
+}
+
+/* Shared attribution/provenance footer */
+.clio-attribution {
+    margin-top: 0.4rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid #232329;
+    color: #9CA3AF;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.clio-attribution a {
+    color: #9CA3AF;
+    text-decoration: underline;
+}
+</style>
+"""
+
+
+def inject_css():
+    st.markdown(_CSS, unsafe_allow_html=True)

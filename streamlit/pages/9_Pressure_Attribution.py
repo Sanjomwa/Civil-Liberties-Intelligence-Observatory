@@ -6,13 +6,14 @@ from core.state import init_state
 from core.config import COUNTRY
 from core.constants import REGIME_STATES
 from core.filters import render_sidebar
-from core.theme import apply_layout
+from core.theme import apply_layout, stress_color, regime_color, inject_css
 from services.marts import (
     get_conflict_drivers,
     get_ooni_corroboration,
     get_platform_drivers,
     get_pressure_attribution_daily,
 )
+from components.status import render_state_badge
 from components.trust import render_trust_strip, attribution_footer
 
 
@@ -25,6 +26,8 @@ st.set_page_config(
     page_icon="🧾",
     layout="wide"
 )
+
+inject_css()
 
 
 # ============================================================
@@ -112,7 +115,12 @@ c1.metric(
     delta_color="inverse",
 )
 
-c2.metric("Pressure Level", row["pressure_level"])
+with c2:
+    render_state_badge(
+        "Pressure Level",
+        row["pressure_level"],
+        stress_color(row["pressure_level"]),
+    )
 
 c3.metric(
     "Conflict Share",
@@ -121,10 +129,13 @@ c3.metric(
 )
 
 regime = row["regime_primary_regime"]
-c4.metric(
-    "Regime (ACLED Path A)",
-    regime if pd.notna(regime) else "No classification",
-)
+
+with c4:
+    render_state_badge(
+        "Regime (ACLED Path A)",
+        regime if pd.notna(regime) else "No classification",
+        regime_color(regime),
+    )
 
 if pd.notna(regime) and regime in REGIME_STATES:
     st.markdown(

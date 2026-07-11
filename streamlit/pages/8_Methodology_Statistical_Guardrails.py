@@ -2,9 +2,10 @@ import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 
+from core.config import COUNTRY
 from core.state import init_state
 from core.filters import render_sidebar
-from core.theme import apply_layout
+from core.theme import apply_layout, inject_css
 from components.trust import attribution_footer
 
 
@@ -17,6 +18,8 @@ st.set_page_config(
     page_icon="🧠",
     layout="wide"
 )
+
+inject_css()
 
 
 # ============================================================
@@ -33,7 +36,7 @@ render_sidebar()
 
 st.title("🧠 Methodology & Statistical Guardrails")
 
-st.caption("""
+st.caption(f"""
 Formal statistical controls, anomaly logic, confidence weighting,
 and inference protections used across {COUNTRY}'s Digital Repression
 Observability System.

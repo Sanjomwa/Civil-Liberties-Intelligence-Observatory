@@ -116,18 +116,26 @@ def attribution_footer(sources, snapshot_at=None):
     if not known:
         return
 
+    # Real <a> tags, not markdown [text](url) syntax: this renders inside
+    # a raw HTML wrapper div (for the .clio-attribution styling), and
+    # Streamlit does not run markdown-link parsing on text already inside
+    # an unsafe_allow_html block -- markdown syntax there would render as
+    # literal, unparsed text instead of a link.
     parts = []
 
     for key in known:
         src = ATTRIBUTION_SOURCES[key]
-        piece = f"[{src['name']}]({src['url']})"
+        piece = f'<a href="{src["url"]}" target="_blank">{src["name"]}</a>'
 
         if "license_name" in src:
-            piece += f", licensed [{src['license_name']}]({src['license_url']})"
+            piece += (
+                f', licensed <a href="{src["license_url"]}" target="_blank">'
+                f'{src["license_name"]}</a>'
+            )
 
         parts.append(piece)
 
-    segments = ["**Data attribution:** " + " · ".join(parts)]
+    segments = ["<b>Data attribution:</b> " + " · ".join(parts)]
 
     access_date = _format_access_date(snapshot_at)
 
@@ -141,4 +149,7 @@ def attribution_footer(sources, snapshot_at=None):
     )
 
     with st.container():
-        st.caption(" | ".join(segments))
+        st.markdown(
+            f'<div class="clio-attribution">{" | ".join(segments)}</div>',
+            unsafe_allow_html=True,
+        )
