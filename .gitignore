@@ -235,3 +235,9 @@ upgraded_assets/
 clio_constituion_project/
 CLIO_Project_Zero_Review.docx
 Archive/*.docx
+
+# Internal planning/governance material, kept out of the public repo deliberately, not accidentally omitted
+docs/00-overview/
+docs/04-research/README.md
+docs/06-operations/
+docs/07-governance/
