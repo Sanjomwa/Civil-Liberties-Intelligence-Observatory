@@ -227,3 +227,11 @@ __marimo__/
 logs/runs
 logs/*.log
 *.py[cod]
+
+# Internal strategy/pricing material, kept out of the public repo deliberately, not accidentally omitted
+docs/01-product/2026-07-11-*.md
+docs/05-business/
+upgraded_assets/
+clio_constituion_project/
+CLIO_Project_Zero_Review.docx
+Archive/*.docx
