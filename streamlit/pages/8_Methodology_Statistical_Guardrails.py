@@ -5,6 +5,7 @@ import pandas as pd
 from core.state import init_state
 from core.filters import render_sidebar
 from core.theme import apply_layout
+from components.trust import attribution_footer
 
 
 # ============================================================
@@ -335,6 +336,8 @@ A real, per-row `is_synthetic` flag is still carried from the staging
 layer through every downstream table. Lumen will be reconsidered for
 inclusion once a real Lumen export replaces the fabricated dataset.
 """)
+
+attribution_footer(["ACLED", "OONI"])
 
 st.divider()
 

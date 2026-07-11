@@ -1,5 +1,6 @@
 # components/trust.py
 
+import pandas as pd
 import streamlit as st
 
 
@@ -57,3 +58,87 @@ def synthetic_data_notice(sources):
         "synthetic (generated for development, not sourced from a real "
         "export) and should not be cited as evidence."
     )
+
+
+# ============================================================
+# TD-63: SOURCE ATTRIBUTION
+# ============================================================
+# Separate from synthetic_data_notice above: that discloses data
+# *authenticity* (is this real or fabricated), this discloses source
+# *provenance and license terms* (whose data this is, under what terms).
+# Neither should be merged into the other.
+
+ATTRIBUTION_SOURCES = {
+    "ACLED": {
+        "name": "ACLED (Armed Conflict Location & Event Data Project)",
+        "url": "https://acleddata.com",
+    },
+    "OONI": {
+        "name": "OONI (Open Observatory of Network Interference)",
+        "url": "https://ooni.org",
+        "license_name": "CC BY-NC-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    },
+}
+
+
+def _format_access_date(value):
+    if value is None:
+        return None
+
+    ts = pd.Timestamp(value)
+
+    if pd.isna(ts):
+        return None
+
+    return ts.strftime("%Y-%m-%d")
+
+
+def attribution_footer(sources, snapshot_at=None):
+    """
+    TD-63 / ADR-0007: renders source attribution for ACLED- and/or
+    OONI-derived data shown on this page, satisfying ACLED's Attribution
+    Policy (source name, link, access date) and OONI's CC BY-NC-SA 4.0
+    Section 3(a) (attribution to the licensor, license name + link,
+    indication of changes made to the licensed material -- CLIO's
+    aggregation/classification is that indication).
+
+    `sources` is a list that may contain "ACLED" and/or "OONI"; any other
+    value is ignored (e.g. Google Transparency Report attribution is a
+    separate, not-yet-resolved question -- TD-64 -- and deliberately not
+    claimed here). `snapshot_at` should be the same per-page freshness
+    value already passed to render_trust_strip, so the access date is
+    real, not invented.
+    """
+
+    known = [s for s in sources if s in ATTRIBUTION_SOURCES]
+
+    if not known:
+        return
+
+    parts = []
+
+    for key in known:
+        src = ATTRIBUTION_SOURCES[key]
+        piece = f"[{src['name']}]({src['url']})"
+
+        if "license_name" in src:
+            piece += f", licensed [{src['license_name']}]({src['license_url']})"
+
+        parts.append(piece)
+
+    segments = ["**Data attribution:** " + " · ".join(parts)]
+
+    access_date = _format_access_date(snapshot_at)
+
+    if access_date:
+        segments.append(f"Data refreshed: {access_date}")
+
+    segments.append(
+        "CLIO aggregates and classifies this data into attributed, "
+        "confidence-qualified findings — it does not redistribute the "
+        "underlying source datasets."
+    )
+
+    with st.container():
+        st.caption(" | ".join(segments))

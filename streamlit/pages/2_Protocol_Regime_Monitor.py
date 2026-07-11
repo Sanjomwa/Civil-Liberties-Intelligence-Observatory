@@ -11,7 +11,7 @@ from core.theme import apply_layout, stress_color
 from services.marts import get_protocol_regimes
 
 from components.kpis import metric_row
-from components.trust import render_trust_strip
+from components.trust import render_trust_strip, attribution_footer
 
 
 # ============================================================
@@ -310,3 +310,7 @@ fig3.update_layout(
 st.plotly_chart(
     fig3,
     use_container_width=True)
+
+st.divider()
+
+attribution_footer(["OONI"], snapshot_at=latest.iloc[0]["snapshot_at"])

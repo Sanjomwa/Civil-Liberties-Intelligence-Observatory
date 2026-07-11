@@ -13,7 +13,8 @@ from services.marts import get_national_stress, get_regime_classification
 from components.kpis import metric_row
 from components.trust import (
     render_trust_strip,
-    insufficient_history_notice
+    insufficient_history_notice,
+    attribution_footer
 )
 
 
@@ -413,3 +414,7 @@ st.dataframe(
     use_container_width=True,
     hide_index=True
 )
+
+st.divider()
+
+attribution_footer(["ACLED"], snapshot_at=latest["snapshot_at"])

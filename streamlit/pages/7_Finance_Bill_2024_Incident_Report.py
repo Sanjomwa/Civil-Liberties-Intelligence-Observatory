@@ -7,7 +7,7 @@ from core.state import init_state
 from core.filters import render_sidebar
 from core.theme import apply_layout
 from services.marts import get_finance_bill_incident
-from components.trust import render_trust_strip
+from components.trust import render_trust_strip, attribution_footer
 
 
 # ============================================================
@@ -291,3 +291,7 @@ with coordinated digital suppression behavior.
 
 Confidence level: HIGH
 """)
+
+st.divider()
+
+attribution_footer(["ACLED", "OONI"], snapshot_at=latest["snapshot_at"])

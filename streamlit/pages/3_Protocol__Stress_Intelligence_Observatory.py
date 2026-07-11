@@ -3,7 +3,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from components.trust import render_trust_strip
+from components.trust import render_trust_strip, attribution_footer
 from core.config import COUNTRY
 from core.filters import render_sidebar
 from core.state import init_state
@@ -298,3 +298,7 @@ else:
         width="stretch",
         hide_index=True,
     )
+
+st.divider()
+
+attribution_footer(["OONI"], snapshot_at=latest["snapshot_at"])

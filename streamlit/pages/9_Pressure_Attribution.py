@@ -13,7 +13,7 @@ from services.marts import (
     get_platform_drivers,
     get_pressure_attribution_daily,
 )
-from components.trust import render_trust_strip
+from components.trust import render_trust_strip, attribution_footer
 
 
 # ============================================================
@@ -432,3 +432,11 @@ else:
         "rates. Confidence bands per marts.dim_censorship_confidence "
         "(ADR-0001)."
     )
+
+st.divider()
+
+# TD-63: this page also surfaces Google Transparency Report-derived
+# platform-driver numbers above; that source's attribution is a separate,
+# unresolved question (TD-64, license status "Cannot Determine") and is
+# deliberately not claimed here alongside ACLED/OONI.
+attribution_footer(["ACLED", "OONI"], snapshot_at=latest["snapshot_at"])
