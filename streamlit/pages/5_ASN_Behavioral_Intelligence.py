@@ -181,26 +181,37 @@ st.divider()
 # ESCALATION PROFILE
 # ============================================================
 
-fig3 = go.Figure()
+st.subheader("Escalation Relationship Profile")
 
-fig3.add_trace(go.Bar(
-    name="Coupled Escalation",
-    x=["Escalation"],
-    y=[row["coupled_escalation_days"]]
-))
+coupled_days = row["coupled_escalation_days"]
+isolated_days = row["isolated_escalation_days"]
 
-fig3.add_trace(go.Bar(
-    name="Isolated Escalation",
-    x=["Escalation"],
-    y=[row["isolated_escalation_days"]]
-))
+if not coupled_days and not isolated_days:
+    st.info(
+        f"{asn} recorded zero coupled and zero isolated escalation days "
+        "in the observed window -- a real reading, not missing data."
+    )
+else:
+    fig3 = go.Figure()
 
-apply_layout(
-    fig3,
-    "Escalation Relationship Profile"
-)
+    fig3.add_trace(go.Bar(
+        name="Coupled Escalation",
+        x=["Escalation"],
+        y=[coupled_days]
+    ))
 
-st.plotly_chart(fig3, use_container_width=True)
+    fig3.add_trace(go.Bar(
+        name="Isolated Escalation",
+        x=["Escalation"],
+        y=[isolated_days]
+    ))
+
+    apply_layout(
+        fig3,
+        "Escalation Relationship Profile"
+    )
+
+    st.plotly_chart(fig3, use_container_width=True)
 
 st.markdown("""
 Coupled escalation means this ASN participates in wider synchronized
