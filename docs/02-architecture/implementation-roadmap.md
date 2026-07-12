@@ -16,7 +16,7 @@ Low-risk, low-effort, high value-per-hour. No architectural judgment required.
 - Regenerate `Bruin/requirements.txt` from the same source as `uv.lock`, resolving the `duckdb` version drift (TD-06).
 - Bump the devcontainer's Python base image to match `pyproject.toml`'s `>=3.12.3` requirement (TD-07).
 - Delete `streamlit/services/freshness.py`, `streamlit/components/charts.py`, `streamlit/components/tables.py`, and `logs/query_log.sql` (TD-17, TD-18, TD-32) — all confirmed dead code with no callers.
-- Fix the top-level `README.md`'s stale repository-structure diagram (TD-22) — the cheapest, highest-visibility documentation fix available.
+- **RESOLVED (2026-07-12).** Fixed the top-level `README.md`'s stale repository-structure diagram (TD-22), regenerated from `git ls-files` rather than the local working tree — part of a broader A6 (public repository readiness) pass; see `decision-log.md`'s 2026-07-12 entry for the full scope, including a real deployment-credential gap (TD-37) found and deliberately not fixed unilaterally.
 - Rename `streamlit/pages/3_Protocol__Stress_Intelligence_Observatory.py` to remove the double underscore, and standardize on `use_container_width=True` across all pages (TD-26, TD-27).
 - Reconcile the `fact_platform_blocking_summary.sql` filename/name mismatch (TD-21).
 - Disable `DEBUG_SQL_LOG` by default in `backfill_acled_pressure_regimes.py`, making it opt-in (TD-25).

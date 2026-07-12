@@ -50,7 +50,7 @@ A living document listing every metric the system produces (name, description, o
 
 ## Two docs/ folders — always disambiguate
 
-As stated in `docs/00-overview/documentation-plan.md`: this CLIO working folder's `docs/00-06` structure and the Bruin repository's own internal `docs/` folder are different things. Any new document should state, in its first paragraph if there is any room for ambiguity, which one it belongs to.
+As stated in `docs/00-overview/documentation-plan.md`: this CLIO working folder's `docs/00-07` structure (`docs/07-governance/` was added 2026-07-11 and is in scope of this same distinction) and the Bruin repository's own internal `docs/` folder are different things. Any new document should state, in its first paragraph if there is any room for ambiguity, which one it belongs to.
 
 ## Ownership
 

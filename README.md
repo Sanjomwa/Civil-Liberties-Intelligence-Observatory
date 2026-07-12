@@ -1,6 +1,6 @@
-# Kenya Civil Liberties Intelligence Observatory
+# CLIO — Civil Liberties Intelligence Observatory
 
-> A historical intelligence platform for reconstructing latent censorship pressure in Kenya by fusing fragmented civil-liberties indicators into auditable statistical signals.
+> An active intelligence platform that fuses internet-censorship measurement (OONI), conflict and protest event data (ACLED), and platform/legal takedown-pressure signals (Google Transparency Report) into attributed, confidence-qualified findings about civil-liberties pressure. Kenya is the current pilot country — the methodology is built to generalize, not to stay Kenya-only.
 
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Bruin](https://img.shields.io/badge/Bruin-Orchestration-FF9900?style=for-the-badge)](https://getbruin.com/)
@@ -10,9 +10,11 @@
 [![DuckDB](https://img.shields.io/badge/DuckDB-Local%20Analytics-FFF000?style=for-the-badge&logo=duckdb&logoColor=black)](https://duckdb.org/)
 [![Parquet](https://img.shields.io/badge/Parquet-Columnar%20Data-005571?style=for-the-badge)](https://parquet.apache.org/)
 
-## Intelligence Reconstruction Scope
+## Scope
 
-This repository reconstructs historical digital repression pressure across Kenya from June 2023 through June 2025. It combines network measurements, conflict indicators, legal-pressure signals, and platform transparency data into governed BigQuery marts and Streamlit intelligence views.
+CLIO (Civil Liberties Intelligence Observatory) is Kenya-**piloted**, not Kenya-only. It combines network measurements, conflict indicators, legal-pressure signals, and platform transparency data into governed BigQuery marts and Streamlit intelligence views. Country, dataset, and date-range settings are pipeline configuration variables rather than hardcoded assumptions, so the same methodology is designed to extend to additional countries as they're onboarded.
+
+Kenya's own data coverage is not a closed historical window, though it is honestly uneven across sources today: ACLED conflict-event history in the pipeline spans 1997 through 2026 and continues to extend as new weeks land, while the OONI/Google-Transparency-driven daily marts (the ones behind the composite pressure score) are currently bounded to a fixed June 2023 – June 2025 date-dimension window pending a data-spine widening — a real, disclosed limitation, not a claim that the project or its underlying measurement has stopped. This is an active, ongoing observatory, not a study that concluded in mid-2025. The project's flagship validated case study to date is the Finance Bill 2024 protests (see "Flagship Report" below), studied as one incident within that ongoing scope, not as its boundary.
 
 The platform is designed to answer high-context analytical questions:
 
@@ -22,7 +24,7 @@ The platform is designed to answer high-context analytical questions:
 - Did pressure indicators align around the Finance Bill 2024 period?
 - Which signals are statistically weak because of sparse data, low confidence, or zero variance?
 
-The platform reconstructs historical civil-liberties pressure; it does not perform live operational surveillance.
+The platform reconstructs civil-liberties pressure from historical and ongoing evidence; it does not perform live operational surveillance.
 
 ## Why This Matters
 
@@ -31,6 +33,14 @@ Digital repression is rarely observable through one clean dataset. It can appear
 This project treats censorship analysis as an observability and inference problem. It fuses fragmented civil-liberties indicators into auditable statistical outputs, while preserving guardrails that prevent weak or sparse evidence from being overstated.
 
 The result is a production-oriented reference architecture for civil-liberties observability, analytical inference, and governed public-interest intelligence reconstruction.
+
+---
+
+## Flagship Report: Finance Bill 2024
+
+CLIO's first fully validated flagship deliverable reconstructs Kenya's June–July 2024 Finance Bill protests, connecting three independently sourced signals: ACLED's categorical regime classification (a MOBILISATION reading from the Bill's May 11, 2024 tabling, escalating to CRISIS the week Parliament was stormed), OONI network-measurement corroboration (a same-day spike in high-confidence DNS-blocking signals concentrated on Signal), and the platform's continuous composite pressure score. The report deliberately discloses, rather than smooths over, a real methodological disagreement between the categorical and continuous scoring approaches during the same window.
+
+Every quantitative figure was independently re-verified against live BigQuery data. Lumen/legal-pressure data is deliberately excluded from the report, since it remains synthetic pending a real Lumen export — see "Data Licensing & Attribution" below. The full analysis is built as `streamlit/pages/7_Finance_Bill_2024_Incident_Report.py`; see "Live Dashboard" below for current access status.
 
 ---
 
@@ -106,14 +116,17 @@ Streamlit deployment:
 
 https://civil-liberties-and-censorship-analysis-with-bruin-toafjdj5xoc.streamlit.app/
 
-Key intelligence surfaces:
+Key intelligence surfaces (9 pages):
 
 - National Stress Observatory
 - Protocol Regime Monitor
 - Protocol Stress Intelligence
+- Protocol Repression Correlation Engine
 - ASN Behavioral Intelligence
+- Suppression Event Explorer
 - Finance Bill 2024 Incident Report
 - Methodology & Statistical Guardrails
+- Pressure Attribution
 
 ---
 
@@ -176,34 +189,45 @@ These controls are intended to keep the observatory stable across local developm
 
 ## Repository Structure
 
+Generated from the repository's tracked files (`git ls-files`), not the local working tree — some `docs/` subdirectories (internal planning and governance material) are deliberately excluded from the public repository via `.gitignore` and will not appear on a fresh clone.
+
 ```text
 .
 |-- Bruin/
 |   |-- pipeline.yml
 |   |-- requirements.txt
+|   |-- config/
+|   |   `-- observatory.yml
+|   |-- scripts/
+|   |   |-- country_literal_check/    # CI guard against hardcoded country literals
+|   |   |-- historical_initializer/   # ACLED regime engine backfill driver
+|   |   `-- staleness_check/          # Materialization-staleness CI guard
 |   `-- assets/
-|       |-- ingest/          # Raw source ingestion assets
+|       |-- ingest/          # Raw source ingestion assets (OONI, ACLED, Google, Lumen)
 |       |-- load/            # GCS and BigQuery external table loaders
 |       |-- staging/         # Source normalization models
 |       |-- intermediate/    # Cross-source preparation models
 |       |-- marts/
 |       |   |-- dims/        # Conformed dimensions
 |       |   `-- facts/       # Analytics-ready fact tables
-|       |-- features/        # Model-ready protocol features
-|       |-- intelligence/    # Regime and relationship inference
-|       `-- reporting/       # Dashboard-facing marts
+|       |-- features/        # Model-ready protocol and pressure features
+|       |-- intelligence/    # Regime classification and relationship inference
+|       `-- reporting/       # Dashboard-facing marts, incl. pressure-attribution
 |-- .env.example             # Portable environment variable template
 |-- .github/
 |   `-- workflows/
-|       |-- lint.yml         # CI lint scaffolding
-|       `-- tests.yml        # CI test scaffolding
+|       |-- lint.yml                    # CI lint scaffolding
+|       |-- tests.yml                   # CI test scaffolding
+|       |-- gcp-auth.yml                # Workload Identity Federation auth check
+|       |-- staleness-check.yml         # Materialization-staleness CI job
+|       `-- country-literal-check.yml   # Hardcoded-country-literal CI guard
 |-- docs/
-|   |-- analysts-questions-playbook.md
-|   |-- civil-liberties-reporting-playbook-Kenya.md
-|   |-- data-modelling.md
-|   |-- data_sources.md
-|   |-- erd-lineage.md
-|   `-- project_difficulties.md
+|   |-- 02-architecture/     # ADRs, architecture assessment, decision log, TD inventory
+|   |   `-- adr/             # Accepted architecture decision records
+|   |-- 03-development/      # Coding standards, testing strategy, documentation standards
+|   `-- (legacy flat docs)   # analysts-questions-playbook.md, data-modelling.md,
+|                             # data_sources.md, erd-lineage.md, and others predating
+|                             # the numbered docs/ restructure
 |-- infra/
 |   |-- main.tf
 |   |-- provider.tf
@@ -221,26 +245,40 @@ These controls are intended to keep the observatory stable across local developm
 |-- streamlit/
 |   |-- app.py
 |   |-- requirements.txt
-|   |-- pages/
-|   |   `-- 3_Protocol__Stress_Intelligence_Observatory.py
+|   |-- pages/                # 9 pages: National Stress Observatory, Protocol Regime
+|   |   |                     # Monitor, Protocol Stress Intelligence, Protocol
+|   |   |                     # Repression Correlation, ASN Behavioral Intelligence,
+|   |   |                     # Suppression Event Explorer, Finance Bill 2024 Incident
+|   |   |                     # Report, Methodology & Statistical Guardrails, Pressure
+|   |   |                     # Attribution
 |   |-- services/
 |   |   |-- bq.py
-|   |   `-- marts.py
+|   |   |-- marts.py
+|   |   `-- freshness.py
 |   |-- core/
 |   |   |-- config.py
 |   |   |-- constants.py
-|   |   `-- contracts.py
+|   |   |-- contracts.py
+|   |   |-- filters.py
+|   |   |-- layout.py
+|   |   |-- state.py
+|   |   `-- theme.py
 |   |-- components/
 |   |   |-- charts.py
+|   |   |-- kpis.py
 |   |   |-- status.py
 |   |   |-- tables.py
-|   |   `-- trust.py
+|   |   `-- trust.py          # ACLED/OONI attribution footer
 |   `-- assets/
 |       |-- annotations/
 |       `-- methodology/
 |           `-- thresholds.yml
 |-- tests/
-|   `-- test_contracts.py    # Automated dashboard contract tests
+|   |-- fixtures/
+|   |   `-- acled_regimes_golden/            # Golden-file fixtures for regime classification
+|   |-- test_contracts.py                    # Dashboard contract validation tests
+|   |-- test_acled_pressure_regimes_golden.py
+|   `-- test_ooni_dns_bogon_classification.py
 |-- pyproject.toml
 |-- uv.lock
 `-- README.md
@@ -442,9 +480,9 @@ Expected NumPy version:
 | OONI                | Network interference and protocol-level censorship measurements |
 | ACLED               | Protest, conflict, and political pressure context               |
 | Google Transparency | Government and platform removal-pressure indicators             |
-| Lumen-style data    | Takedown and legal-pressure signal branch                       |
+| Lumen-style data    | Takedown and legal-pressure signal branch — currently **synthetic**, not a real Lumen export; every dashboard page and mart that touches it discloses this via a visible `is_synthetic` flag |
 
-ACLED ingestion depends on approved API or export access; reproducibility guidance is documented in `/docs`.
+ACLED ingestion depends on approved API or export access; reproducibility guidance is documented in `/docs`. See "Data Licensing & Attribution" below for each source's reuse terms.
 
 ### Modeling Layers
 
@@ -465,6 +503,7 @@ Key reporting marts:
 - `reporting.mart_protocol_interference_trends`
 - `reporting.protocol_repression_correlation_mart`
 - `reporting.asn_behavior_profile_mart`
+- `reporting.mart_pressure_attribution_daily` and its conflict-driver/platform-driver/OONI-daily counterparts — decompose the composite pressure score into named, sourced drivers (see the Pressure Attribution dashboard page)
 
 ### Statistical Methodology
 
@@ -554,11 +593,24 @@ This system is observational and historical. It does not identify individuals, t
 
 Outputs should be interpreted as evidence-weighted indicators, not definitive proof of intent or causality. Civil-liberties analysis requires context, source awareness, and careful communication.
 
+## Data Licensing & Attribution
+
+CLIO's evidence sources carry their own, separate licensing terms, re-verified directly from primary sources:
+
+- **OONI** — CC BY-NC-SA 4.0 (Attribution-NonCommercial-ShareAlike).
+- **ACLED** — a contractual, non-Creative-Commons license: free for non-commercial use with registration; commercial use requires a separate paid license from ACLED.
+- **Google Transparency Report** — no source-specific reuse license could be located; status is undetermined, not assumed compliant.
+- **Lumen Database** — the platform's current Lumen-derived figures are synthetic placeholders, not real Lumen data (see "Data Model and Methodology" above).
+
+Because of the OONI and ACLED terms above, **CLIO's OONI- and ACLED-derived intelligence layer is treated as non-commercial and grant/public-interest-funded for the foreseeable term, not as a product for direct sale.** This project does not redistribute the underlying third-party datasets — only transforms them into attributed, confidence-qualified findings — but transformation does not, on its own, remove either source's NonCommercial restriction. The Finance Bill 2024 flagship report is released as free public-interest research, not a paid deliverable.
+
+This posture governs CLIO's data and findings; it is separate from the MIT license on this repository's own code (see below).
+
 ## Attribution and License
 
 Maintained by Samwel Njogu  
 X: [@sam_njogu9](https://x.com/sam_njogu9)
 
-Built as a Kenya-focused civil-liberties observability platform using Bruin, BigQuery, Streamlit, Terraform, Python, OONI, ACLED, Google Transparency, and Lumen-style legal pressure data.
+Built as a civil-liberties observability platform — currently piloted in Kenya — using Bruin, BigQuery, Streamlit, Terraform, Python, OONI, ACLED, Google Transparency, and Lumen-style legal pressure data.
 
-This project is licensed under the MIT License.
+This repository's own code is licensed under the MIT License. Third-party data sources retain their own separate licensing terms — see "Data Licensing & Attribution" above.
