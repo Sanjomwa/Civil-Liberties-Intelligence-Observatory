@@ -34,7 +34,7 @@ Location: `docs/04-research/experiments/`. Format: hypothesis, method, data, res
 
 ## Retrospectives
 
-`docs/project_difficulties.md`, inside the repository's own internal `docs/` folder, is already an informal version of this pattern and should be treated as the template to formalize going forward, not replaced or duplicated with a new file.
+`Archive/project_difficulties.md` (moved from `docs/project_difficulties.md` on 2026-07-12, part of TD-23/TD-24's disposition — see `decision-log.md`) is an informal version of this pattern and should be treated as the template for the next retrospective, not replaced or duplicated with a new file. The next retrospective should live at `docs/02-architecture/retrospectives.md`, matching the current public docs structure, rather than being added back to the archived location.
 
 ## APIs
 
