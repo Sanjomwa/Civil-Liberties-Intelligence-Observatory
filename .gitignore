@@ -245,3 +245,9 @@ docs/04-research/
 docs/05-business/
 docs/06-operations/
 docs/07-governance/
+
+# Finance Bill 2024 report deliverables placed directly in docs/ root (2026-07-12) -
+# not covered by the folder-level rules above since they sit at docs/ top level, not
+# inside a numbered subfolder. Not public-facing: a draft under active revision.
+docs/CLIO_Finance_Bill_2024_Case_Study_Public.pdf
+docs/CLIO_Finance_Bill_2024_Incident_Report_final.pdf
