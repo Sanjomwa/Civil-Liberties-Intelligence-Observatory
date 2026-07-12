@@ -117,6 +117,8 @@ div[data-testid="stMetricLabel"] {
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .clio-badge-label {
@@ -131,6 +133,11 @@ div[data-testid="stMetricLabel"] {
     padding: 0.18rem 0.65rem;
     border-radius: 999px;
     width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
     line-height: 1.4;
 }
 
