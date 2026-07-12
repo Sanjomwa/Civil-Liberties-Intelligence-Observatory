@@ -229,15 +229,19 @@ logs/*.log
 *.py[cod]
 
 # Internal strategy/pricing material, kept out of the public repo deliberately, not accidentally omitted
-docs/01-product/2026-07-11-*.md
-docs/05-business/
 upgraded_assets/
 clio_constituion_project/
 CLIO_Project_Zero_Review.docx
 Archive/*.docx
 
-# Internal planning/governance material, kept out of the public repo deliberately, not accidentally omitted
+# Public repository docs policy (decided 2026-07-12): of the numbered docs/ folders, only
+# docs/02-architecture/ and docs/03-development/ are intentionally public. Every other
+# numbered docs/ folder is internal planning/governance material and must never reach the
+# public repository - ignored at the folder level (not per-file) so a new file added to any
+# of these later is covered automatically rather than requiring someone to remember to add it.
 docs/00-overview/
-docs/04-research/README.md
+docs/01-product/
+docs/04-research/
+docs/05-business/
 docs/06-operations/
 docs/07-governance/
