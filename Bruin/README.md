@@ -216,7 +216,7 @@ The goal is explainable observability, not unverifiable certainty claims.
 
 Live Demo
 Streamlit deployment:
-https://civil-liberties-and-censorship-analysis-with-bruin-toafjdj5xoc.streamlit.app/
+https://civil-lliberties-intelligence-observatory-toafjdj5xoc.streamlit.app/
 Live Dashboard
 
 ---

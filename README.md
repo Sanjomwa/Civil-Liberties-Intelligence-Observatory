@@ -48,7 +48,7 @@ Every quantitative figure was independently re-verified against live BigQuery da
 
 ### National Stress Observatory
 
-![](<Screenshot 2026-05-18 182543.png>)
+![](screenshot-national-stress-observatory.png)
 
 Executive view of national digital-pressure movement, baseline divergence, suppression-window probability, and evidence quality across the Kenya observation window.
 
@@ -56,7 +56,7 @@ Executive view of national digital-pressure movement, baseline divergence, suppr
 
 ### Protocol Regime Monitor
 
-![](<Screenshot 2026-05-18 182816.png>)
+![](screenshot-protocol-regime-monitor.png)
 
 Protocol-level regime classification for DNS, HTTP, TCP, and TLS, showing when network behavior moves from normal range into elevated, severe, or insufficient-evidence states.
 
@@ -64,7 +64,7 @@ Protocol-level regime classification for DNS, HTTP, TCP, and TLS, showing when n
 
 ### Protocol Stress Intelligence Observatory
 
-![](<Screenshot 2026-05-18 183302.png>)
+![](screenshot-protocol-stress-intelligence-observatory.png)
 
 Comparative protocol-intelligence surface exposing anomaly escalation, confidence-weighted severity, and regime transition behavior across monitored transport layers.
 
@@ -72,7 +72,7 @@ Comparative protocol-intelligence surface exposing anomaly escalation, confidenc
 
 ### Protocol ↔ Repression Correlation Engine
 
-![](<Screenshot 2026-05-18 183334.png>)
+![](screenshot-protocol-repression-correlation-engine.png)
 
 Statistical alignment engine measuring whether protocol anomalies move with national repression-pressure indicators across rolling historical windows.
 
@@ -80,7 +80,7 @@ Statistical alignment engine measuring whether protocol anomalies move with nati
 
 ### ASN Behavioral Intelligence
 
-![](<Screenshot 2026-05-18 183400.png>)
+![](screenshot-asn-behavioral-intelligence.png)
 
 Network-level intelligence view ranking ASNs by blocking intensity, behavioral priority, evidence maturity, dominant protocol, and reliability of observed interference.
 
@@ -88,7 +88,7 @@ Network-level intelligence view ranking ASNs by blocking intensity, behavioral p
 
 ### Finance Bill 2024 Incident Report
 
-![](<Screenshot 2026-05-18 183519.png>)
+![](screenshot-finance-bill-2024-incident-report.png)
 
 Focused reconstruction of the Finance Bill 2024 period, connecting protocol behavior, national pressure signals, and major-provider activity during a known political stress window.
 
@@ -96,7 +96,7 @@ Focused reconstruction of the Finance Bill 2024 period, connecting protocol beha
 
 ### Suppression Event Explorer
 
-![](<Screenshot 2026-05-18 183454.png>)
+![](screenshot-suppression-event-explorer.png)
 
 Investigation surface for exploring synchronized censorship escalation windows, correlation states, divergence patterns, and protocol-specific pressure signals.
 
@@ -104,9 +104,17 @@ Investigation surface for exploring synchronized censorship escalation windows, 
 
 ### Methodology & Statistical Guardrails
 
-![](<Screenshot 2026-05-18 183550.png>)
+![](screenshot-methodology-statistical-guardrails.png)
 
 Methodology view documenting how sparse data, confidence weighting, variance checks, and rolling baselines constrain interpretation before signals enter intelligence outputs.
+
+---
+
+### Pressure Attribution
+
+![](screenshot-pressure-attribution.png)
+
+Decomposes the national composite pressure score into its named, sourced arithmetic drivers (ACLED conflict intensity, Google Transparency platform pressure) for any date, with OONI shown as independent same-day corroboration rather than a composite input — an attributed, citable answer to "why is pressure at this level right now."
 
 ---
 
@@ -114,7 +122,7 @@ Methodology view documenting how sparse data, confidence weighting, variance che
 
 Streamlit deployment:
 
-https://civil-liberties-and-censorship-analysis-with-bruin-toafjdj5xoc.streamlit.app/
+https://civil-lliberties-intelligence-observatory-toafjdj5xoc.streamlit.app/
 
 Key intelligence surfaces (9 pages):
 
