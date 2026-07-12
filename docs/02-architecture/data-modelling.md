@@ -67,14 +67,16 @@ Six dimension tables are materialized in `marts` today (confirmed via `git ls-fi
 | `reporting.asn_behavior_profile_mart` | one row per `asn` (full-history snapshot, **no date grain at all** — TD-02's finding) | Pages 5, 7 |
 | `reporting.mart_pressure_attribution_daily` + `_conflict_drivers` + `_platform_drivers` + `_ooni_daily` | `measurement_date` (daily), `week_start_date` (weekly), `period_start`/`period_end` (semiannual), `measurement_date` respectively — four different real grains, not one (ADR-0006) | Page 9 |
 
-## A documented gotcha: two different `composite_pressure_score` formulas (TD-45, open)
+## A documented gotcha: two different `composite_pressure_score` formulas (TD-45/TD-66, open)
 
 The same column name, `composite_pressure_score`, means two different things depending which table you're reading, discovered while tracing every consumer for ADR-0004 and not yet fixed (low urgency — both formulas are internally consistent and documented in their own asset comments, but the name alone doesn't disambiguate which formula is in play):
 
-- **`marts.fact_country_pressure_daily.composite_pressure_score`** (the "raw" formula, also passed through unchanged into `reporting.protocol_repression_correlation_mart`): `conflict_pressure_score * 0.75 + platform_pressure_score * 0.25` (ADR-0004; Lumen/legal pressure was formally dropped from this formula, no longer a term at all).
+- **`marts.fact_country_pressure_daily.composite_pressure_score`** (the "raw" formula, also passed through unchanged into `reporting.protocol_repression_correlation_mart`): `conflict_pressure_score * 0.75 + platform_pressure_score * 0.25` (ADR-0004; Lumen/legal pressure was formally dropped from this formula, no longer a term at all). This is the value `reporting.mart_pressure_attribution_daily` (page 9) actually decomposes.
 - **`reporting.mart_political_stress_windows.composite_pressure_score`** (a *different*, recomputed value — the fact-table value is renamed `source_composite_pressure_score` inside this mart first): `source_composite_pressure_score + signal_rate*5 + weighted_blocking*8 + max_protocol_stress_score*0.04 + elevated_protocol_count*0.18 - (1-avg_sample_quality_score)*1.2`. **This is the value Page 1's KPI, trend line, and CSV export actually read** — not the fact table's raw column.
 
 Before changing either formula, or before reasoning about "composite_pressure_score" across the codebase, confirm which table's column is actually in play — this ambiguity is exactly what caused the original investigation to need extra care.
+
+**TD-66 (logged 2026-07-12, extends TD-45):** the naming collision above is not the only gap. The second formula's four added terms have no cited weight derivation anywhere in `political_stress_windows_mart.sql`, unlike the first formula's ADR-0004-cited 0.75/0.25 — and no reporting asset decomposes the second formula's own recomputed value the way `mart_pressure_attribution_daily` decomposes the first. In practice: the specific number a dashboard visitor is most likely to see first (page 1's KPI) is not the number CLIO's own attribution page (page 9) can explain. This surfaced while writing the public methodology document (`methodology.md`), which scopes its "attributable inference" claim to the fact-table composite and its dedicated attribution view only, and discloses — without naming either column or citing the second formula's coefficients — that the dashboard's faster-moving reading is not yet decomposed the same way.
 
 ## Entity relationship diagram
 
@@ -118,13 +120,13 @@ erDiagram
         DATE measurement_date PK
         FLOAT64 conflict_pressure_score
         FLOAT64 platform_pressure_score
-        FLOAT64 composite_pressure_score "raw formula, see TD-45 gotcha above"
+        FLOAT64 composite_pressure_score "raw formula, see TD-45/TD-66 gotcha above"
         STRING regime_primary_regime "broadcast from acled_pressure_regimes"
     }
     mart_political_stress_windows {
         DATE date_key PK
         FLOAT64 source_composite_pressure_score "renamed from fact table"
-        FLOAT64 composite_pressure_score "recomputed, different formula, see TD-45 gotcha above"
+        FLOAT64 composite_pressure_score "recomputed, different formula, undecomposed — see TD-45/TD-66 gotcha above"
         STRING suppression_window_class
     }
     protocol_repression_correlation_mart {
