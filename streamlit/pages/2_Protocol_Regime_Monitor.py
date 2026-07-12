@@ -64,7 +64,7 @@ st.title("Protocol Regime Monitor")
 
 st.caption(
     f"Protocol-level censorship regime classification "
-    f"across {COUNTRY} (June 2023 – June 2025)"
+    f"across {COUNTRY} (data currently covers June 2023 – June 2025)"
 )
 
 

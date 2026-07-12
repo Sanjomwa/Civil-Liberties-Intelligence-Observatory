@@ -49,6 +49,15 @@ DEFAULTS = {
         "intelligence": "intelligence",
     },
     "dashboard": {
+        # These match marts.dim_dates' actual date-spine window, not a stale
+        # placeholder - every OONI/Google-Transparency-driven mart (fact_country
+        # _pressure_daily, protocol_daily_signals, protocol_repression_correlation
+        # _mart, mart_pressure_attribution_daily) is bounded to exactly this range
+        # today. Widening this default without first widening dim_dates would make
+        # the dashboard's default view load against a filter range most marts have
+        # zero rows for. See TD-40's caveat in technical-debt-inventory.md before
+        # changing either value. ACLED's own regime data (intelligence.acled
+        # _pressure_regimes) is not bound by dim_dates and already spans 1997-2026.
         "default_start": "2023-06-01",
         "default_end": "2025-06-30",
     },

@@ -65,7 +65,7 @@ st.title("National Stress Observatory")
 
 st.caption(
     f"Country-level digital suppression pressure across {COUNTRY} "
-    "(June 2023 – June 2025)"
+    "(data currently covers June 2023 – June 2025)"
 )
 
 

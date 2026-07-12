@@ -34,7 +34,7 @@ def _is_empty(records) -> bool:
 # ============================================================
 
 st.set_page_config(
-    page_title=f"{COUNTRY} Civil Liberties Observatory",
+    page_title="CLIO — Civil Liberties Intelligence Observatory",
     page_icon="🛰️",
     layout="wide",
 )
@@ -50,13 +50,15 @@ render_sidebar()
 # LANDING PAGE
 # ============================================================
 
-st.title(f"🛰️ {COUNTRY} Civil Liberties Observatory")
+st.title("🛰️ CLIO — Civil Liberties Intelligence Observatory")
 
 st.caption(
     f"""
-    Monitoring network interference, protocol suppression patterns,
-    and digital civil-liberties stress signals across {COUNTRY}
-    (June 2023 – June 2025).
+    Monitoring network interference, protocol suppression patterns, and
+    digital civil-liberties stress signals. {COUNTRY} is the current pilot
+    country. Network-interference and platform-pressure data currently
+    covers June 2023 – June 2025 (this pipeline's date-dimension window);
+    ACLED conflict-event coverage extends much further, 1997 – 2026.
     """
 )
 
