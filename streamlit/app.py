@@ -1,37 +1,10 @@
 # app.py
+#
+# Thin st.navigation entrypoint. Page content lives in pages/*.py; each page
+# owns its title/icon via st.Page() below rather than its own
+# st.set_page_config() call (Streamlit only allows one call per run).
 
 import streamlit as st
-
-from core.config import COUNTRY
-from core.state import init_state
-from core.filters import render_sidebar
-
-from services.marts import (
-    get_national_stress,
-    get_protocol_regimes,
-)
-
-
-def _safe_count(records) -> int:
-    try:
-        return len(records)
-    except TypeError:
-        return 0
-
-
-def _is_empty(records) -> bool:
-    if records is None:
-        return True
-
-    if hasattr(records, "empty"):
-        return bool(records.empty)
-
-    return _safe_count(records) == 0
-
-
-# ============================================================
-# PAGE CONFIG
-# ============================================================
 
 st.set_page_config(
     page_title="CLIO — Civil Liberties Intelligence Observatory",
@@ -39,111 +12,16 @@ st.set_page_config(
     layout="wide",
 )
 
-# ============================================================
-# INIT
-# ============================================================
+pages = st.navigation([
+    st.Page("pages/welcome.py", title="Welcome", icon="🛰️", default=True),
+    st.Page("pages/national_stress_observatory.py", title="National Stress Observatory", icon="📈"),
+    st.Page("pages/protocol_intelligence.py", title="Protocol Intelligence", icon="🔗"),
+    st.Page("pages/protocol_repression_correlation_engine.py", title="Protocol ↔ Repression Correlation Engine", icon="📡"),
+    st.Page("pages/asn_behavioral_intelligence.py", title="ASN Behavioral Intelligence", icon="🧬"),
+    st.Page("pages/suppression_event_explorer.py", title="Suppression Event Explorer", icon="🧭"),
+    st.Page("pages/finance_bill_2024_incident_report.py", title="Finance Bill 2024 Incident Report", icon="📘"),
+    st.Page("pages/methodology_statistical_guardrails.py", title="Methodology & Statistical Guardrails", icon="🧠"),
+    st.Page("pages/pressure_attribution.py", title="Pressure Attribution", icon="🧾"),
+])
 
-init_state()
-render_sidebar()
-
-# ============================================================
-# LANDING PAGE
-# ============================================================
-
-st.title("🛰️ CLIO — Civil Liberties Intelligence Observatory")
-
-st.caption(
-    f"""
-    Monitoring network interference, protocol suppression patterns, and
-    digital civil-liberties stress signals. {COUNTRY} is the current pilot
-    country. Network-interference and platform-pressure data currently
-    covers June 2023 – June 2025 (this pipeline's date-dimension window);
-    ACLED conflict-event coverage extends much further, 1997 – 2026.
-    """
-)
-
-st.divider()
-
-# ============================================================
-# LOAD SUMMARY DATA
-# ============================================================
-
-try:
-    national = get_national_stress(
-        st.session_state.start_date,
-        st.session_state.end_date,
-    )
-
-    protocols = get_protocol_regimes(
-        st.session_state.start_date,
-        st.session_state.end_date,
-    )
-except Exception:
-    national = []
-    protocols = []
-
-if _is_empty(national) or _is_empty(protocols):
-    st.warning(
-        "Dashboard summary data is currently unavailable. "
-        "The landing page remains available while deployment credentials, "
-        "BigQuery permissions, or reporting mart availability are checked."
-    )
-
-# ============================================================
-# SYSTEM STATUS
-# ============================================================
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.metric(
-        "National Stress Records",
-        _safe_count(national),
-    )
-
-with col2:
-    st.metric(
-        "Protocol Observations",
-        _safe_count(protocols),
-    )
-
-st.divider()
-
-# ============================================================
-# NAVIGATION HELP
-# ============================================================
-
-st.subheader("Available Observatory Views")
-
-st.markdown("""
-### 📈 National Stress Observatory
-Country-level pressure trends and suppression probability.
-
-### 🌐 Protocol Regime Monitor
-Protocol-by-protocol escalation states and confidence levels.
-
-### 🔗 Protocol Stress Intelligence Observatory
-Protocol-level anomaly pressure, escalation behavior, and statistical confidence.
-            
-### 📊 Protocol Repression Correllation Engine
-Statistical linkages between protocol stress and national-level suppression.
-
-### 🧠 ASN Behavioral Intelligence 
-Network-level anomaly concentration detection.
-
-### 🚨 Suppression Event Explorer 
-Interactive investigation timelines.
-
-### 📜 Finance Bill Incident Report 
-Narrative reconstruction of June 2024 events.
-
-### ⚖ Methodology & Statistical Guardrails 
-Scientific thresholds, assumptions, and limitations.
-""")
-
-st.divider()
-
-st.info(
-    "Use the left sidebar filters to adjust analysis windows "
-    "before opening observatory pages."
-)
+pages.run()

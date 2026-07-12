@@ -38,7 +38,7 @@ test = [
     "PyYAML>=6.0.0,<7.0",
 ]
 streamlit = [
-    "streamlit>=1.35.0,<2.0",
+    "streamlit>=1.36.0,<2.0",
     "google-cloud-bigquery>=3.20.0,<4.0",
     "google-auth>=2.29.0,<3.0",
     "python-dotenv>=1.0.0,<2.0",

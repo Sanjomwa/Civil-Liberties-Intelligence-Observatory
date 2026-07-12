@@ -112,6 +112,26 @@ div[data-testid="stMetricLabel"] {
     opacity: 0.8;
 }
 
+/* Long categorical values (e.g. behavioral_class) truncate with an ellipsis
+   by default -- wrap instead, same fix category as .clio-badge's overflow
+   fix above. Short numeric values are unaffected since they never wrap.
+   Streamlit sets white-space/text-overflow directly on the inner <p>, not
+   the outer stMetricValue div -- overflow/white-space aren't inherited, so
+   the override has to target the <p> itself or it silently does nothing. */
+div[data-testid="stMetricValue"] {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.25;
+}
+
+div[data-testid="stMetricValue"] p {
+    white-space: normal !important;
+    text-overflow: clip !important;
+    overflow: visible !important;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
 /* Category/status badges -- filled pill, encodes SEVERITY/state */
 .clio-badge-row {
     display: flex;

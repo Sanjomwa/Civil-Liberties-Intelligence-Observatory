@@ -15,12 +15,6 @@ from components.trust import render_trust_strip, attribution_footer
 # PAGE CONFIG
 # ============================================================
 
-st.set_page_config(
-    page_title="Finance Bill 2024 Incident Report",
-    page_icon="📘",
-    layout="wide"
-)
-
 inject_css()
 
 

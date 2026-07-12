@@ -235,11 +235,6 @@ def get_protocol_regimes(start_date, end_date):
 
 
 @st.cache_data(ttl=3600)
-def get_protocol_stress_intelligence(start_date, end_date):
-    return get_protocol_regimes(start_date, end_date)
-
-
-@st.cache_data(ttl=3600)
 def get_protocol_correlation(start_date, end_date):
     sql = f"""
         SELECT

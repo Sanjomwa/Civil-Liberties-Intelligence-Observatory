@@ -14,12 +14,6 @@ from components.trust import render_trust_strip, attribution_footer
 # PAGE CONFIG
 # ============================================================
 
-st.set_page_config(
-    page_title="Protocol ↔ Repression Correlation Engine",
-    page_icon="📡",
-    layout="wide"
-)
-
 inject_css()
 
 

@@ -1,4 +1,4 @@
-# pages/1_National_Stress_Observatory.py
+# pages/national_stress_observatory.py
 
 import streamlit as st
 import plotly.graph_objects as go
@@ -22,12 +22,6 @@ from components.trust import (
 # ============================================================
 # PAGE CONFIG
 # ============================================================
-
-st.set_page_config(
-    page_title="National Stress Observatory",
-    page_icon="📈",
-    layout="wide"
-)
 
 inject_css()
 

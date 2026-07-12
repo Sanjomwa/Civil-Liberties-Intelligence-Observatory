@@ -28,9 +28,11 @@ Status: Phase 1 deliverable, CLIO Engineering Reset. These are drawn from patter
 
 ## Streamlit pages specifically
 
-- Match page 3's defensive normalization pattern (`_ensure_*_columns()` back-filling missing columns, safe NaN-tolerant formatting) as the standard for new pages, not the lighter `if df.empty: st.stop()` pattern used by pages 1/2/5/6. Page 3 is the highest-quality page in the set for a reason.
-- Use `use_container_width=True` consistently; do not introduce `width="stretch"` or other newer API idioms without updating every page at once (TD-27).
+- Match `protocol_intelligence.py`'s defensive normalization pattern (`_ensure_*_columns()` back-filling missing columns, safe NaN-tolerant formatting) as the standard for new pages, not the lighter `if df.empty: st.stop()` pattern used by simpler pages. (This was previously "page 3" — filenames lost their numeric prefixes in the 2026-07-12 `st.navigation`/`st.Page` migration; refer to pages by their actual filename, not a position number, going forward.)
+- Use `use_container_width=True` consistently across all pages (TD-27, resolved 2026-07-12 — the one holdout, the consolidated `protocol_intelligence.py`, was converted from `width="stretch"` to match). Do not reintroduce `width="stretch"` or other newer API idioms without updating every page at once.
 - If a page's data-fetch function does not accept the sidebar date range (as with `get_asn_behavior()`, which queries a dateless snapshot mart), say so explicitly in a comment near the trust-strip call, rather than leaving a reader to wonder whether the omission is a bug.
+- Navigation is centralized in `app.py` via `st.navigation([st.Page(...), ...])`; individual page files must not call `st.set_page_config()` themselves (Streamlit only allows one call per run, and `app.py` already makes it). Set each page's title and icon in its `st.Page(...)` entry in `app.py`, not in the page file. Give every page a distinct icon — `app.py`'s `st.navigation()` call is the single place to check for icon reuse across pages.
+- Any page rendering ACLED- and/or OONI-derived data must call `attribution_footer()` (`components/trust.py`) scoped to its actual sources, matching the pattern established at TD-63 — verify against the page's real mart lineage (`depends:`/`FROM`), not assumed from the page's topic.
 
 ## Infrastructure
 
