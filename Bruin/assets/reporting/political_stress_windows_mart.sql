@@ -15,16 +15,54 @@ description: |
   corroboration overweighting between protocol stress and elevated
   protocol count.
 
-  ADR-0004 / TD-44 / TD-45 (2026-07-05, v5): source_composite_pressure_score
-  (read from marts.fact_country_pressure_daily) no longer includes a Lumen
-  legal-pressure term -- see that asset's header. legal_pressure_score and
-  legal_pressure_is_synthetic are still passed through below for
-  transparency/provenance, but neither feeds this mart's own
-  composite_pressure_score, rolling_baseline_pressure, pressure_delta, or
-  suppression_window_probability/class -- those were already derived from
-  source_composite_pressure_score, not from legal_pressure_score directly,
-  so the only change here is that source_composite_pressure_score's own
-  value shifted upstream.
+  ADR-0004 / TD-44 / TD-45 (2026-07-05, v5, historical -- column renamed
+  by TD-66 below): the fact table's composite score, then named
+  source_composite_pressure_score in this mart, no longer includes a Lumen
+  legal-pressure term -- see fact_country_pressure_daily's header.
+  legal_pressure_score and legal_pressure_is_synthetic are still passed
+  through below for transparency/provenance, but neither feeds this mart's
+  own scoring -- that was already derived from the fact table's composite
+  score, not from legal_pressure_score directly, so at the time this only
+  shifted that upstream value, not this mart's own formula.
+
+  TD-66 (2026-07-18, v6): this mart used to redefine composite_pressure_score
+  under the same name as the fact table's own documented, ADR-0004-cited,
+  ADR-0006-decomposed score -- two different formulas sharing one column
+  name (TD-45's original finding), with no cited derivation for this mart's
+  four added OONI terms anywhere in this asset's history (checked: git log
+  -p across every commit that touched this formula, back to its introduction
+  -- no rationale found). composite_pressure_score below is now a direct,
+  undecomposed-formula passthrough of fact_country_pressure_daily's own
+  value -- the number CLIO's Pressure Attribution page (ADR-0006) actually
+  decomposes is now the same number this mart's consumers read.
+
+  The OONI-fused recomputation (the former composite_pressure_score, and
+  its downstream rolling_baseline_pressure/pressure_delta/
+  suppression_window_probability/suppression_window_class chain) is
+  deleted, not renamed. A recalibration test against the Finance Bill 2024
+  window (matching the old formula's historical CRITICAL/HIGH/ELEVATED
+  trigger-frequency against the clean composite's own delta distribution)
+  found the clean composite alone, once recalibrated, correctly classifies
+  the full 2024-06-22-through-06-28 peak week CRITICAL -- including
+  2024-06-25, which the OONI-fused version actually misses. The two
+  detectors differed only on the 06-20/06-21 pre-storming ramp and a
+  handful of isolated July days -- differences with no independent ground
+  truth available to adjudicate as real signal vs. noise in the
+  daily-varying OONI terms (the same per-event capture gap TD-67 already
+  flags for Kenya's ACLED coverage). Given the crisis itself recovers
+  cleanly once recalibrated, and the OONI terms' own weights have no cited
+  derivation anywhere in this asset's history, the undocumented formula is
+  retired outright rather than kept under a relabeled name. TD-45's
+  underlying naming collision is closed by the same removal -- there is
+  now only one composite_pressure_score formula in this codebase, defined
+  once, in fact_country_pressure_daily.sql.
+
+  OONI's protocol/network signals (signal_rate, weighted_blocking,
+  max_protocol_anomaly_score, max_protocol_stress_score,
+  elevated_protocol_count, avg_sample_quality_score) are unaffected by
+  this change and remain below as their own passthrough columns -- they
+  were never part of composite_pressure_score's own definition, only of
+  the now-deleted recomputation.
 
 depends:
   - reporting.mart_protocol_interference_trends
@@ -74,22 +112,22 @@ country_pressure AS (
 
         -- ADR-0004 / TD-44 / TD-45: passthrough only, as of 2026-07-05 --
         -- legal_pressure_score is no longer a term in
-        -- source_composite_pressure_score below (see fact_country_pressure_daily
+        -- composite_pressure_score below (see fact_country_pressure_daily
         -- header). Kept here for transparency/provenance, not consumed by
         -- this mart's own arithmetic.
         legal_pressure_score,
         platform_pressure_score,
         legal_pressure_is_synthetic,
 
-        composite_pressure_score
-            AS source_composite_pressure_score,
-
-        pressure_level
-            AS source_pressure_level,
+        -- TD-66: direct, undecomposed-formula passthrough of the fact
+        -- table's own documented composite_pressure_score/pressure_level --
+        -- no longer recomputed under this same name below.
+        composite_pressure_score,
+        pressure_level,
 
         -- ADR-0002 step (e): additive ACLED path A passthrough.
-        -- Not consumed by this mart's own composite-score/baseline
-        -- arithmetic below -- surfaced for reporting only.
+        -- Not consumed by this mart's own composite-score arithmetic --
+        -- surfaced for reporting only.
         regime_primary_regime,
         regime_confidence_level,
         regime_transition_detected,
@@ -103,202 +141,75 @@ country_pressure AS (
     FROM `{{ var.project_id }}.marts.fact_country_pressure_daily`
 
     WHERE iso2 = '{{ var.iso2 }}'
-),
-
-base AS (
-
-    SELECT
-        d.date_key,
-
-        COALESCE(c.conflict_pressure_score, 0)
-            AS conflict_pressure,
-
-        COALESCE(c.legal_pressure_score, 0)
-            AS legal_pressure,
-
-        -- TD-01: FALSE (not NULL) when this date has no country_pressure
-        -- row at all, matching the COALESCE(...,0) treatment above.
-        COALESCE(c.legal_pressure_is_synthetic, FALSE)
-            AS legal_pressure_is_synthetic,
-
-        COALESCE(c.platform_pressure_score, 0)
-            AS platform_pressure,
-
-        COALESCE(c.source_composite_pressure_score, 0)
-            AS source_composite_pressure_score,
-
-        COALESCE(c.source_pressure_level, 'LOW')
-            AS source_pressure_level,
-
-        -- ADR-0002 step (e): nullable passthrough, not COALESCEd --
-        -- NULL means no regime classification exists for this date
-        -- (e.g. outside the backfilled range), which is a different
-        -- and more honest signal than a fabricated default.
-        c.regime_primary_regime,
-        c.regime_confidence_level,
-        c.regime_transition_detected,
-        c.regime_transition_type,
-        c.regime_previous_regime,
-        c.regime_protest_band,
-        c.regime_violence_band,
-        c.regime_suppression_band,
-        c.regime_disorder_band,
-
-        COALESCE(n.signal_rate, 0)
-            AS signal_rate,
-
-        COALESCE(n.weighted_blocking, 0)
-            AS weighted_blocking,
-
-        COALESCE(n.max_protocol_anomaly_score, 0)
-            AS max_protocol_anomaly_score,
-
-        COALESCE(n.max_protocol_stress_score, 0)
-            AS max_protocol_stress_score,
-
-        COALESCE(n.elevated_protocol_count, 0)
-            AS elevated_protocol_count,
-
-        COALESCE(n.avg_sample_quality_score, 0)
-            AS avg_sample_quality_score
-
-    FROM `{{ var.project_id }}.marts.dim_dates` d
-
-    LEFT JOIN country_pressure c
-        ON d.date_key = c.measurement_date
-
-    LEFT JOIN network n
-        ON d.date_key = n.measurement_date
-),
-
-scored AS (
-
-    SELECT
-        *,
-
-        ROUND(
-            source_composite_pressure_score
-            + signal_rate * 5
-            + weighted_blocking * 8
-            + COALESCE(max_protocol_stress_score, 0) * 0.04
-            + elevated_protocol_count * 0.18
-            - (1 - avg_sample_quality_score) * 1.2,
-            4
-        ) AS composite_pressure_score
-
-    FROM base
-),
-
-windowed AS (
-
-    SELECT
-        *,
-
-        AVG(composite_pressure_score)
-        OVER (
-            ORDER BY date_key
-            ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
-        ) AS rolling_baseline_pressure,
-
-        COUNT(composite_pressure_score)
-        OVER (
-            ORDER BY date_key
-            ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
-        ) AS baseline_days_30d
-
-    FROM scored
-),
-
-finalized AS (
-
-    SELECT
-        *,
-
-        ROUND(
-            composite_pressure_score
-            - rolling_baseline_pressure,
-            4
-        ) AS pressure_delta,
-
-        CASE
-            WHEN baseline_days_30d < 14
-                THEN NULL
-
-            ELSE ROUND(
-                1 / (
-                    1 + EXP(
-                        -(
-                            composite_pressure_score
-                            - rolling_baseline_pressure
-                        )
-                    )
-                ),
-                4
-            )
-        END AS suppression_window_probability
-
-    FROM windowed
 )
 
 SELECT
-    date_key,
+    d.date_key,
 
-    conflict_pressure,
-    legal_pressure,
-    legal_pressure_is_synthetic,
-    platform_pressure,
+    COALESCE(c.conflict_pressure_score, 0)
+        AS conflict_pressure,
 
-    source_composite_pressure_score,
-    source_pressure_level,
+    COALESCE(c.legal_pressure_score, 0)
+        AS legal_pressure,
 
-    regime_primary_regime,
-    regime_confidence_level,
-    regime_transition_detected,
-    regime_transition_type,
-    regime_previous_regime,
-    regime_protest_band,
-    regime_violence_band,
-    regime_suppression_band,
-    regime_disorder_band,
+    -- TD-01: FALSE (not NULL) when this date has no country_pressure
+    -- row at all, matching the COALESCE(...,0) treatment above.
+    COALESCE(c.legal_pressure_is_synthetic, FALSE)
+        AS legal_pressure_is_synthetic,
 
-    signal_rate,
-    weighted_blocking,
+    COALESCE(c.platform_pressure_score, 0)
+        AS platform_pressure,
 
-    max_protocol_anomaly_score,
-    max_protocol_stress_score,
-    elevated_protocol_count,
+    COALESCE(c.composite_pressure_score, 0)
+        AS composite_pressure_score,
 
-    avg_sample_quality_score,
+    COALESCE(c.pressure_level, 'LOW')
+        AS pressure_level,
 
-    composite_pressure_score,
-    rolling_baseline_pressure,
-    baseline_days_30d,
+    -- ADR-0002 step (e): nullable passthrough, not COALESCEd --
+    -- NULL means no regime classification exists for this date
+    -- (e.g. outside the backfilled range), which is a different
+    -- and more honest signal than a fabricated default.
+    c.regime_primary_regime,
+    c.regime_confidence_level,
+    c.regime_transition_detected,
+    c.regime_transition_type,
+    c.regime_previous_regime,
+    c.regime_protest_band,
+    c.regime_violence_band,
+    c.regime_suppression_band,
+    c.regime_disorder_band,
 
-    pressure_delta,
-    suppression_window_probability,
+    COALESCE(n.signal_rate, 0)
+        AS signal_rate,
 
-    CASE
-        WHEN baseline_days_30d < 14
-            THEN 'INSUFFICIENT_HISTORY'
+    COALESCE(n.weighted_blocking, 0)
+        AS weighted_blocking,
 
-        WHEN pressure_delta >= 1.2
-            THEN 'CRITICAL_OBSERVABILITY_WINDOW'
+    COALESCE(n.max_protocol_anomaly_score, 0)
+        AS max_protocol_anomaly_score,
 
-        WHEN pressure_delta >= 0.7
-            THEN 'HIGH_STRESS_WINDOW'
+    COALESCE(n.max_protocol_stress_score, 0)
+        AS max_protocol_stress_score,
 
-        WHEN pressure_delta >= 0.35
-            THEN 'ELEVATED_PRESSURE'
+    COALESCE(n.elevated_protocol_count, 0)
+        AS elevated_protocol_count,
 
-        ELSE 'NORMAL'
-    END AS suppression_window_class,
+    COALESCE(n.avg_sample_quality_score, 0)
+        AS avg_sample_quality_score,
 
-    'political_stress_windows_mart_v5'
+    'political_stress_windows_mart_v6'
         AS reporting_version,
 
     CURRENT_TIMESTAMP()
         AS snapshot_at
 
-FROM finalized
+FROM `{{ var.project_id }}.marts.dim_dates` d
 
-ORDER BY date_key
+LEFT JOIN country_pressure c
+    ON d.date_key = c.measurement_date
+
+LEFT JOIN network n
+    ON d.date_key = n.measurement_date
+
+ORDER BY d.date_key

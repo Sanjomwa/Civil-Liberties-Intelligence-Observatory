@@ -67,16 +67,11 @@ Six dimension tables are materialized in `marts` today (confirmed via `git ls-fi
 | `reporting.asn_behavior_profile_mart` | one row per `asn` (full-history snapshot, **no date grain at all** — TD-02's finding) | Pages 5, 7 |
 | `reporting.mart_pressure_attribution_daily` + `_conflict_drivers` + `_platform_drivers` + `_ooni_daily` | `measurement_date` (daily), `week_start_date` (weekly), `period_start`/`period_end` (semiannual), `measurement_date` respectively — four different real grains, not one (ADR-0006) | Page 9 |
 
-## A documented gotcha: two different `composite_pressure_score` formulas (TD-45/TD-66, open)
+## A formerly-documented gotcha, now resolved: `composite_pressure_score` (TD-45/TD-66, RESOLVED 2026-07-18)
 
-The same column name, `composite_pressure_score`, means two different things depending which table you're reading, discovered while tracing every consumer for ADR-0004 and not yet fixed (low urgency — both formulas are internally consistent and documented in their own asset comments, but the name alone doesn't disambiguate which formula is in play):
+Until 2026-07-18, the column name `composite_pressure_score` meant two different things depending which table you were reading: `marts.fact_country_pressure_daily`'s documented `conflict_pressure_score * 0.75 + platform_pressure_score * 0.25` (ADR-0004), and a second, undocumented recomputation inside `reporting.mart_political_stress_windows` that added four OONI-derived terms with no cited weight derivation anywhere in that asset. The second formula was the value Page 1's KPI, trend line, and CSV export actually read — not the fact table's raw column, and not the number `reporting.mart_pressure_attribution_daily` (page 9) decomposes.
 
-- **`marts.fact_country_pressure_daily.composite_pressure_score`** (the "raw" formula, also passed through unchanged into `reporting.protocol_repression_correlation_mart`): `conflict_pressure_score * 0.75 + platform_pressure_score * 0.25` (ADR-0004; Lumen/legal pressure was formally dropped from this formula, no longer a term at all). This is the value `reporting.mart_pressure_attribution_daily` (page 9) actually decomposes.
-- **`reporting.mart_political_stress_windows.composite_pressure_score`** (a *different*, recomputed value — the fact-table value is renamed `source_composite_pressure_score` inside this mart first): `source_composite_pressure_score + signal_rate*5 + weighted_blocking*8 + max_protocol_stress_score*0.04 + elevated_protocol_count*0.18 - (1-avg_sample_quality_score)*1.2`. **This is the value Page 1's KPI, trend line, and CSV export actually read** — not the fact table's raw column.
-
-Before changing either formula, or before reasoning about "composite_pressure_score" across the codebase, confirm which table's column is actually in play — this ambiguity is exactly what caused the original investigation to need extra care.
-
-**TD-66 (logged 2026-07-12, extends TD-45):** the naming collision above is not the only gap. The second formula's four added terms have no cited weight derivation anywhere in `political_stress_windows_mart.sql`, unlike the first formula's ADR-0004-cited 0.75/0.25 — and no reporting asset decomposes the second formula's own recomputed value the way `mart_pressure_attribution_daily` decomposes the first. In practice: the specific number a dashboard visitor is most likely to see first (page 1's KPI) is not the number CLIO's own attribution page (page 9) can explain. This surfaced while writing the public methodology document (`methodology.md`), which scopes its "attributable inference" claim to the fact-table composite and its dedicated attribution view only, and discloses — without naming either column or citing the second formula's coefficients — that the dashboard's faster-moving reading is not yet decomposed the same way.
+**Fixed, not just relabeled.** `reporting.mart_political_stress_windows.composite_pressure_score` is now a direct passthrough of the fact table's own documented value — no recomputation, no second formula. The OONI-fused recomputation was deleted outright (a recalibration backtest against the Finance Bill 2024 window found the documented composite alone correctly classified the full crisis week once its own delta thresholds were recalibrated, with no independent ground truth to support keeping the undocumented formula alive under any label — see `decision-log.md`'s 2026-07-18 entry for the full account). There is exactly one `composite_pressure_score` formula in this codebase now, defined once, and the value Page 1's KPI shows is the same value page 9 decomposes.
 
 ## Entity relationship diagram
 
@@ -99,7 +94,7 @@ erDiagram
     dim_country ||--o{ fact_country_pressure_daily : "country (analytical, no live consumer join yet)"
 
     acled_pressure_regimes ||--o{ fact_country_pressure_daily : "regime_* broadcast, Saturday-anchored week"
-    fact_country_pressure_daily ||--o| mart_political_stress_windows : "source_composite_pressure_score"
+    fact_country_pressure_daily ||--o| mart_political_stress_windows : "composite_pressure_score (direct passthrough)"
     fact_country_pressure_daily ||--o| protocol_repression_correlation_mart : "conflict/platform/composite pressure passthrough"
     fact_country_pressure_daily ||--o{ mart_pressure_attribution_daily : "composite decomposition (ADR-0006)"
 
@@ -120,14 +115,14 @@ erDiagram
         DATE measurement_date PK
         FLOAT64 conflict_pressure_score
         FLOAT64 platform_pressure_score
-        FLOAT64 composite_pressure_score "raw formula, see TD-45/TD-66 gotcha above"
+        FLOAT64 composite_pressure_score "conflict*0.75 + platform*0.25, ADR-0004"
         STRING regime_primary_regime "broadcast from acled_pressure_regimes"
     }
     mart_political_stress_windows {
         DATE date_key PK
-        FLOAT64 source_composite_pressure_score "renamed from fact table"
-        FLOAT64 composite_pressure_score "recomputed, different formula, undecomposed — see TD-45/TD-66 gotcha above"
-        STRING suppression_window_class
+        FLOAT64 composite_pressure_score "direct passthrough of the fact table's own value — TD-45/TD-66 RESOLVED"
+        STRING pressure_level "direct passthrough"
+        FLOAT64 max_protocol_stress_score "OONI, independent corroboration only"
     }
     protocol_repression_correlation_mart {
         DATE measurement_date PK

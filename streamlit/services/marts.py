@@ -27,17 +27,21 @@ def _validate_mart_response(
 
 @st.cache_data(ttl=3600)
 def get_national_stress(start_date, end_date):
+    """TD-66: composite_pressure_score/pressure_level below are the mart's
+    direct passthrough of fact_country_pressure_daily's documented,
+    ADR-0006-decomposed score -- no longer a shadow recomputation under the
+    same name. The mart's former OONI-fused recomputation (and its
+    downstream rolling-baseline/delta/window-class chain) was retired
+    outright, not renamed -- see political_stress_windows_mart.sql's
+    header for the recalibration test that supported deleting it."""
     sql = f"""
         SELECT
             date_key,
             composite_pressure_score,
-            rolling_baseline_pressure,
-            pressure_delta,
-            suppression_window_probability,
-            suppression_window_class,
+            pressure_level,
+            max_protocol_stress_score,
             elevated_protocol_count,
             avg_sample_quality_score,
-            baseline_days_30d,
             legal_pressure_is_synthetic,
             reporting_version,
             snapshot_at
@@ -53,13 +57,10 @@ def get_national_stress(start_date, end_date):
         required_columns=[
             "date_key",
             "composite_pressure_score",
-            "rolling_baseline_pressure",
-            "pressure_delta",
-            "suppression_window_probability",
-            "suppression_window_class",
+            "pressure_level",
+            "max_protocol_stress_score",
             "elevated_protocol_count",
             "avg_sample_quality_score",
-            "baseline_days_30d",
             "legal_pressure_is_synthetic",
             "reporting_version",
             "snapshot_at",
@@ -67,13 +68,10 @@ def get_national_stress(start_date, end_date):
         dtype_hints={
             "date_key": "datetime",
             "composite_pressure_score": "numeric",
-            "rolling_baseline_pressure": "numeric",
-            "pressure_delta": "numeric",
-            "suppression_window_probability": "numeric",
-            "suppression_window_class": "string",
+            "pressure_level": "string",
+            "max_protocol_stress_score": "numeric",
             "elevated_protocol_count": "numeric",
             "avg_sample_quality_score": "numeric",
-            "baseline_days_30d": "numeric",
             "legal_pressure_is_synthetic": "any",
             "reporting_version": "string",
             "snapshot_at": "datetime",
@@ -81,6 +79,7 @@ def get_national_stress(start_date, end_date):
         non_nullable=[
             "date_key",
             "composite_pressure_score",
+            "pressure_level",
             "legal_pressure_is_synthetic",
             "reporting_version",
             "snapshot_at",

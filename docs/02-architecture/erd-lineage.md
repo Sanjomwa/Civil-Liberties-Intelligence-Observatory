@@ -94,7 +94,7 @@ flowchart LR
     Google["Google Transparency chain\n(platform_pressure_score)"] --> fact_country
     Lumen["Lumen chain\n(legal_pressure_score, zero weight)"] -.-> fact_country
 
-    fact_country --> stress_windows["reporting.mart_political_stress_windows\n(page 1 - recomputed composite, undecomposed, see data-modelling.md's TD-45/TD-66 gotcha)"]
+    fact_country --> stress_windows["reporting.mart_political_stress_windows\n(page 1 - direct passthrough of fact table's composite, TD-45/TD-66 RESOLVED 2026-07-18)"]
     fact_country --> corr_mart["reporting.protocol_repression_correlation_mart\n(pages 4, 6, 7 - raw composite passthrough)"]
     fact_country --> attr_daily["reporting.mart_pressure_attribution_daily\n(page 9 - decomposed into named drivers, ADR-0006)"]
 
