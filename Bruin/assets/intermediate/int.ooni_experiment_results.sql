@@ -16,6 +16,7 @@ depends:
   - stg.ooni_tcp_observations
   - stg.ooni_tls_observations
   - stg.ooni_http_observations
+  - marts.dim_tls_failure_evidence
 
 materialization:
   type: table
@@ -177,7 +178,14 @@ tcp AS (
 
 tls_source AS (
   SELECT
-    *,
+    t.*,
+    -- TD-71 (2026-08-01): per-failure-mode confidence weight, from
+    -- marts.dim_tls_failure_evidence -- NULL when tls_failure is NULL
+    -- (a success, handled separately below) or when tls_failure is a
+    -- string not present in that table (an unmapped/future failure mode,
+    -- which must default LOW, never inherit an elevated tier -- see the
+    -- COALESCE in the confidence_score CASE below, not this join).
+    dim.standalone_confidence AS tls_failure_standalone_confidence,
     -- TD-72 item (d) / TD-69 (2026-08-01): Signal rotated its TLS root CA
     -- in 2022 (old "TextSecure"/Open Whisper Systems root -> new "Signal
     -- Messenger, LLC" root). Older OONI probe versions have broken
@@ -215,7 +223,9 @@ tls_source AS (
         'ddb0f92bb95c8d6fd202ea6e8cc5ccd182b544f8cd696f47d580659ddc9df65a'
       )
     ) AS presents_known_signal_root_ca
-  FROM `{{ var.project_id }}.stg.ooni_tls_observations`
+  FROM `{{ var.project_id }}.stg.ooni_tls_observations` AS t
+  LEFT JOIN `{{ var.project_id }}.marts.dim_tls_failure_evidence` AS dim
+    ON dim.tls_failure = t.tls_failure
 ),
 
 tls AS (
@@ -300,14 +310,40 @@ tls AS (
     -- it come alive alongside this fix, every non-reset/timeout/cert-
     -- exclusion failure row's confidence_score would have jumped from 0.45
     -- to 0.75 with no per-failure-mode review behind that specific number
-    -- -- again TD-71's question, not this one's. Failure rows keep their
-    -- pre-fix confidence_score (ELSE 0.45) unchanged; only genuine
-    -- successes move (0.45 UNKNOWN -> 0.70 OK), matching result_state's
-    -- own scope exactly.
+    -- -- that used to be TD-71's question; it is now answered below, via
+    -- marts.dim_tls_failure_evidence, not by resurrecting this flat arm.
+    -- TD-71 (2026-08-01): per-failure-mode confidence, replacing the flat
+    -- `ELSE 0.45` that collapsed every TLS failure mode (ssl_invalid_
+    -- hostname, connection_aborted, eof_error, etc.) to the same score
+    -- regardless of evidentiary weight. tls_failure_standalone_confidence
+    -- comes from tls_source's join to marts.dim_tls_failure_evidence
+    -- (joined there, not inlined here, so this file has exactly one
+    -- source of per-failure-mode confidence literals -- the keep-in-sync
+    -- trap TD-57 already tracks for this project's SQL generally). The
+    -- final `COALESCE(..., 0.45)` is the required default-low allowlist:
+    -- any tls_failure string not present in that dimension table --
+    -- including one OONI introduces after this was written -- silently
+    -- takes the pre-fix floor, never an elevated tier it was never
+    -- reviewed for. NOTE: this only changes confidence_score for
+    -- connection_reset (0.45 -> 0.60) and generic_timeout_error
+    -- (0.45 -> 0.40) among failure modes with an existing dedicated
+    -- result_state arm above -- and connection_reset rows are also
+    -- `is_blocking_signal = TRUE`, so this also raises
+    -- confidence_weighted_interference/signal_rate in
+    -- features.protocol_daily_signals on any day with a TLS reset
+    -- (verified, before/after, against the Finance Bill 2024 window --
+    -- see decision-log.md's 2026-08-01 entry for the measured effect,
+    -- deliberately not asserted here to be zero). ssl_invalid_certificate
+    -- and ssl_unknown_authority (the residual, non-cert-exclusion-matched
+    -- rows) are deliberately still mapped to 0.45 in the dimension table
+    -- itself, not elevated -- the corroboration signal that would justify
+    -- raising them (agreement with OONI's own anomaly/blocking_general
+    -- verdict) does not exist in CLIO's ingested raw measurement JSON,
+    -- confirmed live before shipping this fix, not assumed.
     CASE
       WHEN tls_failure = 'ssl_unknown_authority' AND test_name = 'signal' AND presents_known_signal_root_ca THEN 0.70
       WHEN handshake_success IS TRUE THEN 0.70
-      ELSE 0.45
+      ELSE COALESCE(tls_failure_standalone_confidence, 0.45)
     END AS confidence_score,
     -- Gated identically to the three arms above (tls_failure =
     -- 'ssl_unknown_authority' AND test_name = 'signal' AND
