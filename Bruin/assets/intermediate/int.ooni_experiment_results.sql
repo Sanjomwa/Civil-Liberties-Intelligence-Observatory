@@ -195,11 +195,12 @@ tls_source AS (
     -- this was written. Correction made during this same fix, before
     -- shipping: the originally-assumed "before" state (these rows classify
     -- BLOCKED, per `WHEN handshake_success IS FALSE THEN 'BLOCKED'`) does
-    -- not hold against this table's actual data -- `handshake_success` is
-    -- NULL for every row here, not just Signal's (see TD-72, a separate,
-    -- larger, not-fixed-here bug: `$.status.success` is not a field this
-    -- test's raw JSON shape ever has). These rows' real prior result_state
-    -- was 'UNKNOWN', not 'BLOCKED'. This fix still correctly moves them to
+    -- not hold against this table's actual data -- `handshake_success` was
+    -- NULL for every row here at the time, not just Signal's (TD-72, fixed
+    -- 2026-08-01 -- see stg.ooni_tls_observations.sql; handshake_success
+    -- now derives from `tls_failure IS NULL` instead of the wrong
+    -- `$.status.*` path). These rows' real prior result_state was
+    -- 'UNKNOWN', not 'BLOCKED'. This fix still correctly moves them to
     -- 'OK', which remains the right verdict -- Signal's real backend,
     -- reachable -- just under a corrected description of what it fixes.
     EXISTS (
@@ -252,12 +253,28 @@ tls AS (
     -- fixes both: TD-72 stays entirely unfixed and uniform across all four
     -- apps as intended, and reset/timeout rows keep falling through to
     -- their real verdicts regardless of which certificate they presented.
+    -- TD-72 (2026-08-01): handshake_success now genuinely reflects success
+    -- (tls_failure IS NULL, fixed at the staging layer). Deliberately NOT
+    -- restoring a `WHEN handshake_success IS FALSE THEN 'BLOCKED'` arm here
+    -- -- that arm existed before this fix but was permanently dead code
+    -- (handshake_success was always NULL), so it never actually ran; had it
+    -- been left in place, turning handshake_success on would have made it
+    -- fire for real for the first time, silently reclassifying every
+    -- TLS failure mode not already caught by the reset/timeout/cert-
+    -- exclusion arms above (ssl_invalid_hostname, connection_aborted,
+    -- eof_error, etc.) from 'UNKNOWN' to 'BLOCKED' -- a real classification
+    -- change with no review behind it, and squarely TD-71's still-open
+    -- question (per-failure-mode confidence/verdict), not this fix's. Any
+    -- row with a failure the earlier arms don't name still falls through
+    -- to the explicit `tls_failure IS NOT NULL THEN 'UNKNOWN'` arm below,
+    -- byte-for-byte the same behavior as before this fix -- this CASE only
+    -- changes what happens to rows where tls_failure IS NULL (genuine
+    -- successes), which is the entire scope of TD-72.
     CASE
       WHEN handshake_success IS TRUE THEN 'OK'
       WHEN LOWER(COALESCE(tls_failure, '')) LIKE '%reset%' THEN 'BLOCKED'
       WHEN LOWER(COALESCE(tls_failure, '')) LIKE '%timeout%' THEN 'DOWN'
       WHEN tls_failure = 'ssl_unknown_authority' AND test_name = 'signal' AND presents_known_signal_root_ca THEN 'OK'
-      WHEN handshake_success IS FALSE THEN 'BLOCKED'
       WHEN tls_failure IS NOT NULL THEN 'UNKNOWN'
       ELSE 'UNKNOWN'
     END AS result_state,
@@ -277,9 +294,18 @@ tls AS (
       WHEN tls_failure IS NOT NULL THEN CONCAT('tls.', LOWER(tls_failure))
       ELSE 'tls.unknown'
     END AS blocking_detail,
+    -- Same reasoning as result_state above: no `handshake_success IS FALSE
+    -- THEN 0.75` arm here either. That arm predates this fix and was
+    -- likewise permanently dead (handshake_success was always NULL); had
+    -- it come alive alongside this fix, every non-reset/timeout/cert-
+    -- exclusion failure row's confidence_score would have jumped from 0.45
+    -- to 0.75 with no per-failure-mode review behind that specific number
+    -- -- again TD-71's question, not this one's. Failure rows keep their
+    -- pre-fix confidence_score (ELSE 0.45) unchanged; only genuine
+    -- successes move (0.45 UNKNOWN -> 0.70 OK), matching result_state's
+    -- own scope exactly.
     CASE
       WHEN tls_failure = 'ssl_unknown_authority' AND test_name = 'signal' AND presents_known_signal_root_ca THEN 0.70
-      WHEN handshake_success IS FALSE THEN 0.75
       WHEN handshake_success IS TRUE THEN 0.70
       ELSE 0.45
     END AS confidence_score,

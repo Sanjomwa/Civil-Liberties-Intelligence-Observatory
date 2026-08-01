@@ -64,7 +64,29 @@ SELECT
   JSON_VALUE(tls_json, '$.ip') AS ip_address,
   SAFE_CAST(JSON_VALUE(tls_json, '$.port') AS INT64) AS port,
   COALESCE(JSON_VALUE(tls_json, '$.server_name'), JSON_VALUE(tls_json, '$.sni')) AS server_name,
-  SAFE_CAST(JSON_VALUE(tls_json, '$.status.success') AS BOOL) AS handshake_success,
+  -- TD-72 (2026-08-01): `$.status.success`/`$.status.failure` are OONI's
+  -- TCP-connect data format (df-005-tcpconnect) fields -- genuinely present
+  -- in these same four tests' own `tcp_connect[]` arrays (confirmed live:
+  -- stg.ooni_tcp_observations' identical JSONPath is non-NULL for 100% of
+  -- rows there), but never populated on a TLS handshake object, which has
+  -- no nested `status` at all. handshake_success read from that path was
+  -- NULL for 100% of this table's rows, always -- a copy-paste of the TCP
+  -- extractor onto the wrong shape, not a real signal. OONI's own canonical
+  -- TLS model (probe-cli's ArchivalTLSOrQUICHandshakeResult, oonipipeline's
+  -- measurement_to_tls_observation) has no boolean success field at all --
+  -- only `failure` (null = success). handshake_success is now derived the
+  -- same way: no failure string present. Certificate trust is a separate,
+  -- deliberately orthogonal concept (see peer_certificate_sha256s below and
+  -- int.ooni_experiment_results.presents_known_signal_root_ca) -- a
+  -- successful handshake and a trusted certificate are two different
+  -- claims, and this column only ever asserts the former. Computed via the
+  -- same COALESCE as tls_failure below (not by referencing that alias) so
+  -- each column stands on its own; the two are consistent by construction
+  -- (handshake_success = tls_failure IS NULL).
+  COALESCE(
+    JSON_VALUE(tls_json, '$.status.failure'),
+    JSON_VALUE(tls_json, '$.failure')
+  ) IS NULL AS handshake_success,
   COALESCE(
     JSON_VALUE(tls_json, '$.status.failure'),
     JSON_VALUE(tls_json, '$.failure')
