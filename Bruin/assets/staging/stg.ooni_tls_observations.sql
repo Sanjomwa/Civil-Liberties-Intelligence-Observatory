@@ -69,7 +69,20 @@ SELECT
     JSON_VALUE(tls_json, '$.status.failure'),
     JSON_VALUE(tls_json, '$.failure')
   ) AS tls_failure,
-  tls_offset
+  tls_offset,
+  -- TD-69 (2026-08-01): SHA-256 fingerprints of every certificate presented
+  -- during this handshake, in DER form (base64-decoded, matching how OONI's
+  -- own oonipipeline computes cert identity in oonidata.datautils). Consumed
+  -- by int.ooni_experiment_results to recognize Signal's own rotated root CA
+  -- and stop misclassifying it as interception. Empty array if the probe
+  -- recorded no certificates (failed before the peer sent any, or a non-TLS
+  -- failure).
+  ARRAY(
+    SELECT TO_HEX(SHA256(cert_der))
+    FROM UNNEST(IFNULL(JSON_QUERY_ARRAY(tls_json, '$.peer_certificates'), ARRAY<STRING>[])) AS cert_json,
+    UNNEST([SAFE.FROM_BASE64(JSON_VALUE(cert_json, '$.data'))]) AS cert_der
+    WHERE cert_der IS NOT NULL
+  ) AS peer_certificate_sha256s
 FROM measurements AS m,
 UNNEST(IFNULL(JSON_QUERY_ARRAY(m.raw_test_keys, '$.tls_handshakes'), ARRAY<STRING>[])) AS tls_json
 WITH OFFSET AS tls_offset;

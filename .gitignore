@@ -251,3 +251,9 @@ docs/07-governance/
 # inside a numbered subfolder. Not public-facing: a draft under active revision.
 docs/CLIO_Finance_Bill_2024_Case_Study_Public.pdf
 docs/CLIO_Finance_Bill_2024_Incident_Report_final.pdf
+
+# Session-local relay reports (2026-08-01) - disposable scratch written at the repo
+# root by a live-repo Claude Code session, meant to be pasted back into the separate
+# planning environment by hand. Never staged or committed, including by the project
+# owner's own later action.
+reports.md
