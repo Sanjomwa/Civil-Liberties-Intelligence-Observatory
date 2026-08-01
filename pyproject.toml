@@ -49,6 +49,14 @@ streamlit = [
     "db-dtypes>=1.2.0,<2.0",
 ]
 
+[tool.ruff.lint]
+# Pin the enabled rule set explicitly. ruff 0.16.0 changed its own default
+# selection to a much broader set (I, SIM, UP, RUF, YTT, ...); this codebase
+# has only ever been written against ruff's historical default (E4, E7, E9,
+# F), and an unpinned `pip install ruff` in CI will otherwise silently pick
+# up whatever the installed version's defaults happen to be.
+select = ["E4", "E7", "E9", "F"]
+
 [tool.black]
 line-length = 100
 target-version = ["py312"]
