@@ -1,6 +1,6 @@
 # CLIO Data Modelling
 
-Status: rewritten 2026-07-12, replacing the archived pre-restructure version at `Archive/data-modelling.md` (TD-23), which described an aspirational Kimball/CLRI star schema inconsistent with what is actually implemented. This document is grounded directly in the live BigQuery schema (`INFORMATION_SCHEMA.COLUMNS`, queried 2026-07-12 against `encoded-joy-485413-k5`) and the live Bruin DAG (`bruin validate`, 54/54 assets clean at time of writing), not restated from memory or from the archived draft. See `architecture-assessment.md` for the broader system design and `erd-lineage.md` for the full pipeline lineage; this document covers the marts/dims/facts layer specifically.
+Status: rewritten 2026-07-12, refreshed 2026-08-02 to add `dim_tls_failure_evidence` (shipped 2026-08-01, TD-71) and the `handshake_success` fix's consequence (2026-08-01, repo's-own-TD-72) — both re-verified live against the current schema and DAG for this refresh (`INFORMATION_SCHEMA.COLUMNS` against `encoded-joy-485413-k5`, `bruin validate`, 55/55 assets clean), not hand-edited from memory of what changed. Originally grounded directly in the live BigQuery schema and the live Bruin DAG (54/54 assets clean 2026-07-12). See `architecture-assessment.md` for the broader system design and `erd-lineage.md` for the full pipeline lineage; this document covers the marts/dims/facts layer specifically.
 
 BigQuery does not enforce foreign-key constraints — every relationship below is an analytical join relationship (confirmed against each asset's actual SQL, not assumed from column-name similarity), not a database-enforced one.
 
@@ -21,7 +21,7 @@ Bruin materializes seven layers, in dependency order:
 
 ## Live dimensions
 
-Six dimension tables are materialized in `marts` today (confirmed via `git ls-files Bruin/assets/marts/dims/` and a live schema query):
+Seven dimension tables are materialized in `marts` today (confirmed via `git ls-files Bruin/assets/marts/dims/` and a live schema query):
 
 | Dimension | Grain | Status |
 |---|---|---|
@@ -31,6 +31,7 @@ Six dimension tables are materialized in `marts` today (confirmed via `git ls-fi
 | `dim_censorship_confidence` | one row per confidence tier (HIGH/MEDIUM/LOW/INSUFFICIENT_DATA) | Live, consumed — the canonical confidence-bucketing reference (ADR-0001/TD-05), joined via `LEFT JOIN ... QUALIFY ROW_NUMBER()` rather than duplicated bucketing logic. |
 | `dim_measurement_quality` | one row per quality tier | Live, consumed. |
 | `dim_blocking_signals` | one row per blocking-signal type | Live in schema, **zero external consumers** (TD-59, low severity, deliberately not yet retired — "when next touching the marts layer, decide"). |
+| `dim_tls_failure_evidence` | one row per `tls_failure` string (6 rows, built from the exact values observed live in Kenya's TLS data as of 2026-08-01, not the full OONI spec vocabulary) | Live, consumed. Shipped 2026-08-01 (TD-71) to replace a flat `ELSE 0.45` confidence collapse in `int.ooni_experiment_results.sql`'s `tls` CTE with per-failure-mode weights (`connection_reset` 0.60, `eof_error`/`connection_aborted` 0.50, `ssl_invalid_certificate`/`ssl_unknown_authority` 0.45 unchanged, `generic_timeout_error` 0.40), sourced against `ooni/spec`'s `df-007-errors.md`. Joined via exact string match on `tls_failure` (`stg.ooni_tls_observations.tls_failure = dim_tls_failure_evidence.tls_failure`), consumed through `COALESCE(tls_failure_standalone_confidence, 0.45)` — any `tls_failure` string absent from this table (today or introduced later by OONI) silently keeps the pre-fix 0.45 floor rather than inheriting an elevated tier. Externally validated 2026-08-01 against OONI's own live API: the `tls_failure` extractor this table joins against matched OONI's raw JSON verbatim for 113/113 available re-tiered rows. |
 
 **Retired, do not treat as live**: `dim_platforms`, `dim_reasons`, `dim_regions`, `dim_requestors` — all four deleted (asset file removed, table dropped) in the 2026-07-06 cost-audit cleanup pass (TD-56), after direct consumer-tracing found zero external references to any of them. If you see them referenced in older documentation (including the archived pre-restructure docs this file replaces), that documentation is describing a state that no longer exists.
 
@@ -39,7 +40,7 @@ Six dimension tables are materialized in `marts` today (confirmed via `git ls-fi
 | Fact | Grain | Purpose |
 |---|---|---|
 | `marts.fact_country_pressure_daily` | one row per `measurement_date` | The national daily composite pressure score and its inputs (conflict/legal/platform pressure sub-scores), plus broadcast ACLED regime columns (`regime_*`, Saturday-anchored). Bounded by `dim_dates`. |
-| `marts.fact_ooni_censorship_signals` | one row per OONI experiment result | Analytics-ready OONI blocking-signal events, the base for `features.protocol_daily_signals`. |
+| `marts.fact_ooni_censorship_signals` | one row per OONI experiment result | Analytics-ready OONI blocking-signal events, the base for `features.protocol_daily_signals`. Its upstream source, `stg.ooni_tls_observations.handshake_success`, was structurally dead (NULL for 100% of 422,487 rows) until 2026-08-01 (repo's-own-TD-72); now derived from `tls_failure IS NULL`, which moved 386,617 rows (91.5% of the TLS observation table) from `UNKNOWN` to the correct `OK` state. |
 | `marts.fact_protocol_blocking_summary` | one row per `(month_date, test_name, protocol)` | Monthly protocol-blocking rollup, feeds page 3's per-app panel (TD-51). |
 | `marts.fact_takedown_activity` | one row per `(source, platform, reason, measurement_date)` | Google Transparency + (synthetic) Lumen takedown activity — the dead-end Branch A of TD-01's Lumen investigation; still materializes, nothing downstream reads it live. |
 | `marts.fact_takedown_pressure_daily` | one row per `(source, measurement_date)` | Daily rollup of the above; same dead-end status. |
@@ -90,6 +91,8 @@ erDiagram
     dim_censorship_confidence ||--o{ mart_pressure_attribution_ooni_daily : "confidence bucketing"
 
     dim_measurement_quality ||--o{ fact_ooni_censorship_signals : "quality bucketing"
+
+    dim_tls_failure_evidence ||--o{ fact_ooni_censorship_signals : "tls_failure confidence tiering (TD-71)"
 
     dim_country ||--o{ fact_country_pressure_daily : "country (analytical, no live consumer join yet)"
 

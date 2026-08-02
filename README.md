@@ -7,7 +7,7 @@
 [![BigQuery](https://img.shields.io/badge/BigQuery-Warehouse-4285F4?style=for-the-badge&logo=googlebigquery&logoColor=white)](https://cloud.google.com/bigquery)
 [![Streamlit](https://img.shields.io/badge/Streamlit-Intelligence%20Dashboard-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![Terraform](https://img.shields.io/badge/Terraform-Infrastructure-844FBA?style=for-the-badge&logo=terraform&logoColor=white)](https://www.terraform.io/)
-[![DuckDB](https://img.shields.io/badge/DuckDB-Local%20Analytics-FFF000?style=for-the-badge&logo=duckdb&logoColor=black)](https://duckdb.org/)
+[![DuckDB](https://img.shields.io/badge/DuckDB-Bruin%20Asset%20Runtime-FFF000?style=for-the-badge&logo=duckdb&logoColor=black)](https://duckdb.org/)
 [![Parquet](https://img.shields.io/badge/Parquet-Columnar%20Data-005571?style=for-the-badge)](https://parquet.apache.org/)
 
 ## Scope
@@ -173,6 +173,8 @@ Design principles:
 - Normalize BigQuery date and timestamp types before dashboard validation.
 - Treat the system as historical reconstruction, not live surveillance.
 
+**What DuckDB actually does here:** it is not a local analytics/querying layer a developer runs ad hoc — it's the connection Bruin's own CLI uses to execute this pipeline's `type: python` ingestion assets (the `duckdb-parquet` connection declared in `.bruin.yml`/`Bruin/pipeline.yml`), most visibly at the raw→load Parquet boundary (`raw.acled_conflict_events`, `raw.ooni_conflict_measurements`, and similar assets). Each of those assets runs inside its own ephemeral `uv`-managed environment that Bruin builds per `Bruin/requirements.txt` — a separate dependency surface from the top-level `pyproject.toml`/`uv.lock`, which governs local dev tooling (tests, Streamlit, `scripts/`) instead. Confirmed empirically 2026-08-02: `bruin run` against a `duckdb-parquet`-connected asset installs and uses whatever version `Bruin/requirements.txt` pins, independent of what (if anything) is installed in the top-level Python environment.
+
 ## Engineering Reliability Controls
 
 | Control                              | Implementation                                                                                                                                                    |
@@ -202,7 +204,9 @@ Generated from the repository's tracked files (`git ls-files`), not the local wo
 |   |-- scripts/
 |   |   |-- country_literal_check/    # CI guard against hardcoded country literals
 |   |   |-- historical_initializer/   # ACLED regime engine backfill driver
-|   |   `-- staleness_check/          # Materialization-staleness CI guard
+|   |   |-- staleness_check/          # Materialization-staleness CI guard
+|   |   `-- steady_state/             # Resolves and runs the single next unprocessed
+|   |                                 # ACLED regime week (TD-38) -- never bare `bruin run`
 |   `-- assets/
 |       |-- ingest/          # Raw source ingestion assets (OONI, ACLED, Google, Lumen)
 |       |-- load/            # GCS and BigQuery external table loaders
@@ -242,7 +246,8 @@ Generated from the repository's tracked files (`git ls-files`), not the local wo
 |-- scripts/
 |   |-- download_ooni.ps1
 |   |-- local_ingest_ooni.py
-|   `-- lumen_parquet.py
+|   |-- lumen_parquet.py
+|   `-- ooni_api_validation.py     # Live cross-check against OONI's own API (rate-limited, disk-cached)
 |-- streamlit/
 |   |-- app.py                # Thin st.navigation entrypoint - pages own their
 |   |   |                     # title/icon via st.Page(), not filename parsing
@@ -278,9 +283,14 @@ Generated from the repository's tracked files (`git ls-files`), not the local wo
 |-- tests/
 |   |-- fixtures/
 |   |   `-- acled_regimes_golden/            # Golden-file fixtures for regime classification
+|   |                                        # (Finance Bill 2024, Jan-Feb 2008)
 |   |-- test_contracts.py                    # Dashboard contract validation tests
 |   |-- test_acled_pressure_regimes_golden.py
-|   `-- test_ooni_dns_bogon_classification.py
+|   |-- test_ooni_dns_bogon_classification.py
+|   |-- test_ooni_dns_canary_classification.py
+|   |-- test_ooni_tls_handshake_success_fix.py
+|   |-- test_ooni_tls_failure_evidence_tiering.py
+|   `-- test_ooni_tls_root_ca_exclusion.py
 |-- pyproject.toml
 |-- uv.lock
 `-- README.md
@@ -327,13 +337,13 @@ python -m pip install --no-cache-dir -r streamlit\requirements.txt
 
 ### 3. Dependency Compatibility
 
-The dashboard requirements pin the geospatial stack to avoid NumPy ABI conflicts during BigQuery imports:
+`streamlit/requirements.txt` pins NumPy below 2.0 to avoid ABI conflicts with `pyarrow`/`google-cloud-bigquery`:
 
 ```text
 numpy>=1.26.4,<2.0
-shapely==2.0.3
-geopandas==0.14.3
 ```
+
+(A prior version of this section also described pinned `shapely`/`geopandas` versions for a geospatial stack — corrected here: neither package appears anywhere in `streamlit/requirements.txt`, `pyproject.toml`, `uv.lock`, or the `streamlit/` codebase today. There is no map-rendering dependency in this project currently.)
 
 If dependency state is stale, rebuild the virtual environment and reinstall from `streamlit/requirements.txt`.
 
@@ -400,14 +410,18 @@ The Bruin pipeline expects these connection names:
 
 ### 7. Prepare Source Data
 
-Minimum source expectations:
+Four sources feed the pipeline. Their raw-ingest assets expect real, specific local files — the exact expected filenames and destination paths below are taken directly from each asset's own code (`Bruin/assets/ingest/*.py`), not paraphrased.
 
-- OONI JSONL gzip files normalized into `ooni_measurements.parquet`
-- ACLED aggregated Kenya/Africa CSV export
-- Google Transparency CSV exports
-- Lumen-style Parquet data, generated or replaced with approved real exports
+| Source | Required? | Where to get it | Exact expected path |
+|---|---|---|---|
+| **ACLED** | Yes — feeds the conflict-pressure/regime-classifier chain | [ACLED's Data Export Tool](https://acleddata.com/data-export-tool/) (free registration required for non-commercial use; a separate paid Commercial License Agreement applies for commercial use — see `docs/02-architecture/data_sources.md`) | `data/dev/acled/Africa_aggregated_data_up_to_week_of-2026-03-14.csv` |
+| **OONI** | Yes — feeds the protocol/censorship-measurement chain, the dashboard's primary evidence source | OONI's own data-access channels (OONI API/Explorer, `ooni.org/data`; rate-limited and, per this project's own licensing review, not designed for bulk historical extraction). **This repository does not document exactly how the currently-used `.jsonl.gz` files were originally obtained** — flagging that plainly as a real reproducibility gap rather than implying a verified path | `.jsonl.gz` files under `data/dev/ooni/ooni-kenya-censorship/`, normalized by `raw.ooni_conflict_measurements` into `data/dev/ooni/ooni_measurements.parquet` |
+| **Google Transparency Report** | Feeds `platform_pressure_score` and the pressure-attribution platform-drivers mart; the pipeline can be scoped to skip it (see below) | Google's Transparency Report government-requests pages, CSV export per report type (no official bulk API confirmed — see `docs/02-architecture/data_sources.md`) | `data/dev/google/google-government-removal-requests.csv` and `data/dev/google/google-government-detailed-removal-requests.csv` |
+| **Lumen** | No — nothing to obtain | N/A. `raw.lumen_requests` fabricates its rows in code (`np.random.seed(42)`, deterministic); it does not read any external file. This branch is also formally excluded from the composite pressure score (ADR-0004) — it materializes but nothing live reads it. | N/A |
 
-See `docs/02-architecture/data_sources.md` for expanded data acquisition notes and `docs/02-architecture/data-modelling.md` for modeling detail.
+**A real, disclosed reproducibility limitation:** the ACLED and Google Transparency ingest scripts read from a hardcoded absolute path (`/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/...`), not a path computed relative to the repository root — a clone at any other location will need to either replicate that exact path or edit the script. The OONI ingest asset does not have this problem (`Path(__file__).resolve().parents[3]`, computed relative to its own file location). **If you don't have ACLED registration or a documented path to OONI's raw historical export, you cannot reproduce the full pipeline end-to-end** — this is a genuine boundary, not a "just clone and run" claim. A partial run scoped to whichever source(s) you do have real data for is possible via Bruin's `--selector`/`--exclude-tag`/`--tag` flags (`bruin run --help`), since Bruin's DAG only materializes an asset once its declared dependencies exist — running the full `pipeline.yml` default against incomplete source data will halt at the first missing upstream asset, not degrade gracefully.
+
+See `docs/02-architecture/data_sources.md` for full per-source licensing, grain, and known-limitation detail, and `docs/02-architecture/data-modelling.md` for schema/modeling detail.
 
 ### 8. Run Bruin
 
@@ -453,11 +467,9 @@ python -m pip install --upgrade pip setuptools wheel
 python -m pip install --no-cache-dir -r streamlit/requirements.txt
 
 python - <<'PY'
-import numpy, shapely, geopandas
+import numpy
 from google.cloud import bigquery
 print("numpy", numpy.__version__)
-print("shapely", shapely.__version__)
-print("geopandas", geopandas.__version__)
 print("bigquery import ok")
 PY
 
@@ -534,6 +546,25 @@ Lint entry point:
 ```bash
 ruff check .
 ```
+
+### Validation History
+
+Run commands and asset names tell you validation *exists*; they don't tell you what's actually been checked or what came back. This section states that plainly, with real numbers, not vague claims — full detail lives in `docs/02-architecture/technical-debt-inventory.md` and `docs/02-architecture/decision-log.md`; this is the top-line summary, not a duplicate of either.
+
+**ACLED regime classifier — golden-file regression tests.** `tests/test_acled_pressure_regimes_golden.py` asserts the ACLED "Path A" regime classifier's output against recorded fixtures for two real historical windows: the Finance Bill 2024 protests (2024-05-11 to 2024-07-13) and the Jan–Feb 2008 post-election violence. This is a drift check against already-validated, materialized BigQuery output, gated behind an opt-in `RUN_BIGQUERY_TESTS=1` environment variable — without it, both tests skip cleanly (2 skipped, offline, well under 1 second); re-run live for this section (2026-08-02) with the flag set and real BigQuery access, both windows pass (2 passed, ~12 seconds). The repository's full test suite (`pytest -q`, also re-run live for this section) currently reports 16 passed, 15 skipped — the skips are exclusively the BigQuery-gated tests across several files, not failures.
+
+**A disclosed, self-found bug: 91.5% of the TLS observation table was misclassified for months.** `stg.ooni_tls_observations.handshake_success` was structurally `NULL` for 100% of 422,487 rows across every ingested app (Signal, WhatsApp, Telegram, Psiphon) — the extraction read a JSONPath (`$.status.success`) that belongs to a different OONI data shape than TLS handshake objects actually have. The consequence: 386,617 of 422,487 rows (91.5%) that should have read `OK` (a genuinely successful handshake) instead fell through to `UNKNOWN`. Found and fixed on this project's own initiative — not flagged by an outside party — and disclosed here rather than left to be found later in the commit history. Full before/after numbers per app, and the downstream cascade this fix was traced through, are in `technical-debt-inventory.md`'s TD-72 entry.
+
+**External validation against OONI's own live API (2026-08-01), not just this project's own tables.** A dedicated validation pass checked CLIO's TLS classification against OONI's raw measurement JSON directly, across four independent strata (~1,054 live API calls against `api.ooni.org`, rate-limited, disk-cached):
+
+- **Core premise: 100/100 exact matches.** Sampled rows CLIO moved `UNKNOWN`→`OK` were checked against OONI's raw JSON at the exact recorded offset — did `failure` actually show present-and-null, or was an extraction miss silently read as a false success? Zero divergences.
+- **Extractor verbatim match: 113/113.** Every available row for CLIO's four re-tiered TLS failure modes matched OONI's raw `failure` string exactly.
+- **All 361 real `BLOCKED` rows individually checked, not sampled.** 281/361 (77.8%) directly agree with OONI's own `anomaly=true` flag. The remaining 80 all carry OONI's own `scores.accuracy = 0.0` — pulled and checked against OONI's documented known-bad-probe-version gates: 80/80 matched at least one gate, meaning OONI itself never reached a "not blocked" verdict for any of them, rather than disagreeing with CLIO. Effective agreement among rows OONI scored with confidence: 281/281 = 100%.
+- **Residual sample (informational): 99/100.** A sample of the remaining ambiguous `ssl_*` `UNKNOWN` rows would be discarded by the same known-bad-probe-version table — a concrete, evidence-backed lead for a still-open confidence-elevation question, not itself a pass/fail check.
+
+Full stratum-by-stratum methodology is in `decision-log.md`'s 2026-08-01 (fifth session) entry.
+
+**ACLED ingestion-layer fidelity audit (2026-08-02).** A separate check of whether the ACLED ingestion pipeline (`raw.acled_conflict_events` → `load.acled_conflict_events_to_gcs` → `stg.acled_conflict_events`) transcribes ACLED's own export data faithfully, one layer upstream of the regime-classifier tests above. Checked field-by-field for the Finance Bill 2024 window and two quiet control periods (the Aug 2010 constitutional referendum and the Sept 2017 Supreme Court election annulment): row counts, fatality sums, event/sub-event-type coding, date/week-anchor alignment, and county (`admin1`) coverage all matched exactly, including a full row-level equality diff beyond the requested aggregate checks (0 mismatches, either direction, in every window), and the same result held at the full 267,956-row, 58-country dataset level. **One honestly-disclosed gap, not smoothed over:** the original ACLED CSV that `raw.acled_conflict_events` reads wasn't available in that session's environment, so the earliest ingestion leg (CSV → Parquet) was verified by code inspection — a pure 1:1 column rename with no computation — rather than an executed byte-level diff. Full results are in `decision-log.md`'s 2026-08-02 entry.
 
 ## Infrastructure and Deployment
 
