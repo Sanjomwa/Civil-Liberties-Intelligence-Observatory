@@ -289,6 +289,13 @@ with coordinated digital suppression behavior.
 
 render_confidence_badge("Confidence level", "HIGH", confidence_color("HIGH"))
 
+st.caption(
+    "TLS-derived figures on this page reflect two resolved data-quality "
+    "findings (DNS canary and TLS handshake-success misclassification) "
+    "-- see **Methodology & Statistical Guardrails → Data Sources & "
+    "Known Limitations** for detail."
+)
+
 st.divider()
 
 attribution_footer(["ACLED", "OONI"], snapshot_at=latest["snapshot_at"])

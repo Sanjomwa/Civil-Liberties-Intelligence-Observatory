@@ -334,6 +334,46 @@ layer through every downstream table. Lumen will be reconsidered for
 inclusion once a real Lumen export replaces the fabricated dataset.
 """)
 
+st.warning("""
+**DNS canary misclassification, found and fixed 2026-08-01 (TD-68).**
+This project's most-repeated flagship finding -- "177 same-day,
+high-confidence DNS-layer interference signals inside Kenya on
+June 25, 2024, concentrated on Signal's DNS resolution" -- was
+retracted after a live cross-check against OONI's own public API.
+
+The bogon classifier matched any DNS answer shaped like a
+private/reserved IP, with no exclusion for `uptime.signal.org`,
+Signal's own intentional client-side canary hostname, which is
+designed to always resolve to `127.0.0.1` as a benign health check.
+OONI's own Signal-test author confirmed independently: "the DNS
+results with IP 127.0.0.1 are to be considered normal."
+
+**Fixed and verified against live data:** the June 25, 2024 same-day
+count is now correctly 0. The regex-bogon signal traces 100% to
+`uptime.signal.org` across the full 761-day ingestion history
+(49,883 rows), and the retraction holds across the entire Finance
+Bill 2024 window, not just June 25.
+""")
+
+st.warning("""
+**TLS handshake-success misclassification, found and fixed 2026-08-01
+(TD-72).** `handshake_success` was structurally `NULL` for 100% of
+the 422,487 rows in the TLS observation table, across every app
+tested (Signal, WhatsApp, Telegram, Psiphon) -- a copy-paste of a
+JSONPath from an unrelated data shape. As a result, 386,617 of those
+422,487 rows (91.5%), every genuinely successful handshake, was
+misclassifying as `UNKNOWN` instead of `OK`.
+
+**Fixed** by deriving `handshake_success` from `tls_failure IS NULL`,
+matching OONI's own canonical TLS model. **Externally validated**
+against OONI's own live API: 100/100 sampled reclassified rows
+confirmed present-and-null in OONI's own raw TLS handshake data, and
+all 361 real `BLOCKED` rows system-wide were individually checked --
+281/361 (77.8%) agree directly with OONI's own anomaly verdict, and
+the remaining 80/361 were each traced to a documented OONI
+known-bad-probe-version exclusion, not a genuine disagreement.
+""")
+
 attribution_footer(["ACLED", "OONI"])
 
 st.divider()
