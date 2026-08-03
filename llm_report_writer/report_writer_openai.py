@@ -132,8 +132,25 @@ def _build_user_message(country: str, week_start: str, week_end: str, claims: li
     )
 
 
+def _repo_root() -> Path:
+    """Pure, side-effect-free, and independently testable on purpose --
+    TD-79 (2026-08-03) was a bug buried inside _get_client() that no offline
+    test caught, because the whole function was untestable without either a
+    real API key or extensive mocking. Pulling just the path computation out
+    means the fix itself can be unit-tested without touching the network or
+    process exit code.
+
+    This used to resolve to llm_report_writer/ itself
+    (Path(__file__).resolve().parent), not the actual repo root where .env
+    really lives -- found live during the report-writer's first live-build
+    session, masked there only because OPENAI_API_KEY was already exported
+    directly in that Codespace's shell. .parent.parent is llm_report_writer/'s
+    own parent directory -- the actual repo root, where .env really lives."""
+    return Path(__file__).resolve().parent.parent
+
+
 def _get_client():
-    repo_root = Path(__file__).resolve().parent
+    repo_root = _repo_root()
     try:
         from dotenv import load_dotenv
         load_dotenv(repo_root / ".env")

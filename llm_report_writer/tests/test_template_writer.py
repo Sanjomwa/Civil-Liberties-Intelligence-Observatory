@@ -66,6 +66,40 @@ def test_template_output_contains_no_causal_or_superlative_language():
     assert unclean == [], unclean
 
 
+# --- COMPARISON claim type: never produced by deterministic_analysis.py
+# today (dormant per claim_check.py's own docstring), so CLAIMS above never
+# exercises _render_comparison()/_render_ref() at all. Added 2026-08-03,
+# during a bug-hunt pass, after finding this exact gap left a real bug
+# (missing country attribution in _render_ref, fixed in the same pass)
+# completely uncovered. Synthetic claims here, not from analyze_window().
+
+_COMPARISON_LITERAL_CLAIM = {
+    "claim_type": "COMPARISON",
+    "left": {"country": "Kenya", "date": "2024-06-25", "source_column": "composite_pressure_score"},
+    "right": {"literal": 6.5},
+    "operator": "gte",
+}
+
+
+def test_comparison_claim_renders_without_error():
+    result = generate_report_sentences_template([_COMPARISON_LITERAL_CLAIM])
+    assert len(result["sentences"]) == 1
+    text = result["sentences"][0]["text"]
+    assert "Kenya" in text  # the bug this test guards against: country silently dropped
+    assert "composite_pressure_score" in text
+    assert "6.5" in text
+    assert "was at least" in text  # gte -> "was at least"
+
+
+def test_comparison_claim_passes_full_verification():
+    verification = verify_report(
+        [_COMPARISON_LITERAL_CLAIM],
+        generate_report_sentences_template([_COMPARISON_LITERAL_CLAIM])["sentences"],
+        CTX,
+    )
+    assert verification.verified is True, verification.rejection_reasons
+
+
 def test_unrecognized_claim_type_raises_loudly_not_silently():
     bad_claims = [{"claim_type": "NOT_A_REAL_TYPE"}]
     try:

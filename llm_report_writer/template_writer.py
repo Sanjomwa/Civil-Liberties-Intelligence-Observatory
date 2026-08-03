@@ -60,7 +60,19 @@ def _render_count(claim: dict) -> str:
 def _render_ref(ref: dict) -> str:
     if "literal" in ref:
         return str(ref["literal"])
-    return f"{ref.get('source_column', 'value')} on {ref.get('date')}"
+    # Bug found during the 2026-08-03 bug-hunt pass: this used to omit
+    # `country` entirely, rendering e.g. "composite_pressure_score on
+    # 2024-06-25" with no country attribution at all. Harmless today only
+    # because COMPARISON claims are never actually produced by
+    # deterministic_analysis.py (dormant claim type, per claim_check.py's
+    # own docstring) and so this path had zero test coverage until this
+    # pass added it -- see test_template_writer.py's new COMPARISON test.
+    # Fixed now rather than left latent, since CLIO's own multi-country
+    # scaffolding (CLAUDE.md) means a cross-country COMPARISON claim is a
+    # real, not hypothetical, future case this needs to render correctly.
+    country = ref.get("country")
+    label = f"{ref.get('source_column', 'value')} on {ref.get('date')}"
+    return f"{country}'s {label}" if country else label
 
 
 _OPERATOR_WORDS = {

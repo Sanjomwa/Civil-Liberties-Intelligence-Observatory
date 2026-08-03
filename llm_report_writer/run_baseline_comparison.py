@@ -24,6 +24,7 @@ from __future__ import annotations
 import os
 
 from claim_check import DataContext
+from coherence_check import check_report_coherence
 from deterministic_analysis import analyze_window
 from fixtures.finance_bill_2024_fixture import count_weeks_at_or_above, lookup_daily, lookup_regime
 from template_writer import generate_report_sentences_template
@@ -42,6 +43,11 @@ def _print_report(label: str, sentences, claims, ctx):
     if not result.verified:
         for r in result.rejection_reasons:
             print(f"  REJECTED: {r}")
+    texts = [s["text"] for s in sentences if isinstance(s.get("text"), str)]
+    coherence_flagged = [(t, r) for t, r in check_report_coherence(texts) if not r.clean]
+    if coherence_flagged:
+        for text, r in coherence_flagged:
+            print(f"  [coherence: garbled token(s) {r.flagged_tokens}] {text!r}")
     print()
     return result
 

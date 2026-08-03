@@ -31,6 +31,7 @@ from bigquery_lookup import (
     lookup_regime,
 )
 from claim_check import DataContext
+from coherence_check import check_report_coherence
 from report_writer_openai import ReportGenerationError, generate_report_sentences
 from style_lint import lint_report
 from template_writer import generate_report_sentences_template
@@ -121,6 +122,13 @@ def run():
         style_findings = lint_report(llm_narrative.split(". ")) if llm_narrative else []
         style_flagged = [(s, r.flags) for s, r in style_findings if r.flags]
 
+        # Advisory only -- never blocks verification; see TD-78.
+        coherence_findings = check_report_coherence(llm_narrative.split(". ")) if llm_narrative else []
+        coherence_flagged = [(s, r.flagged_tokens) for s, r in coherence_findings if r.flagged_tokens]
+        if coherence_flagged:
+            for text, tokens in coherence_flagged:
+                print(f"  [coherence: garbled token(s) {tokens}] {text!r}", file=sys.stderr)
+
         results.append({
             "label": label,
             "country": COUNTRY,
@@ -146,6 +154,7 @@ def run():
                 "extraction_model": llm_out["extraction_model"],
             },
             "style_lint_flags": style_flagged,
+            "coherence_flags": coherence_flagged,
         })
 
     with open("run_live_windows_results.json", "w") as f:

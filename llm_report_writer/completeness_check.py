@@ -116,9 +116,20 @@ def _any_phrase_present(report_text: str, phrases: list[str]) -> bool:
 
 
 def check_synthetic_disclosure(claims: list[dict], report_text: str, ctx) -> CompletenessResult:
+    # Bug-hunt pass, 2026-08-03: this used to also list "COUNT" here, but a
+    # COUNT claim's schema (claim_type, country, regime_order_min,
+    # week_start, week_end, claimed_count -- see claim_check.py) has neither
+    # a top-level "date" nor a "left" ref for the fallback below to find, so
+    # this branch could never actually trigger for a COUNT claim -- COUNT
+    # claims summarize intelligence.acled_pressure_regimes only, which has
+    # no synthetic-data column at all. Not a functional bug (no COUNT claim
+    # was ever wrongly accepted or rejected because of this), but leaving a
+    # claim_type listed as triggerable when it structurally never can be is
+    # misleading to a future reader -- removed for clarity, behavior
+    # unchanged.
     triggered = False
     for claim in claims:
-        if claim.get("claim_type") in ("MAGNITUDE_BAND", "COMPARISON", "COUNT"):
+        if claim.get("claim_type") in ("MAGNITUDE_BAND", "COMPARISON"):
             country = claim.get("country")
             date = claim.get("date") or (claim.get("left") or {}).get("date")
             if country and date:

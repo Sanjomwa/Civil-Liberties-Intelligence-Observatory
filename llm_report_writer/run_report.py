@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 
 from claim_check import DataContext
+from coherence_check import check_report_coherence
 from deterministic_analysis import analyze_window, summarize_window_for_prompt
 from fixtures.finance_bill_2024_fixture import count_weeks_at_or_above, lookup_daily, lookup_regime
 from report_writer_openai import generate_report_sentences
@@ -75,6 +76,15 @@ def run():
     else:
         print("  No style issues flagged.")
 
+    print("\n=== Coherence check (advisory only -- never blocks verification; see TD-78) ===")
+    coherence_findings = check_report_coherence([s["text"] for s in sentences if isinstance(s.get("text"), str)])
+    coherence_flagged = [(text, r) for text, r in coherence_findings if not r.clean]
+    if coherence_flagged:
+        for text, r in coherence_flagged:
+            print(f"  [garbled token(s): {r.flagged_tokens}] {text!r}")
+    else:
+        print("  No coherence issues flagged.")
+
     output = {
         "country": COUNTRY,
         "week_start": WEEK_START,
@@ -88,6 +98,7 @@ def run():
         "verified": result.verified,
         "rejection_reasons": result.rejection_reasons,
         "style_lint_flags": [{"text": t, "flags": r.flags} for t, r in flagged],
+        "coherence_flags": [{"text": t, "flagged_tokens": r.flagged_tokens} for t, r in coherence_flagged],
     }
     with open("output_report.json", "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)

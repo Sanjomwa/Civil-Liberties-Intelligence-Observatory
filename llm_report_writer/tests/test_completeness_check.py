@@ -57,11 +57,29 @@ TRANSITION_CLAIM = {
     "after": {"week_start_date": "2024-06-22", "regime_label": "CRISIS"},
 }
 
+COUNT_CLAIM = {
+    "claim_type": "COUNT",
+    "country": "Kenya",
+    "regime_order_min": "CRISIS",
+    "week_start": "2024-06-15",
+    "week_end": "2024-07-13",
+    "claimed_count": 3,
+}
+
 
 # --- synthetic disclosure ---
 
 def test_synthetic_rule_not_triggered_by_classification_only():
     result = check_synthetic_disclosure([HIGH_CONF_CLASSIFICATION_CLAIM], "Some report text.", CTX)
+    assert result.triggered is False
+
+
+def test_synthetic_rule_never_triggered_by_count_claim():
+    """Bug-hunt pass, 2026-08-03: COUNT claims summarize
+    intelligence.acled_pressure_regimes only and have no
+    legal_pressure_is_synthetic-bearing field at all -- this must never
+    trigger, structurally, regardless of report_text or ctx contents."""
+    result = check_synthetic_disclosure([COUNT_CLAIM], "Kenya had 3 weeks at CRISIS or above.", CTX)
     assert result.triggered is False
 
 
