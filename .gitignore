@@ -258,9 +258,7 @@ docs/CLIO_Finance_Bill_2024_Incident_Report_final.pdf
 # owner's own later action.
 reports.md
 
-# OTF-04 LLM extraction layer (2026-08-02, ADR-0009) - copyrighted source-article body
-# text (The Star, Daily Nation) must never land in git history; only the provenance
-# manifest (source_articles_manifest.json) is tracked. output/ is per-run generated
-# data (JSONL/CSV), not source, and is disposable/regeneratable via run_extraction.py.
-llm_extraction/source_articles_cache/
-llm_extraction/output/
+# ADR-0010 llm_report_writer/ live comparison run output (2026-08-03) - per-run
+# generated JSON, not source, disposable/regeneratable via run_live_windows.py.
+llm_report_writer/run_live_windows_results.json
+

@@ -24,5 +24,3 @@ jobs:
           pip install pytest
       - name: Run tests
         run: pytest -q
-      - name: OTF-04 non-merge guard (llm_derived must never enter a Bruin asset)
-        run: python llm_extraction/ci_check_no_merge.py

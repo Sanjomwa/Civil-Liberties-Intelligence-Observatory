@@ -38,3 +38,16 @@ This is additive and isolated. No existing CLIO table, score, mart, or dashboard
 Any future request to join `llm_derived.article_extractions` output into an existing CLIO composite, mart, or the ACLED regime engine requires a new ADR that explicitly supersedes this one — the CI guard in `.github/workflows/tests.yml` will fail any Bruin asset that attempts this without one.
 
 Scaling this prototype beyond the two seed articles (broader source coverage, a real coverage-gap audit, additional event types, additional languages) is out of scope for this ADR and would warrant its own follow-up decision once the mechanism has had an observation period, consistent with how this project has previously deferred Path A/Path B's own retirement question (ADR-0002) pending real evidence rather than deciding it up front.
+
+## Amendment (2026-08-03): `llm_extraction/` deleted from the live repo
+
+Per Sam's explicit direction (2026-08-02), `llm_extraction/` was removed from this repository's working tree entirely on 2026-08-03 — not archived, not left as "documented negative-result infrastructure" as originally planned. This is a deliberate reversal of the disposition this ADR originally recorded (keep the code, non-merge-guarded, as a standing prototype); the reasoning and evidence captured above (the grounding-checker fix, the copyright-handling split, the two-mechanism non-merge enforcement, the live extraction results) remain the accurate historical record of what was built and why — only the runnable code is gone.
+
+What was actually removed from the working tree:
+- The `llm_extraction/` directory in full (all seven `.py` files, `README.md`, `requirements.txt`, `tests/`, `source_articles_manifest.json`, the gitignored `source_articles_cache/` and `output/` directories).
+- The CI non-merge guard step in `.github/workflows/tests.yml` (`OTF-04 non-merge guard`, `python llm_extraction/ci_check_no_merge.py`) — deleting the script it invoked would otherwise have failed every subsequent CI run.
+- The two `llm_extraction/`-scoped `.gitignore` entries (`source_articles_cache/`, `output/`) and their explanatory comment, now dangling since the directory they scoped no longer exists.
+
+What was deliberately **not** touched: the live `encoded-joy-485413-k5.llm_derived.article_extractions` BigQuery dataset and its 60 rows. Dropping a live BigQuery dataset is a separate, more consequential decision than deleting working-tree code and was explicitly out of scope for the deletion pass — confirmed still present via `bq ls` on 2026-08-03.
+
+`llm_report_writer/` (see ADR-0010, once landed in this repo) is the prototype taking this ADR's place as CLIO's flagship AI-layer story going forward — a narration-of-already-verified-data design rather than this ADR's raw-article-extraction design. This amendment does not retract this ADR's findings; it records that the code has been superseded and removed.
