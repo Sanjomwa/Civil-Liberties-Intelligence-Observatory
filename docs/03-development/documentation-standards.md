@@ -30,7 +30,7 @@ A decision is superseded by a later ADR, never edited in place. See `docs/02-arc
 
 ## Experiment records
 
-Location: `docs/04-research/experiments/`. Format: hypothesis, method, data, result, decision, date, author. This folder is intentionally empty until the Constitution's Research Roadmap programme actually runs something — do not pre-populate it with aspiration.
+Location: `docs/04-research/experiments/`. Format: hypothesis, method, data, result, decision, date, author. This folder is intentionally empty until the Constitution's Research Roadmap program actually runs something — do not pre-populate it with aspiration.
 
 ## Retrospectives
 

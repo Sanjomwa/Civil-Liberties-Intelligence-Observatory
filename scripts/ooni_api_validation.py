@@ -25,7 +25,7 @@ Usage:
     python3 ooni_api_validation.py meta <report_id>
     python3 ooni_api_validation.py full <report_id>
 
-Designed to be imported and driven from a orchestration script/notebook
+Designed to be imported and driven from an orchestration script/notebook
 rather than run standalone per-row; see the driver logic used for this
 session's own four strata (not included here to keep this file a reusable
 library, not a one-off batch script).

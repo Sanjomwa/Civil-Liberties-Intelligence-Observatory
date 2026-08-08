@@ -26,7 +26,7 @@ description: |
   structural changes permitted without architecture review and
   specification version increment.
 
-  MATERIALIZATION NOTE:
+  MATERIALISATION NOTE:
   This asset uses a merge-or-replace strategy against a persistent output
   table (intelligence.acled_regime_history) to support the self-referential
   lag join required for persistence state tracking. A create-and-replace

@@ -27,7 +27,7 @@ description: |
   (country + admin1) for one calendar week.
 
   week_start_date is the Saturday anchor of that week (verified
-  empirically against the materialized table for ADR-0002 step (e) --
+  empirically against the materialised table for ADR-0002 step (e) --
   100% of rows fall on a Saturday; this comment previously and
   incorrectly claimed Monday).
   It is NOT an individual event date.
