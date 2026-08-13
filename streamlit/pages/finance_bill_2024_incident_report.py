@@ -73,13 +73,35 @@ st.divider()
 
 st.subheader("Executive Summary")
 
-st.info("""
-This event window shows statistically significant synchronization
-between protocol anomaly escalation and elevated national digital
-pressure signals.
+alignment_counts = df["alignment_state"].value_counts()
+correlation_counts = df["correlation_state"].value_counts()
+sync_rows = int((df["alignment_state"] == "SYNCHRONIZED_ESCALATION").sum())
+strong_or_moderate_rows = int(
+    df["correlation_state"].isin(["STRONG_RELATIONSHIP", "MODERATE_RELATIONSHIP"]).sum()
+)
+crisis_days = int(
+    df.loc[df["regime_primary_regime"] == "CRISIS", "measurement_date"].nunique()
+)
+total_days = int(df["measurement_date"].nunique())
+total_rows = len(df)
 
-Observed protocol behavior suggests structured suppression dynamics
-rather than isolated service instability.
+st.info(f"""
+**What this window's {total_rows} protocol-day rows ({total_days} days x 4 protocols) actually show:**
+
+- Alignment: **{sync_rows} of {total_rows}** rows are `SYNCHRONIZED_ESCALATION`
+  (protocol anomaly rising together with national pressure). Full breakdown: """
+    + ", ".join(f"{v} {k}" for k, v in alignment_counts.items()) + f"""
+- Correlation strength: **{strong_or_moderate_rows} of {total_rows}** rows reach
+  `STRONG_RELATIONSHIP` or `MODERATE_RELATIONSHIP`. Full breakdown: """
+    + ", ".join(f"{v} {k}" for k, v in correlation_counts.items()) + f"""
+- ACLED path A (independent conflict-event classification, not derived from OONI
+  protocol data): **{crisis_days} of {total_days} days** in this window are
+  classified `CRISIS`.
+
+This is a conflict-confirmed window with weak-to-absent protocol-layer
+statistical correlation, not a synchronized-escalation finding. The two
+evidence sources disagree on strength -- that disagreement is the honest
+result, not something to resolve toward the stronger-sounding claim.
 """)
 
 st.divider()
@@ -124,7 +146,11 @@ sync = px.density_heatmap(
     df,
     x="measurement_date",
     y="protocol",
-    z="rolling_pressure_corr"
+    z="rolling_pressure_corr",
+    # Fixed to the full possible range of this value, not auto-scaled to
+    # this window's own min/max -- auto-scaling would manufacture visual
+    # contrast out of a narrow, weak range of real values.
+    range_color=[-1, 1],
 )
 
 apply_layout(
@@ -134,9 +160,17 @@ apply_layout(
 
 st.plotly_chart(sync, use_container_width=True)
 
-st.markdown("""
-Darker synchronized zones indicate likely coordinated
-suppression alignment.
+_window_min = df["rolling_pressure_corr"].min()
+_window_max = df["rolling_pressure_corr"].max()
+
+st.markdown(f"""
+Color scale fixed to [-1, 1] so shading reflects the real magnitude of
+`rolling_pressure_corr`, not this window's own narrow range. Values in this
+window run **{_window_min:.2f} to {_window_max:.2f}** -- well below the 0.55
+MODERATE-relationship threshold on this same scale. This heatmap does not
+measure cross-protocol coordination; each cell is one protocol's own
+correlation with national pressure, computed independently of every other
+protocol.
 """)
 
 st.divider()
@@ -202,30 +236,55 @@ st.divider()
 
 
 # ============================================================
-# HIGH-RISK WINDOWS
+# CORRELATION WINDOWS
 # ============================================================
 
-critical = df[
+qualifying = df[
     df["correlation_state"].isin([
         "STRONG_RELATIONSHIP",
         "MODERATE_RELATIONSHIP"
     ])
 ]
 
-if critical.empty:
-    critical = df.sort_values(
-        "rolling_pressure_corr",
-        ascending=False
+zero_variance_rows = int((df["correlation_state"] == "ZERO_VARIANCE_WINDOW").sum())
+weak_rows = int((df["correlation_state"] == "WEAK_OR_NO_RELATIONSHIP").sum())
+max_abs_corr = df["rolling_pressure_corr"].abs().max()
+
+if not qualifying.empty:
+    st.subheader("High Confidence Suppression Windows")
+    st.markdown(
+        f"**{len(qualifying)} of {total_rows}** protocol-day rows in this window "
+        "reach the STRONG or MODERATE correlation threshold. Shown below, sorted "
+        "by correlation magnitude."
+    )
+    display_rows = qualifying.sort_values(
+        "rolling_pressure_corr", key=lambda s: s.abs(), ascending=False
+    )
+else:
+    st.subheader("Strongest Available Correlation Windows (none reached the moderate threshold)")
+    st.markdown(f"""
+    **No protocol-day row in this window reaches the MODERATE (>=0.55) or STRONG
+    (>=0.82) correlation threshold.** The strongest observed here is
+    **{max_abs_corr:.2f}**. Of {total_rows} protocol-day rows: **{weak_rows}**
+    are `WEAK_OR_NO_RELATIONSHIP` (a computable but weak correlation) and
+    **{zero_variance_rows}** are `ZERO_VARIANCE_WINDOW` (correlation undefined,
+    not merely weak -- zero variance in the underlying series over the rolling
+    window). The table below shows the {min(20, len(df))} rows with the largest
+    correlation magnitude, sorted by `ABS(rolling_pressure_corr)` to match the
+    mart's own threshold definition -- it is not a "high confidence" reading,
+    just the closest this window comes to one.
+    """)
+    display_rows = df.sort_values(
+        "rolling_pressure_corr", key=lambda s: s.abs(), ascending=False
     ).head(20)
 
-st.subheader("High Confidence Suppression Windows")
-
 st.dataframe(
-    critical[
+    display_rows[
         [
             "measurement_date",
             "protocol",
             "rolling_pressure_corr",
+            "correlation_state",
             "alignment_state",
             "divergence_state",
             "protocol_stress_score"
@@ -281,13 +340,46 @@ not specifically during the Finance Bill window above.
 
 st.subheader("Statistical Assessment")
 
-st.success("""
-The Finance Bill 2024 observation window exhibits multiple
-high-confidence synchronized escalation intervals consistent
-with coordinated digital suppression behavior.
-""")
+if strong_or_moderate_rows > 0:
+    st.success(f"""
+    **{strong_or_moderate_rows} of {total_rows}** protocol-day rows in this
+    window reach the STRONG or MODERATE correlation threshold.
+    """)
+else:
+    st.warning(f"""
+    No protocol-day row in this window reaches the STRONG (>=0.82) or
+    MODERATE (>=0.55) correlation threshold; the strongest observed is
+    **{max_abs_corr:.2f}**. ACLED path A independently classifies
+    **{crisis_days} of {total_days} days** in this window `CRISIS`. The
+    conflict-event evidence and the protocol-layer correlation evidence do
+    not agree in strength here -- that disagreement is the honest result,
+    not a synchronized-suppression finding.
+    """)
 
-render_confidence_badge("Confidence level", "HIGH", confidence_color("HIGH"))
+st.caption(
+    "This mart's correlation-strength thresholds (STRONG >= 0.82, MODERATE "
+    f">= 0.55) are not reached by any protocol-day row in this window (max "
+    f"observed here: {max_abs_corr:.2f}). These thresholds have never been "
+    "reached in this mart's full history either -- see **Methodology & "
+    "Statistical Guardrails** for the complete disclosure."
+)
+
+_confidence_series = df["final_confidence_level"].dropna()
+modal_confidence = _confidence_series.mode().iloc[0] if not _confidence_series.empty else None
+
+render_confidence_badge(
+    "Confidence level (modal)",
+    modal_confidence if modal_confidence else "N/A",
+    confidence_color(modal_confidence) if modal_confidence else confidence_color("INSUFFICIENT_DATA"),
+)
+
+_confidence_counts = df["final_confidence_level"].value_counts()
+st.caption(
+    "Modal value across this window's protocol-day rows shown above ("
+    + ", ".join(f"{v} {k}" for k, v in _confidence_counts.items())
+    + f" of {total_rows} total) -- not a single window-wide judgment picked "
+    "without disclosing the spread."
+)
 
 st.caption(
     "TLS-derived figures on this page reflect two resolved data-quality "

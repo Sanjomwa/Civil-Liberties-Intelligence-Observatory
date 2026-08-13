@@ -48,10 +48,10 @@ latest = df.iloc[-1]
 st.title("📡 Protocol ↔ Repression Correlation Engine")
 
 st.caption("""
-Measures statistically validated alignment between protocol-level
-anomaly escalation and national repression pressure.
-
-High sustained correlation suggests coordinated suppression behavior.
+Measures rolling correlation between protocol-level anomaly escalation and
+national repression pressure, damped by sample quality and confidence. This
+is not a significance-tested statistic -- no p-value or equivalent test is
+computed anywhere in this pipeline.
 """)
 
 
@@ -59,6 +59,28 @@ render_trust_strip(
     reporting_version=latest["reporting_version"],
     snapshot_at=latest["snapshot_at"],
     max_date=df["measurement_date"].max()
+)
+
+_any_qualifying_engine = bool(
+    df["correlation_state"].isin(["STRONG_RELATIONSHIP", "MODERATE_RELATIONSHIP"]).any()
+)
+_max_abs_corr_engine = df["rolling_pressure_corr"].abs().max()
+
+st.caption(
+    (
+        "At least one protocol-day row in the selected date range reaches "
+        "the MODERATE or STRONG threshold."
+        if _any_qualifying_engine
+        else (
+            "No protocol-day row in the selected date range reaches the "
+            "MODERATE (0.55) or STRONG (0.82) threshold -- the largest "
+            f"magnitude observed is {_max_abs_corr_engine:.2f}."
+        )
+    )
+    + " See **Methodology & Statistical Guardrails** for the full, "
+    "dashboard-wide disclosure of how often these thresholds have been "
+    "reached historically, and why they have not been independently "
+    "recalibrated against Kenya's pilot data."
 )
 
 st.divider()
@@ -127,8 +149,10 @@ fig.add_trace(go.Scatter(
     line=dict(width=3)
 ))
 
-fig.add_hline(y=0.55)
-fig.add_hline(y=-0.55)
+fig.add_hline(y=0.55, line_dash="dot", opacity=0.5, annotation_text="MODERATE")
+fig.add_hline(y=-0.55, line_dash="dot", opacity=0.5, annotation_text="MODERATE")
+fig.add_hline(y=0.82, line_dash="dot", opacity=0.6, annotation_text="STRONG")
+fig.add_hline(y=-0.82, line_dash="dot", opacity=0.6, annotation_text="STRONG")
 
 apply_layout(
     fig,
@@ -261,6 +285,7 @@ latest_all = (
     .tail(1)
     .sort_values(
         "rolling_pressure_corr",
+        key=lambda s: s.abs(),
         ascending=False
     )
 )

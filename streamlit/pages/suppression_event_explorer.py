@@ -84,10 +84,10 @@ event_df = df[df["measurement_date"] == event_date]
 # EVENT KPIs
 # ============================================================
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3, c4, c5 = st.columns(5)
 
 c1.metric(
-    "Protocols Affected",
+    "Protocols Monitored",
     len(event_df)
 )
 
@@ -103,7 +103,12 @@ c3.metric(
 
 c4.metric(
     "Elevated Protocols",
-    (event_df["protocol_state"] == "ELEVATED").sum()
+    int((event_df["protocol_state"] == "ELEVATED").sum())
+)
+
+c5.metric(
+    "Critical Shifts",
+    int((event_df["protocol_state"] == "SEVERE_ELEVATION").sum())
 )
 
 st.divider()
@@ -117,7 +122,11 @@ heat = px.density_heatmap(
     event_df,
     x="protocol",
     y="alignment_state",
-    z="rolling_pressure_corr"
+    z="rolling_pressure_corr",
+    # Fixed to the full possible range of this value, not auto-scaled to
+    # this selection's own min/max -- auto-scaling manufactures visual
+    # contrast out of a narrow, weak range of real values.
+    range_color=[-1, 1],
 )
 
 apply_layout(
@@ -130,9 +139,15 @@ st.plotly_chart(
     use_container_width=True
 )
 
-st.markdown("""
-Shows which protocols moved in lockstep with national
-digital repression pressure.
+_heat_min = event_df["rolling_pressure_corr"].min()
+_heat_max = event_df["rolling_pressure_corr"].max()
+
+st.markdown(f"""
+Color scale fixed to [-1, 1]. Each cell is one protocol's own correlation
+with national pressure on this date, computed independently -- this does not
+measure cross-protocol coordination. Values shown here run
+**{_heat_min:.2f} to {_heat_max:.2f}**, against a 0.55 MODERATE-relationship
+threshold on the same scale.
 """)
 
 st.divider()
@@ -144,6 +159,7 @@ st.divider()
 
 rank = event_df.sort_values(
     "rolling_pressure_corr",
+    key=lambda s: s.abs(),
     ascending=False
 )
 
@@ -164,9 +180,18 @@ st.plotly_chart(
     use_container_width=True
 )
 
-st.markdown("""
-Higher values mean stronger synchronization between
-protocol disruption and national pressure escalation.
+_any_qualifying_in_range = bool(
+    df["correlation_state"].isin(["STRONG_RELATIONSHIP", "MODERATE_RELATIONSHIP"]).any()
+)
+_range_max_abs_corr = df["rolling_pressure_corr"].abs().max()
+
+st.markdown(f"""
+Bar height is signed correlation magnitude; ranking (left to right) is by
+`ABS(rolling_pressure_corr)`, matching the mart's own STRONG/MODERATE
+threshold definition -- a strong inverse relationship ranks as high as a
+strong positive one. {"At least one protocol-day row in the selected date range reaches the MODERATE or STRONG threshold." if _any_qualifying_in_range else f"No protocol-day row in the selected date range reaches the MODERATE (0.55) or STRONG (0.82) threshold -- the largest magnitude observed is {_range_max_abs_corr:.2f}."}
+See **Methodology & Statistical Guardrails** for the full, dashboard-wide
+disclosure of how often these thresholds have been reached historically.
 """)
 
 st.divider()

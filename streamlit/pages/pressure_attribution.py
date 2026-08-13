@@ -6,7 +6,7 @@ from core.state import init_state
 from core.config import COUNTRY
 from core.constants import REGIME_STATES
 from core.filters import render_sidebar
-from core.theme import apply_layout, stress_color, regime_color, inject_css
+from core.theme import apply_layout, pressure_level_color, regime_color, inject_css
 from services.marts import (
     get_conflict_drivers,
     get_ooni_corroboration,
@@ -113,7 +113,7 @@ with c2:
     render_state_badge(
         "Pressure Level",
         row["pressure_level"],
-        stress_color(row["pressure_level"]),
+        pressure_level_color(row["pressure_level"]),
     )
 
 c3.metric(

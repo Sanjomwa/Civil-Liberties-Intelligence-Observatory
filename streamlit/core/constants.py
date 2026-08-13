@@ -60,15 +60,22 @@ DEFAULT_END = DEFAULT_END
 
 
 # ============================================================
-# NATIONAL STRESS STATES
+# NATIONAL PRESSURE LEVELS
 # ============================================================
+# Keyed on fact_country_pressure_daily.sql's real pressure_level CASE
+# (LOW/MODERATE/ELEVATED/SEVERE). Replaces the retired STRESS_LEVELS map,
+# whose key vocabulary (NORMAL/ELEVATED_PRESSURE/HIGH_STRESS_WINDOW/
+# CRITICAL_OBSERVABILITY_WINDOW) was tied to suppression_window_class, a
+# field TD-66 deleted -- that map never matched any live pressure_level
+# value at either of its two callsites, so both silently rendered fallback
+# gray. Same 4-color green->amber->orange->red ramp already used elsewhere
+# in this palette, just remapped to the vocabulary that's actually live.
 
-STRESS_LEVELS = {
-    "NORMAL": "#2FA36B",
-    "ELEVATED_PRESSURE": "#F0B34A",
-    "HIGH_STRESS_WINDOW": "#E8593C",
-    "CRITICAL_OBSERVABILITY_WINDOW": "#B42318",
-    "INSUFFICIENT_HISTORY": "#6B7280",
+PRESSURE_LEVELS = {
+    "LOW": "#2FA36B",
+    "MODERATE": "#F0B34A",
+    "ELEVATED": "#E8593C",
+    "SEVERE": "#B42318",
 }
 
 
@@ -100,10 +107,10 @@ CONFIDENCE_LEVELS = {
 # ============================================================
 # ACLED PATH A REGIME STATES (ADR-0002 step (e))
 # ============================================================
-# Deliberately a separate map from STRESS_LEVELS: primary_regime is
+# Deliberately a separate map from PRESSURE_LEVELS: primary_regime is
 # intelligence.acled_pressure_regimes' own weekly categorical taxonomy,
-# not path B's suppression_window_class. Ordered by the regime engine's
-# own hierarchy (CRISIS=7 ... STABLE=1, see acled_pressure_regimes.sql
+# not fact_country_pressure_daily's pressure_level. Ordered by the regime
+# engine's own hierarchy (CRISIS=7 ... STABLE=1, see acled_pressure_regimes.sql
 # CTE-11) from least to most severe.
 
 REGIME_STATES = {

@@ -172,6 +172,8 @@ def get_protocol_regimes(start_date, end_date):
             elevated_obs_share,
             insufficient_obs_share,
             sample_quality_score,
+            measurement_volume,
+            observation_volume,
             reporting_version,
             feature_version,
             intelligence_version,
@@ -199,6 +201,8 @@ def get_protocol_regimes(start_date, end_date):
             "elevated_obs_share",
             "insufficient_obs_share",
             "sample_quality_score",
+            "measurement_volume",
+            "observation_volume",
             "reporting_version",
             "feature_version",
             "intelligence_version",
@@ -218,6 +222,8 @@ def get_protocol_regimes(start_date, end_date):
             "elevated_obs_share": "numeric",
             "insufficient_obs_share": "numeric",
             "sample_quality_score": "numeric",
+            "measurement_volume": "numeric",
+            "observation_volume": "numeric",
             "reporting_version": "string",
             "feature_version": "string",
             "intelligence_version": "string",
@@ -499,6 +505,10 @@ def get_finance_bill_incident():
             composite_pressure_score,
             pressure_level,
             legal_pressure_is_synthetic,
+            final_confidence_level,
+            final_confidence_score,
+            regime_primary_regime,
+            regime_confidence_level,
             reporting_version,
             snapshot_at
         FROM `{REPORTING}.protocol_repression_correlation_mart`
@@ -521,6 +531,10 @@ def get_finance_bill_incident():
             "composite_pressure_score",
             "pressure_level",
             "legal_pressure_is_synthetic",
+            "final_confidence_level",
+            "final_confidence_score",
+            "regime_primary_regime",
+            "regime_confidence_level",
             "reporting_version",
             "snapshot_at",
         ],
@@ -535,6 +549,10 @@ def get_finance_bill_incident():
             "composite_pressure_score": "numeric",
             "pressure_level": "string",
             "legal_pressure_is_synthetic": "any",
+            "final_confidence_level": "string",
+            "final_confidence_score": "numeric",
+            "regime_primary_regime": "string",
+            "regime_confidence_level": "string",
             "reporting_version": "string",
             "snapshot_at": "datetime",
         },
@@ -1047,4 +1065,55 @@ def get_ooni_corroboration(measurement_date):
             "snapshot_at",
         ],
         title="get_ooni_corroboration",
+    )
+
+
+@st.cache_data(ttl=3600)
+def get_correlation_history_summary():
+    """Single-row, full-history aggregate for the Methodology page's live
+    threshold-track-record disclosure. Computed live rather than hardcoded so
+    this figure cannot go stale the way a static "max observed X" claim would
+    the moment new data lands.
+
+    max_damping is the quality/confidence damping product's own ceiling
+    (sample_quality_score * confidence) -- this is what actually bounds how
+    high a displayed rolling_pressure_corr could ever reach, not raw
+    correlation. raw_corr is deliberately excluded here: it reaches ~1.0 in
+    degenerate pre-guard windows (a protocol's first days of history, before
+    window_obs >= 18) that the mart's own insufficient_history_flag/
+    zero_variance_flag already exclude from rolling_pressure_corr -- surfacing
+    raw_corr on this page would manufacture a new misleading number.
+    """
+    sql = f"""
+        SELECT
+            COUNT(*) AS total_rows,
+            COUNTIF(
+                correlation_state IN ('STRONG_RELATIONSHIP', 'MODERATE_RELATIONSHIP')
+            ) AS qualifying_rows,
+            MAX(ABS(rolling_pressure_corr)) AS max_abs_corr,
+            MAX(sample_quality_score * COALESCE(final_confidence_score, 0.25))
+                AS max_damping,
+            MAX(snapshot_at) AS snapshot_at
+        FROM `{REPORTING}.protocol_repression_correlation_mart`
+    """
+
+    df = run_query(sql)
+    return _validate_mart_response(
+        df,
+        required_columns=[
+            "total_rows",
+            "qualifying_rows",
+            "max_abs_corr",
+            "max_damping",
+            "snapshot_at",
+        ],
+        dtype_hints={
+            "total_rows": "numeric",
+            "qualifying_rows": "numeric",
+            "max_abs_corr": "numeric",
+            "max_damping": "numeric",
+            "snapshot_at": "datetime",
+        },
+        non_nullable=["total_rows", "qualifying_rows", "snapshot_at"],
+        title="get_correlation_history_summary",
     )

@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from core.constants import (
-    STRESS_LEVELS,
+    PRESSURE_LEVELS,
     PROTOCOL_STATES,
     CONFIDENCE_LEVELS,
     REGIME_STATES,
@@ -56,8 +56,8 @@ def apply_layout(fig: go.Figure, title=None):
 # COLOR HELPERS
 # ============================================================
 
-def stress_color(level):
-    return STRESS_LEVELS.get(level, PALETTE["muted"])
+def pressure_level_color(level):
+    return PRESSURE_LEVELS.get(level, PALETTE["muted"])
 
 
 def protocol_color(state):

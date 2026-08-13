@@ -1,12 +1,12 @@
 import streamlit as st
-import plotly.graph_objects as go
 import pandas as pd
 
 from core.config import COUNTRY
 from core.state import init_state
 from core.filters import render_sidebar
-from core.theme import apply_layout, inject_css
+from core.theme import inject_css
 from components.trust import attribution_footer
+from services.marts import get_correlation_history_summary
 
 
 # ============================================================
@@ -94,35 +94,17 @@ st.divider()
 
 st.subheader("Rolling Baseline Windows")
 
-days = list(range(1, 31))
-baseline = [1 - (d / 40) for d in days]
-
-fig = go.Figure()
-
-fig.add_trace(go.Scatter(
-    x=days,
-    y=baseline,
-    mode="lines+markers"
-))
-
-apply_layout(
-    fig,
-    "30-Day Historical Baseline Weighting"
-)
-
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
-
 st.markdown("""
-Each protocol is evaluated against its rolling historical norm.
+Each protocol is evaluated against its own rolling 30-day trailing average
+of `signal_rate` (`baseline_signal_rate_30d`, computed in
+`features/protocol_daily_signals.sql`) -- a plain unweighted mean. There is
+no decay or weighting term applied to older vs. more recent days anywhere in
+this calculation.
 
 This prevents:
 
 - false alerts from isolated spikes
 - static threshold bias
-- protocol-specific seasonality distortion
 """)
 
 st.divider()
@@ -134,31 +116,27 @@ st.divider()
 
 st.subheader("Confidence Weighting Logic")
 
-confidence = pd.DataFrame({
-    "Confidence Level": [
-        "HIGH",
-        "MEDIUM",
-        "LOW"
-    ],
-    "Weight Applied": [
-        1.00,
-        0.65,
-        0.25
-    ]
-})
-
-st.dataframe(
-    confidence,
-    use_container_width=True,
-    hide_index=True
-)
-
 st.markdown("""
-Low-confidence observations are mathematically suppressed
-before correlation scoring.
+Confidence weighting is not a fixed three-tier lookup table. The weight
+actually applied in correlation scoring is continuous, computed per
+protocol-day in `intelligence/protocol_relationships.sql`:
 
-This prevents sparse evidence from amplifying synthetic
-suppression signatures.
+`final_confidence_score = LEAST(1.0, 0.60 x sample_quality_score + 0.40 x
+strongest_relationship_confidence_score)`
+
+The displayed `rolling_pressure_corr` is this value multiplied through the
+full chain: the raw rolling `CORR()` between protocol anomaly and national
+pressure, x `sample_quality_score`, x `final_confidence_score` -- or, on the
+protocol-days where no `protocol_relationships` row exists to join at all
+(not merely a low relationship-confidence score, which the formula above
+already handles via `COALESCE(..., 0.0)`), a fixed 0.25 fallback in place of
+`final_confidence_score` (`protocol_repression_correlation_mart.sql`). This
+chain is why the displayed correlation sits well below the raw statistical
+correlation -- see "Correlation Strength: Historical Track Record" below.
+
+Low-confidence observations are mathematically suppressed before correlation
+scoring by the same multiplication -- this prevents sparse evidence from
+amplifying synthetic suppression signatures.
 """)
 
 st.divider()
@@ -180,8 +158,8 @@ rules = pd.DataFrame({
     "Threshold": [
         "18+ observations",
         "stddev > 0",
-        "14+ baseline days",
-        "weighted confidence floor"
+        "7+ baseline days (min_baseline_days_30d, protocol_daily_signals.sql)",
+        "5+ measurements/day (min_measurements_per_day, protocol_daily_signals.sql)"
     ]
 })
 
@@ -264,6 +242,55 @@ st.dataframe(
     use_container_width=True,
     hide_index=True
 )
+
+st.divider()
+
+
+# ============================================================
+# CORRELATION STRENGTH: HISTORICAL TRACK RECORD
+# ============================================================
+
+st.subheader("Correlation Strength: Historical Track Record")
+
+try:
+    _corr_summary = get_correlation_history_summary()
+except Exception:
+    _corr_summary = pd.DataFrame()
+
+if _corr_summary.empty:
+    st.warning(
+        "Live summary unavailable (query failed or returned no data). "
+        "By definition, `correlation_state` is `STRONG_RELATIONSHIP` at "
+        "`ABS(rolling_pressure_corr) >= 0.82` and `MODERATE_RELATIONSHIP` at "
+        "`>= 0.55` (`protocol_repression_correlation_mart.sql`)."
+    )
+else:
+    _row = _corr_summary.iloc[0]
+    _total = int(_row["total_rows"])
+    _qualifying = int(_row["qualifying_rows"])
+    _max_abs_corr = float(_row["max_abs_corr"])
+    _max_damping = float(_row["max_damping"])
+    _as_of = pd.Timestamp(_row["snapshot_at"]).strftime("%Y-%m-%d %H:%M UTC")
+
+    st.markdown(f"""
+    As of **{_as_of}**, across this mart's full history ({_total:,}
+    protocol-day rows): **{_qualifying} of {_total}** rows have ever reached
+    the MODERATE (>=0.55) or STRONG (>=0.82) correlation threshold. The
+    largest magnitude `rolling_pressure_corr` observed, ever, is
+    **{_max_abs_corr:.2f}**.
+
+    These thresholds are mathematically reachable -- the quality/confidence
+    damping product (`sample_quality_score x final_confidence_score`) has
+    reached as high as **{_max_damping:.2f}**, above the STRONG threshold --
+    but no protocol-day row in this pipeline's history has actually crossed
+    either threshold yet.
+
+    **0.55 and 0.82 are inherited default thresholds. They have never been
+    independently calibrated against Kenya's actual pilot data, and are not
+    adjusted here to make more windows qualify** -- lowering them to produce
+    more "findings" would misrepresent what the data shows, which is the
+    opposite of what this disclosure is for.
+    """)
 
 st.divider()
 
@@ -391,6 +418,8 @@ This observability framework was designed to prioritize:
 • transparent inference logic  
 • reproducible censorship intelligence
 
-All dashboard outputs are traceable to formal feature,
-intelligence, and reporting transformations.
+Every score, count, and classification shown on this dashboard is computed
+at render time from the pipeline's feature, intelligence, and reporting
+transformations -- none is a hardcoded value. Scope and grain disclosures
+accompany each page's own data and are maintained as the pipeline evolves.
 """)

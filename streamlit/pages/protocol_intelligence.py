@@ -9,7 +9,7 @@ from components.trust import render_trust_strip, attribution_footer
 from core.config import COUNTRY
 from core.filters import render_sidebar
 from core.state import init_state
-from core.theme import apply_layout, stress_color, protocol_color, confidence_color, inject_css
+from core.theme import apply_layout, protocol_color, confidence_color, inject_css
 from services.marts import get_protocol_regimes, get_protocol_blocking_summary
 
 
@@ -34,6 +34,7 @@ def _ensure_protocol_intelligence_columns(df: pd.DataFrame) -> pd.DataFrame:
         "severe_obs_share": 0.0,
         "elevated_obs_share": 0.0,
         "insufficient_obs_share": 0.0,
+        "observation_volume": pd.NA,
     }
 
     for column, default in defaults.items():
@@ -46,6 +47,7 @@ def _ensure_protocol_intelligence_columns(df: pd.DataFrame) -> pd.DataFrame:
         "severe_obs_share",
         "elevated_obs_share",
         "insufficient_obs_share",
+        "observation_volume",
     ]:
         normalized[column] = pd.to_numeric(normalized[column], errors="coerce")
 
@@ -156,8 +158,11 @@ with tab_regime:
     This heatmap shows protocol-level digital stress over time across every
     monitored protocol at once. Higher intensity means stronger statistically
     abnormal interference behavior compared to historical baseline
-    performance. Bright regions indicate possible coordinated protocol
-    disruption.
+    performance. Bright regions indicate elevated statistical anomaly for
+    that specific protocol -- this does not measure coordination or
+    synchronization across protocols; see the Protocol-Repression
+    Correlation Engine page for that separate, independently-computed
+    concept.
     """)
 
     heat = df.pivot_table(
@@ -204,7 +209,7 @@ with tab_regime:
     fig_conf.add_trace(go.Bar(
         x=protocol_df["date_key"],
         y=protocol_df["regime_confidence"],
-        marker_color=[stress_color(v) for v in protocol_df["protocol_state"]],
+        marker_color=[protocol_color(v) for v in protocol_df["protocol_state"]],
         name="Confidence",
     ))
     apply_layout(fig_conf, f"{protocol} Statistical Confidence")
@@ -247,6 +252,34 @@ with tab_regime:
         "mask a small loud one, and confidence describes the driving "
         "family's evidence."
     )
+
+    _protocol_volume_stats = df.groupby("protocol").agg(
+        max_stress=("protocol_stress_score", "max"),
+        avg_obs_volume=("observation_volume", "mean"),
+    )
+    _quiet_protocols = _protocol_volume_stats.index[
+        _protocol_volume_stats["max_stress"].fillna(0) <= 0.01
+    ].tolist()
+
+    if _quiet_protocols:
+        _quiet_str = ", ".join(p.upper() for p in _quiet_protocols)
+        _volume_desc = "; ".join(
+            f"{protocol.upper()}: {row['avg_obs_volume']:.0f} obs/day"
+            for protocol, row in _protocol_volume_stats.iterrows()
+        )
+        st.caption(
+            f"**Coverage check for {_quiet_str}:** {_quiet_str} show a "
+            f"protocol_stress_score of essentially 0 across this entire date "
+            f"range and are classified NORMAL_RANGE on nearly every day as a "
+            f"result. This is not a sparse-coverage artifact -- average daily "
+            f"observation volume in this range is {_volume_desc}, so "
+            f"{_quiet_str}'s coverage is comparable to or higher than the "
+            f"protocol(s) showing real signal. The near-universal 'normal' "
+            f"reading reflects genuine absence of measured interference at "
+            f"that protocol layer in this data, not sparse or missing "
+            f"coverage -- though it does not rule out interference this "
+            f"layer's tests are simply not well-suited to detect."
+        )
 
 with tab_reliability:
     st.subheader("Observed State Distribution")
