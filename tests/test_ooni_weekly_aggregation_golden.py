@@ -34,6 +34,23 @@ stg.ooni_measurement_summary (tor's verdict extraction there is also
 deliberately not implemented, for the same underlying reason). This is
 not an oversight in this fixture -- it is a faithful reflection of a real
 CLIO-wide gap, not a bug this test masks.
+
+EXTENDED (weekly OONI aggregation relay session, 2026-08-15): the fixture
+file was restructured from one flat week->test_name mapping into two
+top-level keys, `result_state_weekly` (the original content, unchanged
+values, renamed only) and `ooni_verdict_weekly` (new -- the ANOMALOUS/
+ooni_verdict side, from int.ooni_measurement_verdicts, same window, same
+Saturday anchor, same skip-gate pattern). Extending in place rather than
+adding a sibling file was chosen because both sides describe the exact
+same window and the same underlying grain-compatibility finding (test_name
+is native to both source tables) -- one file, one drift check, two
+independently-verified column groups, matching features.ooni_weekly_
+signals' own choice to carry both series side by side in one row rather
+than as two separate tables. ooni_verdict_weekly's total_scored_
+measurements excludes NULL ooni_verdict rows (NOT_IMPLEMENTED tor +
+DISCARDED_BAD_PROBE_VERSION signal rows), per this build's own Task B
+denominator -- see reports.md's 2026-08-15 entry for the 17.9%-vs-15.1%
+denominator correction this produced for signal specifically.
 """
 import json
 import os
@@ -48,7 +65,8 @@ requires_bigquery = pytest.mark.skipif(
 
 PROJECT_ID = "encoded-joy-485413-k5"
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures" / "ooni_weekly_golden"
-FIELDS = ["total_experiment_results", "blocked_results", "down_results", "unknown_results", "blocking_signal_count"]
+RESULT_STATE_FIELDS = ["total_experiment_results", "blocked_results", "down_results", "unknown_results", "blocking_signal_count"]
+OONI_VERDICT_FIELDS = ["total_scored_measurements", "anomalous_count"]
 
 
 def _load_golden(name):
@@ -82,7 +100,36 @@ def _fetch_actual(client, country, start, end):
     actual = {}
     for row in rows:
         actual.setdefault(row.week_start_date, {})[row.test_name] = {
-            f: getattr(row, f) for f in FIELDS
+            f: getattr(row, f) for f in RESULT_STATE_FIELDS
+        }
+    return actual
+
+
+def _fetch_actual_ooni_verdict(client, country, start, end):
+    from google.cloud import bigquery
+
+    query = f"""
+        SELECT
+          CAST(DATE_TRUNC(measurement_date, WEEK(SATURDAY)) AS STRING) AS week_start_date,
+          test_name,
+          COUNT(*) AS total_scored_measurements,
+          COUNTIF(ooni_verdict = 'ANOMALOUS') AS anomalous_count
+        FROM `{PROJECT_ID}.int.ooni_measurement_verdicts`
+        WHERE country = @country
+          AND ooni_verdict IS NOT NULL
+          AND measurement_date BETWEEN @start AND @end
+        GROUP BY week_start_date, test_name
+    """
+    job_config = bigquery.QueryJobConfig(query_parameters=[
+        bigquery.ScalarQueryParameter("country", "STRING", country),
+        bigquery.ScalarQueryParameter("start", "DATE", start),
+        bigquery.ScalarQueryParameter("end", "DATE", end),
+    ])
+    rows = client.query(query, job_config=job_config).result()
+    actual = {}
+    for row in rows:
+        actual.setdefault(row.week_start_date, {})[row.test_name] = {
+            f: getattr(row, f) for f in OONI_VERDICT_FIELDS
         }
     return actual
 
@@ -103,7 +150,17 @@ def _assert_matches_golden(actual, golden):
 def test_finance_bill_2024_weekly_golden():
     from google.cloud import bigquery
 
-    golden = _load_golden("finance_bill_2024.json")
+    golden = _load_golden("finance_bill_2024.json")["result_state_weekly"]
     client = bigquery.Client(project=PROJECT_ID)
     actual = _fetch_actual(client, "KE", "2024-05-11", "2024-07-13")
+    _assert_matches_golden(actual, golden)
+
+
+@requires_bigquery
+def test_finance_bill_2024_weekly_golden_ooni_verdict():
+    from google.cloud import bigquery
+
+    golden = _load_golden("finance_bill_2024.json")["ooni_verdict_weekly"]
+    client = bigquery.Client(project=PROJECT_ID)
+    actual = _fetch_actual_ooni_verdict(client, "KE", "2024-05-11", "2024-07-13")
     _assert_matches_golden(actual, golden)
