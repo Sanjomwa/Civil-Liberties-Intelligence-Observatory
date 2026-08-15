@@ -71,6 +71,15 @@ description: |
     here, per this phase's explicit scope; dnscheck's bootstrap layer
     (not the per-resolver lookups detail) is still extracted.
 
+  TD-93 (2026-08-15): added signal_legacy_endpoint_nxdomain_only, a new
+  boolean column distinguishing NXDOMAIN failures attributable only to a
+  legacy/deprecated Signal hostname (per OONI's own current spec) from
+  ones corroborated by a real, currently-tested endpoint also failing --
+  consumed by int.ooni_measurement_verdicts_candidate.sql to fix a
+  substantial Signal ANOMALOUS overcount found via external validation
+  against OONI's own real classification. See that asset's header and
+  reports.md's 2026-08-15 TD-93 entry for the full finding.
+
 depends:
   - stg.ooni_measurements
 
@@ -156,6 +165,51 @@ SELECT
   -- only, confirmed live across all 50,454 rows, no NULLs, no third value.
   JSON_VALUE(raw_test_keys, '$.signal_backend_status') AS signal_backend_status,
   JSON_VALUE(raw_test_keys, '$.signal_backend_failure') AS signal_backend_failure,
+
+  -- TD-93 (2026-08-15). ts-029-signal.md's CURRENT spec (2023-12-01-001,
+  -- fetched live from raw.githubusercontent.com/ooni/spec) names exactly
+  -- four tested backend endpoints: cdsi.signal.org, chat.signal.org,
+  -- sfu.voip.signal.org, storage.signal.org. Two hostnames the live probe
+  -- still queries -- textsecure-service.whispersystems.org (Signal's
+  -- pre-rebrand legacy backend domain) and api.directory.signal.org --
+  -- are NOT among them. Live data confirms both are structurally dead:
+  -- textsecure-service.whispersystems.org resolved successfully in every
+  -- Kenya measurement through 2023-10, then NXDOMAINed in 100% of
+  -- measurements every single month from 2023-12 through 2025-06 (a clean
+  -- one-time retirement signature, not intermittent interference);
+  -- api.directory.signal.org NXDOMAINs in 100% of measurements across
+  -- CLIO's entire ingestion window with zero successes ever. The four
+  -- current-spec endpoints resolve successfully >99% of the time
+  -- throughout, confirmed per-hostname, per-month.
+  --
+  -- This flag is TRUE only when signal_backend_failure = 'dns_nxdomain_error'
+  -- AND none of the four current-spec endpoints' own queries also show
+  -- dns_nxdomain_error in the same measurement -- i.e. the nxdomain is
+  -- attributable ONLY to a legacy/out-of-spec hostname, not corroborated
+  -- by a real, currently-tested endpoint also failing to resolve. This is
+  -- deliberately narrower than "any failure on a legacy hostname": a
+  -- matched-pair check against OONI's own real anomaly/failure booleans
+  -- (66 sampled measurements, /api/v1/measurements) found that broader
+  -- rule wrong -- generic_timeout_error/connection_reset/network_unreachable
+  -- failures against the SAME legacy hostnames still agree with OONI's own
+  -- anomaly=true classification (OONI's backend still trusts a timeout/
+  -- reset as a real signal even against a legacy hostname; only NXDOMAIN,
+  -- which specifically means "this domain has no DNS records at all," is
+  -- treated as untrustworthy noise). The nxdomain-specific, current-spec-
+  -- corroboration-checked version of this rule reached 100% substantive
+  -- agreement (66/66) against OONI's real classification in that sample --
+  -- see reports.md's 2026-08-15 TD-93 session entry for the full
+  -- methodology and the broader rule's measured failure mode.
+  test_name = 'signal'
+    AND JSON_VALUE(raw_test_keys, '$.signal_backend_failure') = 'dns_nxdomain_error'
+    AND NOT EXISTS (
+      SELECT 1
+      FROM UNNEST(JSON_EXTRACT_ARRAY(raw_test_keys, '$.queries')) AS q
+      WHERE JSON_EXTRACT_SCALAR(q, '$.hostname') IN (
+          'cdsi.signal.org', 'chat.signal.org', 'sfu.voip.signal.org', 'storage.signal.org'
+        )
+        AND JSON_EXTRACT_SCALAR(q, '$.failure') = 'dns_nxdomain_error'
+    ) AS signal_legacy_endpoint_nxdomain_only,
 
   -- whatsapp (ts-018-whatsapp.md) -- three status fields, each in
   -- {'ok','blocked'} only, confirmed live. The two "list of affected

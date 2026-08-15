@@ -45,6 +45,20 @@ description: |
   reports.md's 2026-08-16 TD-91 session entry for the original TD-87
   Phase 2 design and this session's three corrections.
 
+  TD-93 (2026-08-15): a fourth correction, found via external validation
+  against OONI's own real, published per-measurement classification
+  (/api/v1/measurements, matched by report_id) rather than CLIO-internal
+  sampling. Signal's test_anomaly_flag overcounted ANOMALOUS by routing
+  NXDOMAIN failures against two hostnames outside OONI's own current
+  ts-029-signal.md spec into ANOMALOUS; OONI's own backend calls these
+  FAILED. Fixed via a new signal_legacy_endpoint_nxdomain_only column
+  (stg.ooni_measurement_summary.sql) consumed here ahead of test_anomaly_
+  flag, same precedence as psiphon_failure. See this file's ooni_verdict
+  CASE and reports.md's 2026-08-15 TD-93 entry for the full finding and
+  the matched-pair verification (100% substantive agreement, up from
+  78.8%, on the same 66-measurement sample TD-91's own investigation
+  used).
+
   OONI's own real, per-measurement verdict vocabulary (OK / CONFIRMED /
   ANOMALOUS / FAILED), derived from each test's own probe-submitted
   summary field (stg.ooni_measurement_summary, Phase 1) -- NOT the same
@@ -202,6 +216,11 @@ verdicts AS (
     -- can route it to FAILED directly -- see that CASE for why.
     s.psiphon_failure,
 
+    -- TD-93 (2026-08-15): carried through so the final ooni_verdict CASE
+    -- can route it to FAILED ahead of test_anomaly_flag -- see that CASE
+    -- and stg.ooni_measurement_summary.sql's header for the full finding.
+    s.signal_legacy_endpoint_nxdomain_only,
+
     wc.fingerprint_match_id,
 
     CASE
@@ -358,6 +377,29 @@ SELECT
     WHEN measurement_failure IS NOT NULL
       OR control_failure IS NOT NULL
       OR psiphon_failure IS NOT NULL THEN 'FAILED'
+    -- TD-93 (2026-08-15). External validation against OONI's own real,
+    -- published classification (/api/v1/measurements, matched by
+    -- report_id) found signal's test_anomaly_flag (keyed only on
+    -- signal_backend_status = 'blocked') overcounts ANOMALOUS by routing
+    -- NXDOMAIN failures against two hostnames outside OONI's own current
+    -- ts-029-signal.md spec -- textsecure-service.whispersystems.org
+    -- (dead since 2023-12, confirmed via a clean one-time retirement
+    -- signature in live per-month data) and api.directory.signal.org
+    -- (dead across CLIO's entire ingestion window, zero successes ever)
+    -- -- into ANOMALOUS, when OONI's own real backend calls these FAILED.
+    -- This ahead of test_anomaly_flag, same precedence pattern as
+    -- psiphon_failure above: FAILED wins over a computed ANOMALOUS,
+    -- because it reflects a real, more specific, externally-corroborated
+    -- terminal state OONI itself already assigns. signal_legacy_endpoint_
+    -- nxdomain_only is already scoped (in stg.ooni_measurement_summary)
+    -- to fire ONLY when none of OONI's four current-spec endpoints
+    -- (cdsi/chat/sfu.voip/storage.signal.org) also show an nxdomain in
+    -- the same measurement, so a genuine current-endpoint block still
+    -- reaches ANOMALOUS below, unaffected. A matched-pair sample (66
+    -- measurements against OONI's real anomaly/confirmed/failure
+    -- booleans) reached 100% substantive agreement with this rule,
+    -- versus 78.8% before it -- see reports.md's 2026-08-15 TD-93 entry.
+    WHEN signal_legacy_endpoint_nxdomain_only THEN 'FAILED'
     WHEN test_anomaly_flag IS TRUE THEN 'ANOMALOUS'
     WHEN test_anomaly_flag IS NULL THEN NULL
     ELSE 'OK'

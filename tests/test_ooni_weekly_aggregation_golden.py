@@ -51,6 +51,23 @@ measurements excludes NULL ooni_verdict rows (NOT_IMPLEMENTED tor +
 DISCARDED_BAD_PROBE_VERSION signal rows), per this build's own Task B
 denominator -- see reports.md's 2026-08-15 entry for the 17.9%-vs-15.1%
 denominator correction this produced for signal specifically.
+
+RE-FROZEN (TD-93, 2026-08-15, same day): `ooni_verdict_weekly`'s `signal`
+values changed after TD-93's fix (int.ooni_measurement_verdicts_candidate.sql
+now routes signal's NXDOMAIN failures against two out-of-spec legacy
+hostnames to FAILED instead of ANOMALOUS -- see that asset's header).
+`total_scored_measurements` is unchanged for every week/test_name (the
+fix only moves rows between ANOMALOUS and FAILED, not into or out of the
+scored population). Only `signal`'s `anomalous_count` moved -- every
+other test_name's numbers in this fixture are byte-for-byte unchanged,
+confirmed via a full before/after diff before re-freezing, not assumed.
+Real deltas, Finance Bill window (signal anomalous_count, before -> after):
+2024-05-11: 85->13, 05-18: 110->7, 05-25: 109->4, 06-01: 87->1,
+06-08: 65->1, 06-15: 78->4, 06-22: 90->31, 06-29: 9->6, 07-06: 20->10,
+07-13: 1->1 (unchanged that week). Window total: 1,844 -> 1,268 (-576,
+-31.2%). See reports.md's 2026-08-15 TD-93 entry for the full
+methodology and the external-validation matched-pair check this fix is
+based on.
 """
 import json
 import os
