@@ -1,0 +1,372 @@
+{
+  "2024-05-11": {
+    "dnscheck": {
+      "total_experiment_results": 30062,
+      "blocked_results": 0,
+      "down_results": 82,
+      "unknown_results": 96,
+      "blocking_signal_count": 0
+    },
+    "psiphon": {
+      "total_experiment_results": 960,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 1,
+      "blocking_signal_count": 0
+    },
+    "signal": {
+      "total_experiment_results": 8197,
+      "blocked_results": 9,
+      "down_results": 401,
+      "unknown_results": 1460,
+      "blocking_signal_count": 9
+    },
+    "telegram": {
+      "total_experiment_results": 9557,
+      "blocked_results": 3,
+      "down_results": 97,
+      "unknown_results": 3863,
+      "blocking_signal_count": 3
+    },
+    "whatsapp": {
+      "total_experiment_results": 25835,
+      "blocked_results": 6,
+      "down_results": 357,
+      "unknown_results": 575,
+      "blocking_signal_count": 6
+    }
+  },
+  "2024-05-18": {
+    "dnscheck": {
+      "total_experiment_results": 34239,
+      "blocked_results": 0,
+      "down_results": 80,
+      "unknown_results": 56,
+      "blocking_signal_count": 0
+    },
+    "psiphon": {
+      "total_experiment_results": 1065,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 0,
+      "blocking_signal_count": 0
+    },
+    "signal": {
+      "total_experiment_results": 9738,
+      "blocked_results": 9,
+      "down_results": 502,
+      "unknown_results": 1689,
+      "blocking_signal_count": 9
+    },
+    "telegram": {
+      "total_experiment_results": 10924,
+      "blocked_results": 2,
+      "down_results": 108,
+      "unknown_results": 4368,
+      "blocking_signal_count": 2
+    },
+    "whatsapp": {
+      "total_experiment_results": 29871,
+      "blocked_results": 11,
+      "down_results": 121,
+      "unknown_results": 537,
+      "blocking_signal_count": 11
+    }
+  },
+  "2024-05-25": {
+    "dnscheck": {
+      "total_experiment_results": 42083,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 2,
+      "blocking_signal_count": 0
+    },
+    "psiphon": {
+      "total_experiment_results": 1112,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 2,
+      "blocking_signal_count": 0
+    },
+    "signal": {
+      "total_experiment_results": 8979,
+      "blocked_results": 0,
+      "down_results": 321,
+      "unknown_results": 1536,
+      "blocking_signal_count": 0
+    },
+    "telegram": {
+      "total_experiment_results": 10110,
+      "blocked_results": 0,
+      "down_results": 129,
+      "unknown_results": 4142,
+      "blocking_signal_count": 0
+    },
+    "whatsapp": {
+      "total_experiment_results": 31078,
+      "blocked_results": 0,
+      "down_results": 4,
+      "unknown_results": 461,
+      "blocking_signal_count": 0
+    }
+  },
+  "2024-06-01": {
+    "dnscheck": {
+      "total_experiment_results": 34071,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 6,
+      "blocking_signal_count": 0
+    },
+    "psiphon": {
+      "total_experiment_results": 929,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 2,
+      "blocking_signal_count": 0
+    },
+    "signal": {
+      "total_experiment_results": 7924,
+      "blocked_results": 2,
+      "down_results": 255,
+      "unknown_results": 1359,
+      "blocking_signal_count": 2
+    },
+    "telegram": {
+      "total_experiment_results": 8995,
+      "blocked_results": 0,
+      "down_results": 125,
+      "unknown_results": 3709,
+      "blocking_signal_count": 0
+    },
+    "whatsapp": {
+      "total_experiment_results": 27241,
+      "blocked_results": 3,
+      "down_results": 6,
+      "unknown_results": 368,
+      "blocking_signal_count": 3
+    }
+  },
+  "2024-06-08": {
+    "dnscheck": {
+      "total_experiment_results": 39165,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 4,
+      "blocking_signal_count": 0
+    },
+    "psiphon": {
+      "total_experiment_results": 1181,
+      "blocked_results": 0,
+      "down_results": 1,
+      "unknown_results": 2,
+      "blocking_signal_count": 0
+    },
+    "signal": {
+      "total_experiment_results": 9880,
+      "blocked_results": 5,
+      "down_results": 377,
+      "unknown_results": 1781,
+      "blocking_signal_count": 5
+    },
+    "telegram": {
+      "total_experiment_results": 11901,
+      "blocked_results": 0,
+      "down_results": 156,
+      "unknown_results": 4779,
+      "blocking_signal_count": 0
+    },
+    "whatsapp": {
+      "total_experiment_results": 32200,
+      "blocked_results": 3,
+      "down_results": 5,
+      "unknown_results": 507,
+      "blocking_signal_count": 3
+    }
+  },
+  "2024-06-15": {
+    "dnscheck": {
+      "total_experiment_results": 54831,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 72,
+      "blocking_signal_count": 0
+    },
+    "psiphon": {
+      "total_experiment_results": 1671,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 1,
+      "blocking_signal_count": 0
+    },
+    "signal": {
+      "total_experiment_results": 13168,
+      "blocked_results": 10,
+      "down_results": 395,
+      "unknown_results": 2422,
+      "blocking_signal_count": 10
+    },
+    "telegram": {
+      "total_experiment_results": 16394,
+      "blocked_results": 4,
+      "down_results": 154,
+      "unknown_results": 6689,
+      "blocking_signal_count": 4
+    },
+    "whatsapp": {
+      "total_experiment_results": 46243,
+      "blocked_results": 3,
+      "down_results": 19,
+      "unknown_results": 867,
+      "blocking_signal_count": 3
+    }
+  },
+  "2024-06-22": {
+    "dnscheck": {
+      "total_experiment_results": 111208,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 68,
+      "blocking_signal_count": 0
+    },
+    "psiphon": {
+      "total_experiment_results": 3232,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 2,
+      "blocking_signal_count": 0
+    },
+    "signal": {
+      "total_experiment_results": 26039,
+      "blocked_results": 12,
+      "down_results": 447,
+      "unknown_results": 4767,
+      "blocking_signal_count": 12
+    },
+    "telegram": {
+      "total_experiment_results": 33268,
+      "blocked_results": 14,
+      "down_results": 167,
+      "unknown_results": 13699,
+      "blocking_signal_count": 14
+    },
+    "whatsapp": {
+      "total_experiment_results": 101123,
+      "blocked_results": 0,
+      "down_results": 258,
+      "unknown_results": 3092,
+      "blocking_signal_count": 0
+    }
+  },
+  "2024-06-29": {
+    "dnscheck": {
+      "total_experiment_results": 81203,
+      "blocked_results": 0,
+      "down_results": 10,
+      "unknown_results": 38,
+      "blocking_signal_count": 0
+    },
+    "psiphon": {
+      "total_experiment_results": 2463,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 0,
+      "blocking_signal_count": 0
+    },
+    "signal": {
+      "total_experiment_results": 18646,
+      "blocked_results": 3,
+      "down_results": 245,
+      "unknown_results": 3466,
+      "blocking_signal_count": 3
+    },
+    "telegram": {
+      "total_experiment_results": 24512,
+      "blocked_results": 21,
+      "down_results": 288,
+      "unknown_results": 10120,
+      "blocking_signal_count": 21
+    },
+    "whatsapp": {
+      "total_experiment_results": 71894,
+      "blocked_results": 0,
+      "down_results": 25,
+      "unknown_results": 1911,
+      "blocking_signal_count": 0
+    }
+  },
+  "2024-07-06": {
+    "dnscheck": {
+      "total_experiment_results": 71647,
+      "blocked_results": 0,
+      "down_results": 44,
+      "unknown_results": 408,
+      "blocking_signal_count": 0
+    },
+    "psiphon": {
+      "total_experiment_results": 2250,
+      "blocked_results": 0,
+      "down_results": 2,
+      "unknown_results": 4,
+      "blocking_signal_count": 0
+    },
+    "signal": {
+      "total_experiment_results": 17166,
+      "blocked_results": 8,
+      "down_results": 288,
+      "unknown_results": 3214,
+      "blocking_signal_count": 8
+    },
+    "telegram": {
+      "total_experiment_results": 22233,
+      "blocked_results": 5,
+      "down_results": 76,
+      "unknown_results": 9126,
+      "blocking_signal_count": 5
+    },
+    "whatsapp": {
+      "total_experiment_results": 64131,
+      "blocked_results": 0,
+      "down_results": 20,
+      "unknown_results": 1127,
+      "blocking_signal_count": 0
+    }
+  },
+  "2024-07-13": {
+    "dnscheck": {
+      "total_experiment_results": 9699,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 20,
+      "blocking_signal_count": 0
+    },
+    "psiphon": {
+      "total_experiment_results": 267,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 0,
+      "blocking_signal_count": 0
+    },
+    "signal": {
+      "total_experiment_results": 1929,
+      "blocked_results": 1,
+      "down_results": 12,
+      "unknown_results": 361,
+      "blocking_signal_count": 1
+    },
+    "telegram": {
+      "total_experiment_results": 2599,
+      "blocked_results": 0,
+      "down_results": 0,
+      "unknown_results": 1085,
+      "blocking_signal_count": 0
+    },
+    "whatsapp": {
+      "total_experiment_results": 7642,
+      "blocked_results": 0,
+      "down_results": 2,
+      "unknown_results": 132,
+      "blocking_signal_count": 0
+    }
+  }
+}

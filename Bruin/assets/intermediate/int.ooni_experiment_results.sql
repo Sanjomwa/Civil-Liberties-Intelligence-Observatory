@@ -17,6 +17,7 @@ depends:
   - stg.ooni_tls_observations
   - stg.ooni_http_observations
   - marts.dim_tls_failure_evidence
+  - marts.dim_tcp_failure_evidence
 
 materialization:
   type: table
@@ -136,6 +137,25 @@ dns AS (
   FROM dns_source
 ),
 
+tcp_source AS (
+  SELECT
+    t.*,
+    -- TD-80 (2026-08-15): per-failure-mode result_state/blocking_detail/
+    -- confidence, from marts.dim_tcp_failure_evidence -- NULL when
+    -- tcp_failure is NULL (a success, handled separately below) or when
+    -- tcp_failure is a string not present in that table (an unmapped/
+    -- future failure mode, which must default to UNKNOWN/0.45, never
+    -- inherit an elevated tier -- see the COALESCE/fallback arms below,
+    -- not this join). Same join shape as tls_source's join to
+    -- marts.dim_tls_failure_evidence above.
+    dim.result_state AS tcp_failure_result_state,
+    dim.blocking_detail AS tcp_failure_blocking_detail,
+    dim.confidence_score AS tcp_failure_confidence_score
+  FROM `{{ var.project_id }}.stg.ooni_tcp_observations` AS t
+  LEFT JOIN `{{ var.project_id }}.marts.dim_tcp_failure_evidence` AS dim
+    ON dim.tcp_failure = t.tcp_failure
+),
+
 tcp AS (
   SELECT
     observation_id,
@@ -153,27 +173,34 @@ tcp AS (
     ip_address AS endpoint_ip,
     port AS endpoint_port,
     tcp_failure AS failure_reason,
+    -- TD-80 (2026-08-15): result_state now sourced from
+    -- marts.dim_tcp_failure_evidence rather than an inline
+    -- LIKE '%timeout%' substring match, which missed the literal OONI
+    -- failure string 'timed_out' (16 live rows, previously misclassified
+    -- UNKNOWN instead of DOWN). The reset arm stays ahead of the dim
+    -- lookup, unchanged -- confirmed dead code (0 live matches) but left
+    -- in place, not removed (see dim_tcp_failure_evidence.sql's header).
     CASE
       WHEN connect_success IS TRUE THEN 'OK'
       WHEN LOWER(COALESCE(tcp_failure, '')) LIKE '%reset%' THEN 'BLOCKED'
-      WHEN LOWER(COALESCE(tcp_failure, '')) LIKE '%timeout%' THEN 'DOWN'
+      WHEN tcp_failure_result_state IS NOT NULL THEN tcp_failure_result_state
       WHEN tcp_failure IS NOT NULL THEN 'UNKNOWN'
       ELSE 'UNKNOWN'
     END AS result_state,
     CASE
       WHEN connect_success IS TRUE THEN 'tcp.ok'
       WHEN LOWER(COALESCE(tcp_failure, '')) LIKE '%reset%' THEN 'tcp.rst'
-      WHEN LOWER(COALESCE(tcp_failure, '')) LIKE '%timeout%' THEN 'tcp.timeout'
+      WHEN tcp_failure_blocking_detail IS NOT NULL THEN tcp_failure_blocking_detail
       WHEN tcp_failure IS NOT NULL THEN CONCAT('tcp.', LOWER(tcp_failure))
       ELSE 'tcp.unknown'
     END AS blocking_detail,
     CASE
       WHEN LOWER(COALESCE(tcp_failure, '')) LIKE '%reset%' THEN 0.80
       WHEN connect_success IS TRUE THEN 0.70
-      ELSE 0.45
+      ELSE COALESCE(tcp_failure_confidence_score, 0.45)
     END AS confidence_score,
     CAST(NULL AS STRING) AS exclusion_reason
-  FROM `{{ var.project_id }}.stg.ooni_tcp_observations`
+  FROM tcp_source
 ),
 
 tls_source AS (

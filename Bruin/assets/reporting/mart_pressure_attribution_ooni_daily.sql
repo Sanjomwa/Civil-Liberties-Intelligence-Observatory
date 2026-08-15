@@ -112,7 +112,13 @@ SELECT
     COUNTIF(result_state = 'BLOCKED') AS blocked_results,
     COUNTIF(result_state = 'OK') AS ok_results,
     COUNTIF(result_state = 'DOWN') AS down_results,
-    COUNTIF(result_state = 'ERROR') AS error_results,
+    -- TD-82 (2026-08-15): 'ERROR' has never been a member of
+    -- result_state's accepted values (BLOCKED/OK/DOWN/UNKNOWN, per
+    -- int.ooni_experiment_results.sql's own column check) -- this
+    -- COUNTIF was permanently, silently zero. Renamed to count the real
+    -- fourth state instead, so blocked+ok+down+unknown now sums to
+    -- total_experiment_results exactly.
+    COUNTIF(result_state = 'UNKNOWN') AS unknown_results,
 
     COUNT(DISTINCT probe_asn) AS distinct_asns,
     COUNT(DISTINCT measurement_id) AS distinct_measurements,

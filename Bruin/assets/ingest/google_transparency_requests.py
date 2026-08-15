@@ -71,14 +71,48 @@ ENV = resolve_env(fallback="dev")
 require_dev(ENV)
 
 
+def resolve_csv_file(base_path: Path) -> Path:
+    # TD-89/TD-81 (2026-08-15): Google's export tool now nests the current-
+    # format CSV under a dated bundle folder
+    # (government-removals_<start>_<end>_en_v1/), not directly under
+    # base_path -- glob for it rather than hardcoding one dated folder
+    # name, since this will presumably change with each future export.
+    # Bundle folder names embed non-zero-padded dates (e.g.
+    # "government-removals_2025-7-1_2025-12-31_en_v1"), which do not sort
+    # chronologically as plain strings -- pick by file mtime instead, so
+    # the most recently-downloaded export bundle wins regardless of its
+    # folder name's shape.
+    candidates = sorted(
+        base_path.glob("government-removals_*_en_v1/google-government-removal-requests.csv"),
+        key=lambda p: p.stat().st_mtime,
+    )
+    if not candidates:
+        raise FileNotFoundError(
+            f"No google-government-removal-requests.csv found under "
+            f"{base_path}/government-removals_*_en_v1/"
+        )
+    return candidates[-1]
+
+
 def materialize():
-    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google"
-    csv_file = Path(base_path) / "google-government-removal-requests.csv"
-    parquet_out = Path(base_path) / "google_transparency_requests.parquet"
+    base_path = Path("/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google")
+    csv_file = resolve_csv_file(base_path)
+    parquet_out = base_path / "google_transparency_requests.parquet"
 
-    print(f"📂 Reading Google requests CSV: {csv_file.name}")
+    print(f"📂 Reading Google requests CSV: {csv_file}")
 
+    # TD-89/TD-81 (2026-08-15): Google's real current-format export uses
+    # country_name/items_requested, not country/items_requested_removal --
+    # confirmed against the file's own header row. Renamed back to CLIO's
+    # existing column names immediately after reading, so this fix is
+    # scoped to the read only; every downstream consumer (this asset's own
+    # declared columns, stg.google_transparency_requests, and anything
+    # reading that table) is untouched.
     df = pd.read_csv(csv_file)
+    df = df.rename(columns={
+        "country_name": "country",
+        "items_requested": "items_requested_removal",
+    })
     df = df[[
         "time_period", "country", "cldr_territory", "requestor", "product", "reason",
         "number_of_requests", "items_requested_removal",

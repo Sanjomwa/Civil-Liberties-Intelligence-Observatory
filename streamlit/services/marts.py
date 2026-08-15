@@ -1012,7 +1012,7 @@ def get_ooni_corroboration(measurement_date):
             blocked_results,
             ok_results,
             down_results,
-            error_results,
+            unknown_results,
             distinct_asns,
             high_confidence_events,
             medium_confidence_events,
