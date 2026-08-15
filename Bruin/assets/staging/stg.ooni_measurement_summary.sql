@@ -82,6 +82,33 @@ materialization:
     - country
     - test_name
 
+custom_checks:
+  - name: web_connectivity_and_facebook_messenger_still_dormant
+    description: |
+      TD-91 (2026-08-16), Task E. web_connectivity/facebook_messenger's
+      wc_*/facebook_* extraction above was built and verified only
+      against OONI's own spec docs (ts-017-web-connectivity.md,
+      ts-019-facebook-messenger.md), never against real data -- CLIO's
+      corpus has had zero rows of either test type since ingestion began
+      (confirmed 2026-08-15, TD-87 Phase 1). This check's own FAILURE
+      (either count going nonzero) is itself the actionable signal, not
+      a problem to silence: it means one of these test types has started
+      arriving for real, and before trusting ANY verdict this asset or
+      int.ooni_measurement_verdicts derives for it, re-run the same
+      live-sampling verification the 6 real test types got in the
+      TD-87 Phase 1 session (per-test-type field presence and real
+      values, sampled directly from the new rows) -- do NOT assume the
+      spec-derived extraction above is correct until confirmed. Pay
+      particular attention to web_connectivity's test_keys.blocking: it
+      is polymorphic per OONI's own spec (`optional<string|bool>` -- the
+      literal boolean `false` when clean, or one of several strings when
+      anomalous), and this asset's wc_blocking extraction has never been
+      checked against a real value of either shape.
+    query: |
+      SELECT COUNTIF(test_name IN ('web_connectivity', 'facebook_messenger'))
+      FROM `{{ var.project_id }}.stg.ooni_measurement_summary`
+    value: 0
+
 columns:
   - name: measurement_id
     type: string

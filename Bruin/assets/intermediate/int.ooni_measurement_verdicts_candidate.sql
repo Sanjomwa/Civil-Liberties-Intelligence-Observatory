@@ -1,0 +1,366 @@
+/* @bruin
+name: int.ooni_measurement_verdicts_candidate
+type: bq.sql
+connection: bigquery-default
+
+tags:
+  - int_bq
+  - dataset_ooni
+  - ooni_verdict_phase_2
+
+description: |
+  TD-91 (2026-08-16): candidate/publish split for the CONFIRMED guard's
+  write-order. This asset holds the REAL computation (previously all of
+  int.ooni_measurement_verdicts.sql's own body) -- int.ooni_measurement_
+  verdicts.sql is now a trivial `SELECT * FROM this table`, published only
+  after int.ooni_measurement_verdicts_confirmed_guard.sql passes against
+  THIS candidate table, not the already-published one.
+
+  Why: create+replace does not roll back a failed run -- without this
+  split, a CONFIRMED-outside-web_connectivity violation would leave a bad
+  table live and queryable (by Streamlit or any direct query) for the
+  entire window between the violation landing and a fixed rerun
+  succeeding. This closes that exposure the same way
+  intelligence.acled_pressure_regimes_precondition_check's check-before-
+  write pattern does for ACLED.
+
+  Investigated and confirmed cheap before building, not assumed: this
+  table and its upstream (stg.ooni_measurement_summary) are both small,
+  scalar-only tables (222 MiB / 197 MiB respectively, live-measured via
+  __TABLES__) -- nothing like the 63 GiB raw-JSON-carrying
+  stg.ooni_measurements this project's 2026-07-06 cost audit flagged as
+  the pipeline's actual expensive-rebuild risk. Materializing this
+  candidate and then a trivial passthrough copy costs a small fraction of
+  a cent at this project's own $6.25/TiB on-demand pricing -- confirmed
+  with real byte counts, not the cost audit's own already-expensive OONI
+  observation-CTE shape (which reads raw_test_keys directly; this asset
+  does not).
+
+  No naming convention for a "_candidate" pattern existed anywhere else
+  in this repo before this fix (checked) -- this establishes one.
+
+  Everything below this point (grain, CONFIRMED's structural guard layer
+  1, TD-91's psiphon_failure/probe_accuracy_gate corrections) is
+  unchanged from the original int.ooni_measurement_verdicts.sql -- see
+  reports.md's 2026-08-16 TD-91 session entry for the original TD-87
+  Phase 2 design and this session's three corrections.
+
+  OONI's own real, per-measurement verdict vocabulary (OK / CONFIRMED /
+  ANOMALOUS / FAILED), derived from each test's own probe-submitted
+  summary field (stg.ooni_measurement_summary, Phase 1) -- NOT the same
+  thing as result_state, which stays untouched, per-observation, and
+  unconsumed by this asset.
+
+  Grain: one row per measurement_id (OONI's own real grain), deliberately
+  different from result_state's per-observation grain in
+  int.ooni_experiment_results.sql. Consumed only by
+  int.ooni_measurement_verdicts_confirmed_guard.sql and the published
+  int.ooni_measurement_verdicts -- no existing mart or Streamlit page
+  reads this candidate table directly, and none should (query the
+  published table instead).
+
+  measurement_failure (sourced from stg.ooni_measurements.failure, the
+  raw measurement envelope's top-level `failure` key) is confirmed
+  PERMANENTLY dead -- not just currently zero. Verified against OONI's
+  own df-000-base.md spec (no top-level `failure` field defined on the
+  base measurement envelope at all) and two live raw measurements
+  fetched directly from api.ooni.io (a signal and a dnscheck sample, both
+  report_id-matched into CLIO's own ingested tables to rule out
+  survivorship bias -- both landed with full raw JSON fidelity). This is
+  NOT evidence that failed measurements are being dropped before
+  ingestion -- every real per-test failure signal lives at a test-
+  specific path inside test_keys, which stg.ooni_measurement_summary
+  already extracts and this asset already consumes via test_anomaly_flag.
+  See the ooni_verdict CASE below for the one concrete correction this
+  finding produced (psiphon_failure moved from ANOMALOUS to FAILED).
+
+  fingerprint_match_id is always NULL this phase (real fingerprint
+  matching against ooni/blocking-fingerprints is Phase 5, out of scope
+  here) -- the column exists now purely for forward compatibility, and
+  because CONFIRMED's three-layer guard (see
+  int.ooni_measurement_verdicts_confirmed_guard.sql) needs somewhere
+  structurally safe to be built ahead of that real logic landing.
+
+  STRUCTURAL GUARD (layer 1 of 3, see the confirmed_guard asset for layers
+  2-3): fingerprint_match_id is populated ONLY inside wc_confirmed below,
+  a CTE whose SOURCE is filtered to test_name = 'web_connectivity' --
+  never by a bare `CASE WHEN test_name = 'web_connectivity'` predicate
+  mixed into a shared, unfiltered CTE. OONI's CONFIRMED state is
+  structurally possible only for web_connectivity (fingerprint-matched
+  block pages / censorship-associated DNS answers) -- never for Signal,
+  WhatsApp, Telegram, Tor, or any other test. Get this right now so
+  Phase 5 has one safe, pre-isolated place to add real fingerprint-match
+  logic later, rather than requiring a future author to remember to add
+  the test_name filter themselves.
+
+  probe_accuracy_gate grounds a real, earlier-measured finding (an audit
+  found 80/361 BLOCKED TLS rows and 99/100 residual ssl_* UNKNOWN rows
+  carry OONI's own scores.accuracy = 0.0) via
+  marts.dim_ooni_probe_version_accuracy -- see that asset's header for the
+  sourced discard rule (Signal-specific, ooni/probe#2344) and three
+  corrections made in the original design before encoding it (compound
+  version+date condition, cross-test test_version collisions, no
+  engine_version field). TD-91 (2026-08-16): probe_accuracy_gate now
+  gates ooni_verdict directly (see that CASE) -- confirmed the LEFT JOIN
+  to dim_ooni_probe_version_accuracy already existed (the
+  ADR-0001/TD-05-shaped "built but never joined" failure this session
+  checked for did not recur), only the downstream *use* of its result
+  was the still-open decision, resolved this session as exclude-not-flag.
+
+  TD-91 (2026-08-16), Task D -- the NULL sentinel split. ooni_verdict
+  IS NULL currently has THREE distinguishable causes, not two: (1) tor,
+  by design, not implemented this phase -- ooni_verdict_source =
+  'NOT_IMPLEMENTED'; (2) a known-bad-probe-version exclusion (Task B's
+  new exclude-not-flag decision, signal-only today) -- probe_accuracy_gate
+  = 'DISCARDED_BAD_PROBE_VERSION'; (3) a genuine, unexpected per-row
+  extraction failure on an otherwise-implemented, otherwise-scored test
+  type -- test_anomaly_flag hit its own defensive NULL fallback (e.g.
+  signal_backend_status present but neither 'ok' nor 'blocked'). No new
+  sentinel column was needed -- (1) and (2) are already fully
+  distinguishable via the existing ooni_verdict_source/probe_accuracy_gate
+  columns; (3) is simply "NULL and neither of the other two applies."
+  The custom_checks entry below (unknown_extraction_failure_rate_is_zero)
+  monitors (3) specifically, per test_name -- live rate confirmed 0 for
+  every implemented+scored test type as of 2026-08-16 (signal/whatsapp/
+  telegram/psiphon/dnscheck all show 0 unexplained-NULL rows; only tor's
+  by-design NULLs and signal's known-bad-version exclusions exist today).
+  A nonzero rate for any of those five going forward is a real alarm --
+  it means a live OONI field shape changed underneath this asset's
+  assumptions (e.g. a probe update introducing a new
+  signal_backend_status value this CASE doesn't recognize).
+
+depends:
+  - stg.ooni_measurement_summary
+  - marts.dim_ooni_probe_version_accuracy
+
+materialization:
+  type: table
+  strategy: create+replace
+
+custom_checks:
+  - name: unknown_extraction_failure_rate_is_zero
+    description: |
+      TD-91 (2026-08-16). Counts rows where ooni_verdict is NULL for a
+      reason OTHER than tor's by-design NOT_IMPLEMENTED or a known-bad
+      probe-version exclusion -- i.e. test_anomaly_flag genuinely failed
+      to resolve on an implemented, scored test type. Must stay 0; a
+      nonzero count means a live OONI field shape changed underneath
+      this asset's per-test extraction (see this file's own Task D
+      comment above for the three NULL causes and how they're told
+      apart).
+    query: |
+      SELECT COUNT(*)
+      FROM `{{ var.project_id }}.int.ooni_measurement_verdicts_candidate`
+      WHERE ooni_verdict IS NULL
+        AND ooni_verdict_source != 'NOT_IMPLEMENTED'
+        AND probe_accuracy_gate != 'DISCARDED_BAD_PROBE_VERSION'
+    value: 0
+
+columns:
+  - name: measurement_id
+    type: string
+    checks:
+      - name: not_null
+      - name: unique
+  - name: ooni_verdict
+    type: string
+    checks:
+      - name: accepted_values
+        value: [OK, CONFIRMED, ANOMALOUS, FAILED]
+@bruin */
+
+WITH summary AS (
+  SELECT *
+  FROM `{{ var.project_id }}.stg.ooni_measurement_summary`
+),
+
+-- STRUCTURAL GUARD, layer 1: fingerprint_match_id exists ONLY here, and
+-- this CTE's own source is filtered to web_connectivity -- see header.
+-- Always NULL this phase (Phase 5 builds the real ooni/blocking-
+-- fingerprints match here, inside this same filtered CTE, never outside
+-- it).
+wc_confirmed AS (
+  SELECT
+    measurement_id,
+    CAST(NULL AS STRING) AS fingerprint_match_id
+  FROM summary
+  WHERE test_name = 'web_connectivity'
+),
+
+verdicts AS (
+  SELECT
+    s.measurement_id,
+    s.test_name,
+    s.probe_asn,
+    s.probe_network_name,
+    s.country,
+    s.measurement_date,
+    s.measurement_start_time,
+    s.measurement_failure,
+
+    -- TD-91 (2026-08-16): carried through so the final ooni_verdict CASE
+    -- can route it to FAILED directly -- see that CASE for why.
+    s.psiphon_failure,
+
+    wc.fingerprint_match_id,
+
+    CASE
+      WHEN s.test_name = 'web_connectivity' THEN s.wc_control_failure
+      ELSE NULL
+    END AS control_failure,
+
+    CASE
+      WHEN s.test_name = 'web_connectivity'
+        AND s.wc_blocking IS NOT NULL
+        AND s.wc_blocking != 'false'
+        THEN s.wc_blocking
+      ELSE NULL
+    END AS web_blocking_type,
+
+    -- test_anomaly_flag: derived per test_name from Phase 1's real,
+    -- live-verified field vocabulary (see stg.ooni_measurement_summary's
+    -- header for what changed from the original hypothesis). Each arm
+    -- defaults to NULL (not FALSE) when its test's own fields are
+    -- unexpectedly all-NULL -- defensive; never observed live today
+    -- (every real row of every implemented test type has its fields
+    -- populated, confirmed in Phase 1's verification), but matches this
+    -- project's default-safe-not-default-clean discipline.
+    CASE s.test_name
+      WHEN 'web_connectivity' THEN CASE
+        WHEN s.wc_blocking IS NULL THEN NULL
+        WHEN s.wc_blocking = 'false' THEN FALSE
+        ELSE TRUE
+      END
+      WHEN 'signal' THEN CASE
+        WHEN s.signal_backend_status = 'blocked' THEN TRUE
+        WHEN s.signal_backend_status = 'ok' THEN FALSE
+        ELSE NULL
+      END
+      WHEN 'whatsapp' THEN CASE
+        WHEN s.whatsapp_endpoints_status IS NULL
+          AND s.whatsapp_web_status IS NULL
+          AND s.registration_server_status IS NULL THEN NULL
+        WHEN s.whatsapp_endpoints_status = 'blocked'
+          OR s.whatsapp_web_status = 'blocked'
+          OR s.registration_server_status = 'blocked'
+          OR s.whatsapp_endpoints_blocked_count > 0
+          OR s.whatsapp_endpoints_dns_inconsistent_count > 0 THEN TRUE
+        ELSE FALSE
+      END
+      WHEN 'telegram' THEN CASE
+        WHEN s.telegram_tcp_blocking IS NULL
+          AND s.telegram_http_blocking IS NULL
+          AND s.telegram_web_status IS NULL THEN NULL
+        WHEN s.telegram_tcp_blocking IS TRUE
+          OR s.telegram_http_blocking IS TRUE
+          OR s.telegram_web_status = 'blocked' THEN TRUE
+        ELSE FALSE
+      END
+      WHEN 'facebook_messenger' THEN CASE
+        WHEN s.facebook_dns_blocking IS NULL
+          AND s.facebook_tcp_blocking IS NULL THEN NULL
+        WHEN s.facebook_dns_blocking IS TRUE
+          OR s.facebook_tcp_blocking IS TRUE THEN TRUE
+        ELSE FALSE
+      END
+      -- TD-91 (2026-08-16): psiphon_failure no longer feeds
+      -- test_anomaly_flag -- moved to the FAILED branch below (see
+      -- ooni_verdict's own CASE). psiphon has no other test-provided
+      -- anomaly-detection field distinct from "did the probe/tunnel
+      -- break," so it always resolves FALSE here; its verdict is
+      -- decided by the FAILED check ahead of this flag ever being
+      -- consulted for a psiphon_failure row.
+      WHEN 'psiphon' THEN FALSE
+      WHEN 'dnscheck' THEN CASE
+        WHEN s.dnscheck_bootstrap_failure IS NOT NULL THEN TRUE
+        ELSE FALSE
+      END
+      -- tor (not implemented this phase) and any future/unrecognized
+      -- test_name both fall through to NULL here.
+      ELSE NULL
+    END AS test_anomaly_flag,
+
+    CASE s.test_name
+      WHEN 'web_connectivity' THEN 'PROBE_SUMMARY_FIELD'
+      WHEN 'signal' THEN 'PROBE_SUMMARY_FIELD'
+      WHEN 'whatsapp' THEN 'PROBE_SUMMARY_FIELD'
+      WHEN 'telegram' THEN 'PROBE_SUMMARY_FIELD'
+      WHEN 'facebook_messenger' THEN 'PROBE_SUMMARY_FIELD'
+      WHEN 'psiphon' THEN 'PROBE_SUMMARY_FIELD'
+      WHEN 'dnscheck' THEN 'PARTIAL_BOOTSTRAP_ONLY'
+      ELSE 'NOT_IMPLEMENTED'
+    END AS ooni_verdict_source,
+
+    CASE
+      WHEN dim.is_known_bad_version IS TRUE THEN 'DISCARDED_BAD_PROBE_VERSION'
+      WHEN dim.is_known_bad_version IS FALSE THEN 'SCORED'
+      ELSE 'UNKNOWN_VERSION'
+    END AS probe_accuracy_gate
+
+  FROM summary AS s
+  LEFT JOIN wc_confirmed AS wc
+    ON wc.measurement_id = s.measurement_id
+  -- Compound key: test_version values collide across test_name families
+  -- (e.g. '0.2.0' exists for both signal and telegram, independently
+  -- versioned) -- see dim_ooni_probe_version_accuracy's header for how
+  -- this was caught before shipping a bare test_version join.
+  LEFT JOIN `{{ var.project_id }}.marts.dim_ooni_probe_version_accuracy` AS dim
+    ON dim.test_name = s.test_name
+    AND dim.test_version = s.test_version
+)
+
+SELECT
+  *,
+  CASE
+    WHEN fingerprint_match_id IS NOT NULL THEN 'CONFIRMED'
+    -- TD-91 (2026-08-16): probe_accuracy_gate now gates ooni_verdict
+    -- directly. CHOSE: exclude (NULL), not just flag-alongside-a-
+    -- computed-verdict. Reasoning: DISCARDED_BAD_PROBE_VERSION mirrors
+    -- OONI's own real backend behavior -- the vendored score_signal()
+    -- rule this table is built from IS a discard-before-scoring rule
+    -- (scores.accuracy = 0.0 before any anomaly detection is attempted),
+    -- not a mere confidence markdown. Computing ANOMALOUS/OK from a
+    -- signal_backend_status value OONI's own backend would not have
+    -- trusted enough to score at all would silently manufacture a
+    -- classification with no real epistemic backing. CONFIRMED still
+    -- wins ahead of this check -- fingerprint matching is a stronger,
+    -- independent signal (structural web content, not behavioral
+    -- scoring) that the version-accuracy rule was never about. This NULL
+    -- is distinguishable from tor's NOT_IMPLEMENTED NULL via
+    -- probe_accuracy_gate itself (tor's ooni_verdict_source stays
+    -- NOT_IMPLEMENTED, never DISCARDED_BAD_PROBE_VERSION), so a
+    -- downstream consumer can always tell the two apart.
+    WHEN probe_accuracy_gate = 'DISCARDED_BAD_PROBE_VERSION' THEN NULL
+    -- psiphon_failure added here, moved out of test_anomaly_flag. Live
+    -- verification (TD-91 relay session) found CLIO's original
+    -- measurement_failure source (the raw measurement envelope's
+    -- top-level `failure` key) genuinely does not exist in OONI's real
+    -- JSON for any test type -- confirmed against OONI's own
+    -- df-000-base.md spec (no such field defined) and two live raw
+    -- measurements fetched directly from api.ooni.io (signal, dnscheck),
+    -- neither of which has a top-level `failure` sibling to `test_keys`.
+    -- Both sampled measurements DO exist in CLIO's own ingested tables
+    -- (report_id-matched) with full raw JSON fidelity -- ruling out
+    -- survivorship bias; nothing is silently dropped before landing.
+    -- The one real, generic, OONI-attached "the probe itself broke"
+    -- signal (test_keys.failure / test_keys.failed_operation, present as
+    -- a structural key across all 6 test types) is populated live ONLY
+    -- for psiphon (863/50,673 rows) -- 0/rows for signal/whatsapp/
+    -- telegram/dnscheck/tor, confirmed by direct query, not assumed to
+    -- generalize. psiphon_failure's real values ("clientlib: tunnel
+    -- establishment timeout", "StartTunnel called multiple times",
+    -- "psiphonfeat: not enabled", etc.) are probe/tunnel-level breakage,
+    -- matching OONI's own FAILED semantics ("the probe itself broke")
+    -- precisely -- not ANOMALOUS ("signs of possible interference"),
+    -- which is what this fix corrects: these rows were previously
+    -- reachable only via test_anomaly_flag's TRUE branch, folding a
+    -- genuine probe failure into the same bucket as a detected block.
+    WHEN measurement_failure IS NOT NULL
+      OR control_failure IS NOT NULL
+      OR psiphon_failure IS NOT NULL THEN 'FAILED'
+    WHEN test_anomaly_flag IS TRUE THEN 'ANOMALOUS'
+    WHEN test_anomaly_flag IS NULL THEN NULL
+    ELSE 'OK'
+  END AS ooni_verdict,
+  CURRENT_TIMESTAMP() AS int_extracted_at
+FROM verdicts;

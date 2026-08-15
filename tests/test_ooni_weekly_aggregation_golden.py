@@ -17,6 +17,23 @@ for the regime_* join in fact_country_pressure_daily.sql.
 Same pattern as test_acled_pressure_regimes_golden.py: a drift check against
 materialized BigQuery output, not a rerun of the classification SQL against
 a frozen input snapshot. Skipped unless RUN_BIGQUERY_TESTS=1 is set.
+
+NOTE (TD-91, 2026-08-16): the fixture has only 5 test_names (dnscheck,
+psiphon, signal, telegram, whatsapp), not CLIO's full live set of 6 --
+`tor` is absent. This is NOT a Finance-Bill-window-specific gap; verified
+live that `tor` has ZERO rows in int.ooni_experiment_results across its
+ENTIRE history, and zero rows in every one of its four underlying
+protocol-observation staging tables (stg.ooni_{dns,tcp,tls,http}_
+observations). Structural, not incidental: tor's own test_keys nests its
+tcp_connect/tls_handshakes/queries/requests arrays one level deeper,
+inside `targets` (a dict keyed by opaque "ip:port" identifiers), not at
+the top level the way DNS/TCP/TLS/HTTP's exploding UNNEST(JSON_QUERY_
+ARRAY(raw_test_keys, '$.tcp_connect')) (etc.) pattern expects -- the same
+`targets`-is-dict-keyed blocker already flagged for TD-87 Phase 1's own
+stg.ooni_measurement_summary (tor's verdict extraction there is also
+deliberately not implemented, for the same underlying reason). This is
+not an oversight in this fixture -- it is a faithful reflection of a real
+CLIO-wide gap, not a bug this test masks.
 """
 import json
 import os

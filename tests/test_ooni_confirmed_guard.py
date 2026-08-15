@@ -1,16 +1,22 @@
 """
 Static test for TD-87 Phase 2's three-layer CONFIRMED guard, layer 3 of 3
-(see int.ooni_measurement_verdicts.sql's header for layer 1, the
-structural CTE isolation, and
+(see int.ooni_measurement_verdicts_candidate.sql's header for layer 1,
+the structural CTE isolation, and
 int.ooni_measurement_verdicts_confirmed_guard.sql for layer 2, the
 DAG-level runtime check).
+
+TD-91 (2026-08-16): repointed from int.ooni_measurement_verdicts.sql to
+int.ooni_measurement_verdicts_candidate.sql -- the candidate/publish
+split moved all real CONFIRMED-producing logic into the candidate file;
+int.ooni_measurement_verdicts.sql is now a trivial
+`SELECT * FROM candidate` with no CASE logic of its own to check.
 
 OONI's CONFIRMED verdict is structurally possible only for
 test_name = 'web_connectivity' (fingerprint-matched block pages /
 censorship-associated DNS answers) -- never for Signal, WhatsApp,
 Telegram, Tor, or any other test. This test reads int.ooni_measurement_
-verdicts.sql's own source text (not live BigQuery) and asserts, by
-construction:
+verdicts_candidate.sql's own source text (not live BigQuery) and
+asserts, by construction:
 
   1. The literal SQL string 'CONFIRMED' appears exactly once, and only in
      the exact gate `WHEN fingerprint_match_id IS NOT NULL THEN 'CONFIRMED'`
@@ -40,7 +46,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VERDICTS_SQL = (
-    REPO_ROOT / "Bruin" / "assets" / "intermediate" / "int.ooni_measurement_verdicts.sql"
+    REPO_ROOT / "Bruin" / "assets" / "intermediate" / "int.ooni_measurement_verdicts_candidate.sql"
 )
 
 
@@ -58,7 +64,7 @@ def test_confirmed_literal_appears_only_in_fingerprint_gated_branch():
     occurrences = re.findall(r"'CONFIRMED'", sql)
     assert len(occurrences) == 1, (
         f"TD-87 Phase 2 guard regression: expected exactly one SQL string "
-        f"literal 'CONFIRMED' in int.ooni_measurement_verdicts.sql, found "
+        f"literal 'CONFIRMED' in int.ooni_measurement_verdicts_candidate.sql, found "
         f"{len(occurrences)} -- a second occurrence could produce CONFIRMED "
         f"via a path this guard doesn't check."
     )
@@ -70,7 +76,7 @@ def test_fingerprint_match_id_assigned_exactly_once():
     assert len(assignments) == 1, (
         f"TD-87 Phase 2 guard regression: expected exactly one "
         f"'AS fingerprint_match_id' assignment in "
-        f"int.ooni_measurement_verdicts.sql, found {len(assignments)} -- "
+        f"int.ooni_measurement_verdicts_candidate.sql, found {len(assignments)} -- "
         f"a second assignment site could populate it outside the "
         f"web_connectivity-filtered CTE."
     )
@@ -81,7 +87,7 @@ def test_fingerprint_match_id_only_defined_inside_web_connectivity_filtered_cte(
 
     cte_match = re.search(r"wc_confirmed AS \(\s*(.*?)\n\),?\n", raw, re.DOTALL)
     assert cte_match, (
-        "wc_confirmed CTE not found in int.ooni_measurement_verdicts.sql -- "
+        "wc_confirmed CTE not found in int.ooni_measurement_verdicts_candidate.sql -- "
         "this test's structural assumptions no longer match the file."
     )
     cte_body = cte_match.group(1)
