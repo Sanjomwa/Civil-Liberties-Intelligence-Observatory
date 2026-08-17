@@ -22,7 +22,7 @@ inject_css()
 # ============================================================
 
 init_state()
-render_sidebar()
+render_sidebar(show_date_filter=False)
 
 
 # ============================================================
@@ -93,12 +93,12 @@ row = asn_df.iloc[0]
 c1, c2, c3, c4 = st.columns(4)
 
 c1.metric(
-    "Behavior Priority",
+    "Behavioral Priority Score",
     f"{row['behavioral_priority_score']:.3f}"
 )
 
 c2.metric(
-    "Reliability",
+    "Evidence Reliability",
     f"{row['data_reliability_score']:.2f}"
 )
 
@@ -108,7 +108,7 @@ c3.metric(
 )
 
 c4.metric(
-    "Behavior Class",
+    "Behavioral Pattern",
     row["behavioral_class"]
 )
 
@@ -123,10 +123,10 @@ fig = go.Figure()
 
 fig.add_trace(go.Bar(
     x=[
-        "Maturity Signal",
-        "Reliability",
-        "Coverage",
-        "Blocking Intensity"
+        "Evidence Maturity",
+        "Evidence Reliability",
+        "Measurement Coverage",
+        "Blocking Signal Intensity"
     ],
     y=[
         row["maturity_adjusted_signal"],
@@ -173,7 +173,9 @@ apply_layout(
 st.plotly_chart(fig2, use_container_width=True)
 
 st.markdown(f"""
-This ranks {COUNTRY} networks by strategic censorship signal importance.
+This ranks {COUNTRY} networks by the strength and reliability of their
+blocking-related evidence -- networks combining a strong signal with
+consistent measurement coverage rank highest.
 """)
 
 st.divider()

@@ -64,7 +64,7 @@ Seven dimension tables are materialized in `marts` today (confirmed via `git ls-
 |---|---|---|
 | `reporting.mart_political_stress_windows` | `date_key` | Page 1 (National Stress Observatory) |
 | `reporting.mart_protocol_interference_trends` | `(date_key, protocol)` | Pages 2, 3 (Protocol Regime Monitor, Protocol Stress Intelligence) |
-| `reporting.protocol_repression_correlation_mart` | `(measurement_date, protocol)` | Pages 4, 6, 7 (Correlation Engine, Suppression Event Explorer, Finance Bill Incident Report) |
+| `reporting.protocol_repression_correlation_mart` | `(measurement_date, protocol)` | Pages 4, 7 (Correlation Engine — both tabs, including the former separate Suppression Event Explorer page merged in under TD-98 — and Finance Bill Incident Report) |
 | `reporting.asn_behavior_profile_mart` | one row per `asn` (full-history snapshot, **no date grain at all** — TD-02's finding) | Pages 5, 7 |
 | `reporting.mart_pressure_attribution_daily` + `_conflict_drivers` + `_platform_drivers` + `_ooni_daily` | `measurement_date` (daily), `week_start_date` (weekly), `period_start`/`period_end` (semiannual), `measurement_date` respectively — four different real grains, not one (ADR-0006) | Page 9 |
 

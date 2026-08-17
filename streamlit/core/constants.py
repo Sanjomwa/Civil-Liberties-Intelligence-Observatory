@@ -55,6 +55,7 @@ PROJECT_ID = PROJECT_ID
 DATASETS = DATASETS
 REPORTING = f"{PROJECT_ID}.{DATASETS['reporting']}"
 MARTS = f"{PROJECT_ID}.{DATASETS['marts']}"
+FEATURES = f"{PROJECT_ID}.{DATASETS['features']}"
 DEFAULT_START = DEFAULT_START
 DEFAULT_END = DEFAULT_END
 
@@ -186,18 +187,9 @@ DIVERGENCE_STATES = {
     "HIGH_DIVERGENCE": "#E8593C",
 }
 
-
-# ============================================================
-# PAGE REGISTRY
-# ============================================================
-
-PAGES = [
-    "National Stress Observatory",
-    "Protocol Regime Monitor",
-    "Protocol-Repression Correlation",
-    "ASN Behavioral Intelligence",
-    "Suppression Event Explorer",
-    "Finance Bill 2024 Incident Report",
-    "Methodology & Statistical Guardrails",
-    "Pressure Attribution",
-]
+# TD-99 (F5): PAGES list removed 2026-08-17 -- zero consumers anywhere in
+# streamlit/ (confirmed via grep), and it had drifted stale (still listed
+# "Protocol Regime Monitor" and "Suppression Event Explorer", both retired
+# -- see TD-16 and TD-98 respectively). app.py's st.navigation() call is
+# the actual, already-correct single source of truth for page registration
+# and doesn't need a shadow copy here.

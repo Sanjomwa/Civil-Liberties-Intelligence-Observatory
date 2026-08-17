@@ -66,7 +66,7 @@ Protocol-level regime classification for DNS, HTTP, TCP, and TLS — stress heat
 
 ![](screenshot-protocol-repression-correlation-engine.png)
 
-Statistical alignment engine measuring whether protocol anomalies move with national repression-pressure indicators across rolling historical windows.
+Statistical alignment engine measuring whether protocol anomalies move with national repression-pressure indicators across rolling historical windows. Two tabs over the same underlying mart: **Protocol Drill-Down** follows one protocol's correlation over time; **Date Snapshot** follows every protocol on one specific date — useful for reconstructing what happened around a specific incident (TD-98: merged from the former, separate "Suppression Event Explorer" page — same data, two views, one honest weak-correlation disclosure instead of two).
 
 ---
 
@@ -83,14 +83,6 @@ Network-level intelligence view ranking ASNs by blocking intensity, behavioral p
 ![](screenshot-finance-bill-2024-incident-report.png)
 
 Focused reconstruction of the Finance Bill 2024 period, connecting protocol behavior, national pressure signals, and major-provider activity during a known political stress window.
-
----
-
-### Suppression Event Explorer
-
-![](screenshot-suppression-event-explorer.png)
-
-Investigation surface for exploring synchronized censorship escalation windows, correlation states, divergence patterns, and protocol-specific pressure signals.
 
 ---
 
@@ -118,13 +110,12 @@ https://civil-lliberties-intelligence-observatory-toafjdj5xoc.streamlit.app/
 
 A dedicated Welcome page orients first-time visitors — what CLIO is, a one-line guide to every page, a suggested reading order by role (journalist/NGO/legal reader vs. methodology reviewer), and the key caveats stated upfront rather than discovered page-by-page.
 
-Key intelligence surfaces (8 pages beyond Welcome):
+Key intelligence surfaces (7 pages beyond Welcome):
 
 - National Stress Observatory
 - Protocol Intelligence (regime classification, stress heatmap, per-app blocking breakdown)
-- Protocol ↔ Repression Correlation Engine
+- Protocol ↔ Repression Correlation Engine (TD-98: two tabs — Protocol Drill-Down, Date Snapshot — merged from the former separate Suppression Event Explorer page)
 - ASN Behavioral Intelligence
-- Suppression Event Explorer
 - Finance Bill 2024 Incident Report
 - Methodology & Statistical Guardrails
 - Pressure Attribution
@@ -252,11 +243,12 @@ Generated from the repository's tracked files (`git ls-files`), not the local wo
 |   |-- app.py                # Thin st.navigation entrypoint - pages own their
 |   |   |                     # title/icon via st.Page(), not filename parsing
 |   |-- requirements.txt
-|   |-- pages/                # Welcome + 8 pages: National Stress Observatory,
+|   |-- pages/                # Welcome + 7 pages: National Stress Observatory,
 |   |   |                     # Protocol Intelligence (consolidated, TD-16),
-|   |   |                     # Protocol Repression Correlation Engine, ASN
-|   |   |                     # Behavioral Intelligence, Suppression Event Explorer,
-|   |   |                     # Finance Bill 2024 Incident Report, Methodology &
+|   |   |                     # Protocol Repression Correlation Engine (two tabs,
+|   |   |                     # merged with the former Suppression Event Explorer
+|   |   |                     # page, TD-98), ASN Behavioral Intelligence, Finance
+|   |   |                     # Bill 2024 Incident Report, Methodology &
 |   |   |                     # Statistical Guardrails, Pressure Attribution
 |   |-- services/
 |   |   |-- bq.py

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from core.constants import MARTS, REPORTING
+from core.constants import FEATURES, MARTS, REPORTING
 from core.contracts import guard_dataframe_schema
 from services.bq import run_query
 
@@ -152,6 +152,76 @@ def get_regime_classification(start_date, end_date):
             "snapshot_at",
         ],
         title="get_regime_classification",
+    )
+
+
+@st.cache_data(ttl=3600)
+def get_ooni_weekly_signals(start_date, end_date):
+    """TD-97: features.ooni_weekly_signals, grain week_start_date x
+    test_name, Saturday-anchored to match intelligence.acled_pressure_
+    regimes' own anchor (ADR-0011). Two independently-tracked series --
+    anomalous_* (from int.ooni_measurement_verdicts) and blocked_* (from
+    int.ooni_experiment_results) -- selected and returned side by side,
+    never merged into one score, per ADR-0011's explicit non-merge rule.
+    """
+    sql = f"""
+        SELECT
+            week_start_date,
+            test_name,
+            anomalous_rate,
+            anomalous_zscore_12w,
+            anomalous_sparse_baseline_flag,
+            anomalous_low_sample_flag,
+            blocked_rate,
+            blocked_zscore_12w,
+            blocked_sparse_baseline_flag,
+            blocked_low_sample_flag,
+            feature_version,
+            computed_at
+        FROM `{FEATURES}.ooni_weekly_signals`
+        WHERE week_start_date BETWEEN DATE('{start_date}')
+        AND DATE('{end_date}')
+        ORDER BY week_start_date, test_name
+    """
+
+    df = run_query(sql)
+    return _validate_mart_response(
+        df,
+        required_columns=[
+            "week_start_date",
+            "test_name",
+            "anomalous_rate",
+            "anomalous_zscore_12w",
+            "anomalous_sparse_baseline_flag",
+            "anomalous_low_sample_flag",
+            "blocked_rate",
+            "blocked_zscore_12w",
+            "blocked_sparse_baseline_flag",
+            "blocked_low_sample_flag",
+            "feature_version",
+            "computed_at",
+        ],
+        dtype_hints={
+            "week_start_date": "datetime",
+            "test_name": "string",
+            "anomalous_rate": "numeric",
+            "anomalous_zscore_12w": "numeric",
+            "anomalous_sparse_baseline_flag": "any",
+            "anomalous_low_sample_flag": "any",
+            "blocked_rate": "numeric",
+            "blocked_zscore_12w": "numeric",
+            "blocked_sparse_baseline_flag": "any",
+            "blocked_low_sample_flag": "any",
+            "feature_version": "string",
+            "computed_at": "datetime",
+        },
+        non_nullable=[
+            "week_start_date",
+            "test_name",
+            "feature_version",
+            "computed_at",
+        ],
+        title="get_ooni_weekly_signals",
     )
 
 

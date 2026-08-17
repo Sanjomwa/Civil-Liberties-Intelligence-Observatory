@@ -115,11 +115,11 @@ page_guide = [
     ("🔗 Protocol Intelligence",
      "Protocol-level (DNS/TCP/TLS/HTTP) regime classification, stress heatmap, and per-app blocking breakdown."),
     ("📡 Protocol ↔ Repression Correlation Engine",
-     "Statistical alignment between protocol anomalies and national pressure, per protocol, over rolling windows."),
+     "Statistical alignment between protocol anomalies and national pressure -- two tabs: Protocol Drill-Down "
+     "(one protocol over time) and Date Snapshot (every protocol on one date, for reconstructing a specific "
+     "escalation window; merged from the former separate Suppression Event Explorer page, TD-98)."),
     ("🧬 ASN Behavioral Intelligence",
      "Network-level (ASN) ranking by blocking intensity, behavioral priority, and evidence maturity."),
-    ("🧭 Suppression Event Explorer",
-     "Investigate synchronized escalation windows and divergence patterns across the protocol surface."),
     ("📘 Finance Bill 2024 Incident Report",
      "CLIO's flagship validated case study — a forensic reconstruction of the June–July 2024 protest period."),
     ("🧠 Methodology & Statistical Guardrails",
