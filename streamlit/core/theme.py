@@ -1,5 +1,7 @@
 # core/theme.py
 
+import logging
+
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -12,6 +14,8 @@ from core.constants import (
     ALIGNMENT_STATES,
     DIVERGENCE_STATES,
 )
+
+log = logging.getLogger(__name__)
 
 
 # ============================================================
@@ -55,33 +59,56 @@ def apply_layout(fig: go.Figure, title=None):
 # ============================================================
 # COLOR HELPERS
 # ============================================================
+# TD-96 fix (2026-08-17): all seven helpers below share the same silent-
+# fallback pattern -- MAP.get(value, PALETTE["muted"]) -- which is exactly
+# the mechanism that let the old STRESS_LEVELS drift bug (a since-retired
+# color map that stopped matching any live value at both its callsites)
+# render silent gray indefinitely instead of failing visibly. A hard raise
+# is deliberately not used here -- this is a live public dashboard, and
+# crashing a real visitor's page on any future unmapped value is worse than
+# the current silent-gray behavior. Instead, log a WARNING at the moment of
+# fallback so an unmapped value shows up in logs/monitoring; the visible
+# behavior (gray fallback for the end user) is unchanged.
+
+def _color_or_fallback(mapping, value, map_name):
+    color = mapping.get(value)
+
+    if color is None:
+        log.warning(
+            "%s: no color mapped for value %r -- falling back to PALETTE['muted']",
+            map_name, value,
+        )
+        return PALETTE["muted"]
+
+    return color
+
 
 def pressure_level_color(level):
-    return PRESSURE_LEVELS.get(level, PALETTE["muted"])
+    return _color_or_fallback(PRESSURE_LEVELS, level, "PRESSURE_LEVELS")
 
 
 def protocol_color(state):
-    return PROTOCOL_STATES.get(state, PALETTE["muted"])
+    return _color_or_fallback(PROTOCOL_STATES, state, "PROTOCOL_STATES")
 
 
 def confidence_color(level):
-    return CONFIDENCE_LEVELS.get(level, PALETTE["muted"])
+    return _color_or_fallback(CONFIDENCE_LEVELS, level, "CONFIDENCE_LEVELS")
 
 
 def regime_color(regime):
-    return REGIME_STATES.get(regime, PALETTE["muted"])
+    return _color_or_fallback(REGIME_STATES, regime, "REGIME_STATES")
 
 
 def correlation_color(state):
-    return CORRELATION_STATES.get(state, PALETTE["muted"])
+    return _color_or_fallback(CORRELATION_STATES, state, "CORRELATION_STATES")
 
 
 def alignment_color(state):
-    return ALIGNMENT_STATES.get(state, PALETTE["muted"])
+    return _color_or_fallback(ALIGNMENT_STATES, state, "ALIGNMENT_STATES")
 
 
 def divergence_color(state):
-    return DIVERGENCE_STATES.get(state, PALETTE["muted"])
+    return _color_or_fallback(DIVERGENCE_STATES, state, "DIVERGENCE_STATES")
 
 
 # ============================================================

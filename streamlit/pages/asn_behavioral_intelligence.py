@@ -49,11 +49,18 @@ Behavioral observability profiles across {COUNTRY} networks.
 
 This reveals:
 
-• which ASNs emit strongest censorship evidence  
-• dominant protocol pressure signatures  
-• network reliability maturity  
-• escalation coupling behavior  
+• which ASNs emit strongest censorship evidence
+• dominant protocol pressure signatures
+• network reliability maturity
+• escalation coupling behavior
 • observability concentration across providers
+
+**ASN here is the network OONI probes measured from, not a confirmed
+location of interference (TD-95).** These profiles reflect what was
+observed as unreachable from probes on that network — not that the
+named ASN itself performed the blocking, as opposed to upstream/transit
+interference or a destination service's own geoblocking. See
+Methodology & Statistical Guardrails for detail.
 """)
 
 
@@ -140,7 +147,8 @@ st.markdown("""
 **Plain English**
 
 Higher values indicate stronger and more statistically trustworthy
-censorship evidence from this network.
+evidence of interference observed from probes on this network — not
+confirmation that this network itself is the point of interference.
 """)
 
 st.divider()

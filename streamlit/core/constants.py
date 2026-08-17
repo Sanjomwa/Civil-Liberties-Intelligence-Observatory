@@ -75,7 +75,7 @@ PRESSURE_LEVELS = {
     "LOW": "#2FA36B",
     "MODERATE": "#F0B34A",
     "ELEVATED": "#E8593C",
-    "SEVERE": "#B42318",
+    "SEVERE": "#FF3B5C",
 }
 
 
@@ -120,18 +120,44 @@ REGIME_STATES = {
     "REPRESSION": "#F0B34A",
     "CONTESTATION": "#EF9F27",
     "ESCALATION": "#E8593C",
-    "CRISIS": "#B42318",
+    "CRISIS": "#FF3B5C",
 }
+
+# TD-96 fix (2026-08-17): CRISIS/SEVERE were both #B42318, which measured
+# 2.95:1 contrast against PALETTE["bg"] (#0D0D0F) -- below the 3:1 WCAG
+# floor -- and had lower luminance than CONFLICT and ESCALATION, two
+# nominally-less-severe states in the same ramp. #FF3B5C clears 5.58:1
+# against bg (also above ESCALATION's 5.48:1 and CONFLICT's 4.91:1, fixing
+# the non-monotonic ramp) and shifts hue toward crimson/rose (~350 degrees)
+# rather than a brighter version of ESCALATION's orange-red (~10 degrees),
+# so the two remain visually distinguishable rather than just both being
+# "bright red." Brighter same-hue reds were tried and rejected -- they all
+# landed within ~1.06-1.34:1 contrast of ESCALATION, i.e. still
+# near-indistinguishable by luminance. Paired with a non-color icon marker
+# on the two most severe badges -- see components/status.py's
+# _SEVERITY_ICONS -- since hue alone is not a reliable signal for
+# colorblind readers.
 
 
 # ============================================================
 # CORRELATION STATES
 # ============================================================
+# TD-96 fix (2026-08-17): WEAK_OR_NO_RELATIONSHIP was #2FA36B, the same
+# green used for "healthy"/"low" states elsewhere -- falsely reassuring,
+# since CLIO's real correlation data is almost always weak (per ADR-0011,
+# STRONG_RELATIONSHIP has never once occurred in Kenya's data). It is also
+# a distinct epistemic state from INSUFFICIENT_HISTORY/ZERO_VARIANCE_WINDOW
+# ("couldn't test it," missing data) -- "tested it, found nothing" deserves
+# its own identity, not the same gray as "no data." #6B8CAE is a muted
+# steel-blue: clearly not the green/amber/red severity ramp, and visibly
+# distinct from the flat #6B7280 gray (contrast ratio between the two is
+# 1.38:1, and #6B8CAE carries a real blue hue/saturation the neutral gray
+# lacks).
 
 CORRELATION_STATES = {
     "STRONG_RELATIONSHIP": "#E8593C",
     "MODERATE_RELATIONSHIP": "#F0B34A",
-    "WEAK_OR_NO_RELATIONSHIP": "#2FA36B",
+    "WEAK_OR_NO_RELATIONSHIP": "#6B8CAE",
     "INSUFFICIENT_HISTORY": "#6B7280",
     "ZERO_VARIANCE_WINDOW": "#6B7280",
 }

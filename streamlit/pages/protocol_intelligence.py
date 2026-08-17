@@ -364,8 +364,11 @@ with tab_reliability:
         apply_layout(fig_apps, "Blocking Signals by App and Protocol Layer")
         st.plotly_chart(fig_apps, use_container_width=True)
         st.info(
-            "Counts real blocking events (not just observations) per app and "
-            "per protocol layer -- DNS, TCP, TLS, HTTP."
+            "Counts observations flagged as blocking signals (not just raw "
+            "observations) per app and per protocol layer -- DNS, TCP, TLS, "
+            "HTTP. These are OONI vantage-point signals: observed as "
+            "unreachable from a Kenyan probe, not a confirmed claim about "
+            "where in the network path the interference occurs (TD-95)."
         )
 
         st.dataframe(

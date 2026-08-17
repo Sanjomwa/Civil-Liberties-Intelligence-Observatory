@@ -52,10 +52,16 @@ across {COUNTRY}'s protocol surface.
 
 This page reconstructs suppression episodes by aligning:
 
-• protocol anomaly transitions  
-• national pressure shifts  
-• statistical synchronization  
+• protocol anomaly transitions
+• national pressure shifts
+• statistical synchronization
 • divergence and recovery behavior
+
+**Protocol anomalies here are observed as unreachable from OONI's Kenyan
+measurement vantage points, not confirmed en-route interference location
+(TD-95)** — the pipeline cannot yet distinguish local Kenyan interference
+from upstream/transit interference or a destination service's own
+geoblocking decision. See Methodology & Statistical Guardrails for detail.
 """)
 
 

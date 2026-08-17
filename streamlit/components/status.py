@@ -27,6 +27,17 @@ _CONFIDENCE_ICONS = {
     "UNKNOWN": "?",
 }
 
+# TD-96 fix (2026-08-17): CRISIS (REGIME_STATES) and SEVERE (PRESSURE_LEVELS)
+# are the top tier of their respective severity ramps and now share a color
+# (#FF3B5C) that is only ~1.0-1.2:1 contrast from ESCALATION/ELEVATED's
+# orange-red -- distinguishable by hue, but hue alone isn't a reliable
+# signal for colorblind readers. This icon prefix is a non-color marker for
+# just these two most-severe values, same pattern as _CONFIDENCE_ICONS.
+_SEVERITY_ICONS = {
+    "CRISIS": "⚠",  # warning triangle
+    "SEVERE": "⚠",
+}
+
 
 def render_state_badge(label: str, value, color: str) -> None:
     """
@@ -39,6 +50,7 @@ def render_state_badge(label: str, value, color: str) -> None:
     """
 
     display = "—" if value is None or (isinstance(value, float) and value != value) else str(value)
+    icon = _SEVERITY_ICONS.get(display, "")
     r, g, b = _hex_to_rgb(color)
 
     st.markdown(
@@ -49,7 +61,7 @@ def render_state_badge(label: str, value, color: str) -> None:
                  style="background: rgba({r},{g},{b},0.18);
                         color: {color};
                         border: 1px solid rgba({r},{g},{b},0.5);">
-                {display}
+                {icon + " " if icon else ""}{display}
             </div>
         </div>
         """,

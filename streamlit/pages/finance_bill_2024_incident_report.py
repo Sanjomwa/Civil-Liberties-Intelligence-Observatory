@@ -329,9 +329,13 @@ st.plotly_chart(
 )
 
 st.markdown(f"""
-These are large {COUNTRY} network providers showing
-elevated blocking behavior in their overall observed history,
-not specifically during the Finance Bill window above.
+These are large {COUNTRY} network providers whose subscriber networks
+showed elevated blocking signals in their overall observed history, not
+specifically during the Finance Bill window above. As with all OONI-derived
+findings on this dashboard, "blocking" here means observed as unreachable
+from a probe on that provider's network — it does not establish that the
+provider itself performed the blocking, as opposed to upstream/transit
+interference or a destination service's own geoblocking (TD-95).
 """)
 
 # ============================================================

@@ -401,6 +401,24 @@ the remaining 80/361 were each traced to a documented OONI
 known-bad-probe-version exclusion, not a genuine disagreement.
 """)
 
+st.warning("""
+**OONI findings are attributed at Kenya-country grain from probe location
+alone (TD-95, Phase 0).** OONI's vantage point is the probe's own network
+location -- this pipeline cannot currently distinguish local Kenyan
+interference from upstream/transit interference outside Kenya, or from a
+destination service's own geoblocking or sanctions-compliance decision.
+No existing validation method catches this: it checks classification
+agreement, not vantage-point correctness, and both sides of that check
+share the same probe.
+
+Every OONI-derived finding on this dashboard should be read as **"observed
+as unreachable from this vantage point,"** not as a confirmed claim about
+where in the network path the interference occurs. A `path_attribution_state`
+column (`UNKNOWN` / `VANTAGE_ONLY`) that would carry this distinction into
+the underlying marts is designed but not yet implemented -- see TD-95 for
+the full remediation plan.
+""")
+
 attribution_footer(["ACLED", "OONI"])
 
 st.divider()
