@@ -262,3 +262,9 @@ reports.md
 # generated JSON, not source, disposable/regeneratable via run_live_windows.py.
 llm_report_writer/run_live_windows_results.json
 
+# TD-100/ADR-0013 agreement-check harness: per-run fetch checkpoints (which
+# report_ids a specific run has already pulled from OONI's API). Disposable
+# resume state, not source -- distinct from config/coverage_log.json (the
+# cross-run rotation log), which IS versioned.
+Bruin/scripts/agreement_check/.checkpoints/
+

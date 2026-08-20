@@ -375,7 +375,7 @@
     "2024-05-11": {
       "dnscheck": {
         "total_scored_measurements": 11489,
-        "anomalous_count": 89
+        "anomalous_count": 0
       },
       "psiphon": {
         "total_scored_measurements": 322,
@@ -397,7 +397,7 @@
     "2024-05-18": {
       "dnscheck": {
         "total_scored_measurements": 12347,
-        "anomalous_count": 68
+        "anomalous_count": 0
       },
       "psiphon": {
         "total_scored_measurements": 361,
@@ -419,7 +419,7 @@
     "2024-05-25": {
       "dnscheck": {
         "total_scored_measurements": 14526,
-        "anomalous_count": 1
+        "anomalous_count": 0
       },
       "psiphon": {
         "total_scored_measurements": 373,
@@ -441,7 +441,7 @@
     "2024-06-01": {
       "dnscheck": {
         "total_scored_measurements": 12088,
-        "anomalous_count": 3
+        "anomalous_count": 0
       },
       "psiphon": {
         "total_scored_measurements": 311,
@@ -463,7 +463,7 @@
     "2024-06-08": {
       "dnscheck": {
         "total_scored_measurements": 13899,
-        "anomalous_count": 2
+        "anomalous_count": 0
       },
       "psiphon": {
         "total_scored_measurements": 395,
@@ -485,7 +485,7 @@
     "2024-06-15": {
       "dnscheck": {
         "total_scored_measurements": 20350,
-        "anomalous_count": 36
+        "anomalous_count": 0
       },
       "psiphon": {
         "total_scored_measurements": 557,
@@ -507,7 +507,7 @@
     "2024-06-22": {
       "dnscheck": {
         "total_scored_measurements": 40755,
-        "anomalous_count": 34
+        "anomalous_count": 0
       },
       "psiphon": {
         "total_scored_measurements": 1103,
@@ -529,7 +529,7 @@
     "2024-06-29": {
       "dnscheck": {
         "total_scored_measurements": 31333,
-        "anomalous_count": 24
+        "anomalous_count": 0
       },
       "psiphon": {
         "total_scored_measurements": 821,
@@ -551,7 +551,7 @@
     "2024-07-06": {
       "dnscheck": {
         "total_scored_measurements": 28518,
-        "anomalous_count": 226
+        "anomalous_count": 0
       },
       "psiphon": {
         "total_scored_measurements": 755,
@@ -573,7 +573,7 @@
     "2024-07-13": {
       "dnscheck": {
         "total_scored_measurements": 3585,
-        "anomalous_count": 10
+        "anomalous_count": 0
       },
       "psiphon": {
         "total_scored_measurements": 89,

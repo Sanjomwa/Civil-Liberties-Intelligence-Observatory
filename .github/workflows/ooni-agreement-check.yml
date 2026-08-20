@@ -1,0 +1,76 @@
+name: OONI Agreement Check
+
+# TD-100/ADR-0013 (steps 1-4): standing guardrail that samples CLIO's own
+# OONI-derived verdicts, fetches OONI's own real classification for the same
+# measurements via their public /api/v1/measurements API, and flags new
+# disagreement signatures or panel drift. Runs in `monitor` mode only --
+# `baseline` mode (the wide, one-off per-test-type audits) is invoked
+# manually via the harness script directly, not through this workflow.
+#
+# Dispatch-only for now, by design: config/panel.json is empty until the
+# later, separate baseline sessions (whatsapp/telegram/dnscheck) populate
+# it, so a scheduled run today would only ever exercise the rotating-sample
+# half. The weekly schedule below is commented out on purpose -- enabling it
+# is a one-line uncomment once the panel has real entries, not a rebuild.
+#
+# "on":
+#   schedule:
+#     - cron: "0 6 * * 1"
+
+"on":
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: "OONI test_name to check (signal, whatsapp, telegram, dnscheck, psiphon)"
+        required: true
+        default: "signal"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GOOGLE_CLOUD_PROJECT: encoded-joy-485413-k5
+
+jobs:
+  ooni-agreement-check:
+    name: Check CLIO's OONI verdicts against OONI's own live data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/245097041714/locations/global/workloadIdentityPools/clio-dev/providers/github'
+          service_account: 'bruin-ci@encoded-joy-485413-k5.iam.gserviceaccount.com'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-cloud-bigquery==3.41.0 requests==2.31.0 pyyaml
+      - name: Run OONI agreement check (monitor mode)
+        id: agreement_check
+        run: |
+          set +e
+          python Bruin/scripts/agreement_check/ooni_agreement_check.py \
+            --test-type "${{ inputs.test_type }}" \
+            --mode monitor
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit "$code"
+      - name: Explain the exit code in the job summary
+        if: always()
+        run: |
+          code="${{ steps.agreement_check.outputs.exit_code }}"
+          case "$code" in
+            0) echo "### PASS (exit 0): no new disagreement signatures, panel unchanged." >> "$GITHUB_STEP_SUMMARY" ;;
+            1) echo "### FAIL (exit 1): new, non-allowlisted disagreement signature found." >> "$GITHUB_STEP_SUMMARY" ;;
+            2) echo "### FAIL (exit 2): panel regression -- CLIO's own verdict changed on a panel row." >> "$GITHUB_STEP_SUMMARY" ;;
+            3) echo "### WARN (exit 3): panel external drift -- OONI's real answer changed on a panel row." >> "$GITHUB_STEP_SUMMARY" ;;
+            4) echo "### INCONCLUSIVE (exit 4): fetch error rate exceeded 20%, results not trusted." >> "$GITHUB_STEP_SUMMARY" ;;
+            5) echo "### ERROR (exit 5): operational failure (BigQuery/config/CLI usage)." >> "$GITHUB_STEP_SUMMARY" ;;
+            *) echo "### Unrecognized exit code: $code" >> "$GITHUB_STEP_SUMMARY" ;;
+          esac

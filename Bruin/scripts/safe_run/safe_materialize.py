@@ -129,6 +129,21 @@ CONTRACT_BOUND_ASSETS = {
     ),
 }
 
+# TD-100/ADR-0013 (steps 1-4): a printed reminder, not a gate -- verified
+# live (2026-08-20) that the published verdict table's own dependency chain
+# is stg.ooni_measurement_summary -> int.ooni_measurement_verdicts_candidate
+# -> int.ooni_measurement_verdicts_confirmed_guard / int.ooni_measurement_
+# verdicts. A cascade that reaches ANY of these -- as a root or via
+# downstream closure -- has touched the layer the agreement-check harness
+# (Bruin/scripts/agreement_check/) exists to validate against OONI's own
+# live data.
+OONI_VERDICT_LAYER_ASSETS = {
+    "stg.ooni_measurement_summary",
+    "int.ooni_measurement_verdicts_candidate",
+    "int.ooni_measurement_verdicts_confirmed_guard",
+    "int.ooni_measurement_verdicts",
+}
+
 # Per-rebuild scan volumes, measured in the 2026-07-06 cost audit
 # (INFORMATION_SCHEMA.JOBS_BY_PROJECT, on-demand us-central1 at
 # $6.25/TiB). Every asset not listed here was measured sub-GiB per
@@ -259,6 +274,20 @@ def check_contract_bound(names: set[str], allow: bool) -> None:
     sys.exit(EXIT_REFUSED)
 
 
+def check_ooni_verdict_reminder(names: set[str]) -> None:
+    hits = sorted(names & OONI_VERDICT_LAYER_ASSETS)
+    if not hits:
+        return
+    log.info(
+        "REMINDER: this cascade touches CLIO's OONI verdict layer (%s). "
+        "Consider dispatching ooni-agreement-check.yml (or running "
+        "Bruin/scripts/agreement_check/ooni_agreement_check.py locally) to "
+        "confirm classifications still agree with OONI's own live data "
+        "(TD-100/ADR-0013).",
+        ", ".join(hits),
+    )
+
+
 def run_bruin(asset_path: Path, passthrough: list[str]) -> int:
     """Invoke `bruin run --downstream <asset>`, streaming output live.
 
@@ -343,6 +372,7 @@ def main() -> int:
              len(roots), len(scope), describe_scope(scope))
 
     check_contract_bound(scope, args.allow_contract_bound)
+    check_ooni_verdict_reminder(scope)
 
     if args.dry_run:
         log.info("--dry-run: nothing was executed.")

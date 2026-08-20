@@ -1,0 +1,25 @@
+# OONI agreement-check disagreement allowlist, TD-100/ADR-0013 steps 1-4.
+#
+# Mirrors Bruin/scripts/staleness_check/staleness_allowlist.json's shape
+# (every entry carries a TD reference and a one-line reason) applied to a
+# different guardrail. A disagreement signature the harness finds that is
+# NOT listed here is treated as NEW and fails the run (see
+# ooni_agreement_check.py's exit codes). Prune an entry once its
+# underlying TD item is fully resolved and the signature no longer
+# appears live -- an unpruned entry silently hides a regression the same
+# way an unpruned staleness-allowlist entry would.
+#
+# Each entry matches on the disagreement signature's fields; use the
+# string "*" for a field to match any value (e.g. any hostname_or_target
+# for a given verdict/booleans combination).
+#
+# entries:
+#   - test_name: signal
+#     clio_verdict: ANOMALOUS
+#     ooni_anomaly: true
+#     ooni_confirmed: false
+#     ooni_failure: false
+#     hostname_or_target: "*"
+#     td_ref: TD-00
+#     reason: "example only -- delete once a real entry is added"
+entries: []

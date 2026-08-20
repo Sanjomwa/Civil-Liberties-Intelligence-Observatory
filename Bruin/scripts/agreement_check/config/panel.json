@@ -1,0 +1,5 @@
+{
+  "_comment": "Fixed monitor-mode panel, TD-100/ADR-0013 steps 1-4. Deliberately empty in this session -- populated by the later baseline sessions (whatsapp/telegram/dnscheck), which is separate, later relay-prompt scope. Each entry pins one measurement (report_id, and input for multi-input tests) together with CLIO's verdict and OONI's real answer AT THE TIME IT WAS ADDED to the panel, so a later monitor run can tell apart a CLIO-side regression (clio_verdict changed since the entry was recorded) from external drift (ooni's own answer changed) on the exact same measurement, rather than lumping both under one alarm.",
+  "schema_version": 1,
+  "entries": []
+}

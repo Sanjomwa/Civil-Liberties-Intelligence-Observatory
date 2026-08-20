@@ -1,0 +1,61 @@
+{
+  "_comment": "TD-101 Phase 3 (2026-08-20) pinned panel for the dnscheck bootstrap-failure FAILED/ANOMALOUS carve-out. Ground truth here is TD-55's own sampled evidence (whole-session bogoning of DoH/DoT resolver hostnames while messaging-app DNS resolved normally on the same network-day, already classified BLOCKED @ 0.90 in int.ooni_experiment_results.sql and regression-locked by tests/test_ooni_dns_bogon_classification.py) plus this session's own live investigation of the five non-bogon values -- NOT OONI's own /api/v1/measurements API, which is confirmed degenerate for dnscheck (TD-103) and must not be treated as validation for any entry below.",
+  "entries": [
+    {
+      "measurement_id": "0016aeee19e71bcc85e1f48a884109c74f3de7f869a1862b47e6873a447f4112",
+      "measurement_date": "2025-03-08",
+      "probe_asn": 33771,
+      "dnscheck_bootstrap_failure": "dns_bogon_error",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "TD-55's carved-out exception: the probe engine's own bogon verdict, already validated as real manipulation (whole-session bogoning) and BLOCKED at 0.90 confidence elsewhere in this pipeline -- must stay ANOMALOUS, never FAILED."
+    },
+    {
+      "measurement_id": "0019887534bb32175f273e81474b19376f87b87876911eb31db50383af1230e0",
+      "measurement_date": "2024-02-07",
+      "probe_asn": 15808,
+      "dnscheck_bootstrap_failure": "dns_bogon_error",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Second bogon example, different probe_asn/date, same TD-55 exception."
+    },
+    {
+      "measurement_id": "002b35571a8d0826bcb7c0bbfdebc50c0213d8286894eb2c8b74ef0689954cd8",
+      "measurement_date": "2024-11-27",
+      "probe_asn": 30844,
+      "dnscheck_bootstrap_failure": "dns_nxdomain_error",
+      "expected_ooni_verdict": "FAILED",
+      "note": "This session's largest non-bogon value (33.1% of all non-NULL bootstrap failures); investigated live and found dominated by permanently-dead/typo'd DoH/DoT target hostnames in OONI's own dnscheck target list (e.g. doh.appliedprivacy.ne, 0/629 successes across the entire ingestion window) -- probe/test-infrastructure artifact, not manipulation."
+    },
+    {
+      "measurement_id": "00008fa4f7ea86236d7d752aa14e6bf08460947491c0d91b11d17cb7b76389e4",
+      "measurement_date": "2024-10-31",
+      "probe_asn": 33771,
+      "dnscheck_bootstrap_failure": "generic_timeout_error",
+      "expected_ooni_verdict": "FAILED",
+      "note": "Same probe/environment-artifact shape TD-47 Phase 1 already established for this test type's other non-bogon failure signals -- genuinely 'the probe/network broke,' not interference-consistent."
+    },
+    {
+      "measurement_id": "00d4fe30e24aae42fdd757d8ad45d9a40fc28a6b2d9443f6eb7618ecea17bcbe",
+      "measurement_date": "2024-06-28",
+      "probe_asn": 328490,
+      "dnscheck_bootstrap_failure": "android_dns_cache_no_data",
+      "expected_ooni_verdict": "FAILED",
+      "note": "An Android-OS-level DNS cache condition, not a network-observed failure -- structurally a probe/environment artifact."
+    },
+    {
+      "measurement_id": "02787e118a147319c29de7b62c90ec25b021273307b7c10bd2cc177bd50611b0",
+      "measurement_date": "2024-07-18",
+      "probe_asn": 12455,
+      "dnscheck_bootstrap_failure": "dns_temporary_failure",
+      "expected_ooni_verdict": "FAILED",
+      "note": "Low-volume (46/9,412 live), a transient/SERVFAIL-adjacent resolver condition -- no manipulation-shaped concentration found when investigated."
+    },
+    {
+      "measurement_id": "01cbbc5d4c0c92a482717fdf62ccd449163833d09df32f539163e763d5318d8c",
+      "measurement_date": "2023-11-09",
+      "probe_asn": 36926,
+      "dnscheck_bootstrap_failure": "dns_server_misbehaving",
+      "expected_ooni_verdict": "FAILED",
+      "note": "The smallest live value (16/9,412) -- a generic resolver-side SERVFAIL-class error, not manipulation-shaped."
+    }
+  ]
+}

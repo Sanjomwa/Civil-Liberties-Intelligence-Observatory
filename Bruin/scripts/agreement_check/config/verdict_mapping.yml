@@ -1,0 +1,44 @@
+# OONI agreement-check verdict mapping (TD-100 / ADR-0013, steps 1-4).
+#
+# Global, not per-test-type: CLIO's ooni_verdict vocabulary is declared
+# once, at the whole-table level (int.ooni_measurement_verdicts's own
+# @bruin accepted_values check: OK / CONFIRMED / ANOMALOUS / FAILED) and
+# is identical across every test_name -- confirmed against the live table
+# schema and the published asset's header before building this file. The
+# relay prompt that commissioned this harness assumed a per-test-type
+# mapping; that assumption did not hold, so this file is intentionally
+# one shared mapping, not one per test type.
+#
+# OONI's public /api/v1/measurements API returns three independent
+# booleans per result (anomaly, confirmed, failure) -- NOT mutually
+# exclusive. A live signal fetch during this build returned
+# anomaly=true AND failure=true on the same row. This precedence list
+# resolves the three booleans to a single label, using the exact
+# precedence order CLIO's own
+# int.ooni_measurement_verdicts_candidate.sql CASE statement already
+# uses (CONFIRMED > FAILED > ANOMALOUS > OK) -- this is not a guess: it
+# is the same precedence decision-log.md's 2026-08-15 TD-93 entry
+# validated with a 66-measurement matched-pair sample against this exact
+# API, reaching 100% substantive agreement. Reusing it here rather than
+# re-deriving a new one.
+precedence:
+  - label: CONFIRMED
+    when: confirmed
+  - label: FAILED
+    when: failure
+  - label: ANOMALOUS
+    when: anomaly
+  - label: OK
+    when: default
+
+# CLIO ooni_verdict values that are NOT a real classification -- excluded
+# from the agreement/disagreement denominator entirely (bucketed as
+# CLIO_UNSCORED in the harness output), never counted as a disagreement.
+# Verified against int.ooni_measurement_verdicts_candidate.sql's three
+# documented NULL causes (tor NOT_IMPLEMENTED, DISCARDED_BAD_PROBE_
+# VERSION, and a genuine per-row extraction failure) -- all three surface
+# as CLIO ooni_verdict IS NULL, and TD-93's own matched-pair methodology
+# already treated the bad-probe-version population as "substantively
+# fine, just a label mismatch" rather than a real disagreement.
+unscored_clio_values:
+  - null

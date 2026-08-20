@@ -121,6 +121,53 @@ description: |
   checked for did not recur), only the downstream *use* of its result
   was the still-open decision, resolved this session as exclude-not-flag.
 
+  TD-101 Phase 3 (2026-08-20): dnscheck's FAILED tier is now reachable.
+  Previously EVERY non-NULL dnscheck_bootstrap_failure value routed to
+  ANOMALOUS in full, and FAILED was structurally unreachable for this
+  test type (TD-101's own original finding). Live investigation of the
+  full value distribution (9,412 non-NULL rows: dns_bogon_error 4,523,
+  dns_nxdomain_error 3,120, generic_timeout_error 1,300, android_dns_
+  cache_no_data 407, dns_temporary_failure 46, dns_server_misbehaving 16)
+  found dns_bogon_error is the one value with a real, already-validated
+  manipulation signature (TD-55: whole-session bogoning of DoH/DoT
+  resolver hostnames while messaging-app DNS resolved normally on the
+  same network-day, already classified BLOCKED @ 0.90 in int.ooni_
+  experiment_results.sql, regression-locked by tests/test_ooni_dns_
+  bogon_classification.py) -- it keeps its ANOMALOUS classification,
+  unchanged. Every OTHER non-NULL value newly routes to FAILED, having
+  been separately investigated and found NOT manipulation-shaped:
+  dns_nxdomain_error, the second-largest at 33.1% of the total, is
+  dominated by a handful of permanently-dead/typo'd DoH/DoT target
+  hostnames in OONI's own dnscheck target list (doh.appliedprivacy.ne --
+  almost certainly a typo for appliedprivacy.at -- 0/629 successes
+  across this table's entire 2023-06-12 through 2025-03-05 ingestion
+  window; draco.plan9-ns2.com and dnses.alekberg.net show the same
+  100%-failure, permanently-dead signature), the same probe/test-
+  infrastructure-artifact shape TD-47 Phase 1 already established for
+  this test type's `lookups`-layer failures. This is a narrow carve-out,
+  not a blanket rule -- an earlier design draft that would have routed
+  ALL non-NULL values to FAILED was caught by advisory review before any
+  code was written, precisely because it would have silently reverted
+  TD-55. See the ooni_verdict CASE below for the actual predicate (self-
+  contained, excludes dns_bogon_error explicitly rather than relying on
+  CASE branch ordering) and reports.md for the full session account,
+  including why TD-47 Phase 1/Phase 2a's answers-layer staging tables
+  are deliberately not joined here. ooni_verdict_source stays
+  'PARTIAL_BOOTSTRAP_ONLY' for dnscheck (no existing consumer of the
+  literal's value requires changing it, confirmed by grep across
+  streamlit/, Bruin/assets/marts/, Bruin/assets/features/, tests/, and
+  Bruin/scripts/agreement_check/) -- the name still accurately describes
+  the scope (bootstrap only, never the lookups layer), just with a
+  fuller-than-before routing of that one field's real values now that
+  FAILED is reachable. This fix's cascade (features.ooni_weekly_signals
+  and the Streamlit National Stress Observatory page's dnscheck-
+  selectable anomalous_rate series) moves dnscheck's live ANOMALOUS rate
+  down materially, expected and correct, not a regression -- see
+  reports.md for before/after figures. The tests/fixtures/ooni_weekly_
+  golden/finance_bill_2024.json golden fixture's dnscheck ooni_verdict_
+  weekly values are re-frozen in the same session, matching TD-93's own
+  precedent for the exact same fixture.
+
   TD-91 (2026-08-16), Task D -- the NULL sentinel split. ooni_verdict
   IS NULL currently has THREE distinguishable causes, not two: (1) tor,
   by design, not implemented this phase -- ooni_verdict_source =
@@ -221,6 +268,14 @@ verdicts AS (
     -- and stg.ooni_measurement_summary.sql's header for the full finding.
     s.signal_legacy_endpoint_nxdomain_only,
 
+    -- TD-101 Phase 3 (2026-08-20): carried through so the final
+    -- ooni_verdict CASE can route dnscheck's non-bogon bootstrap
+    -- failures to FAILED, while excepting dns_bogon_error -- see that
+    -- CASE and this file's header for the full TD-55/TD-101 reasoning
+    -- (an earlier blanket-FAILED design draft was caught by advisory
+    -- review before any code was written, precisely to avoid this).
+    s.dnscheck_bootstrap_failure,
+
     wc.fingerprint_match_id,
 
     CASE
@@ -290,8 +345,13 @@ verdicts AS (
       -- decided by the FAILED check ahead of this flag ever being
       -- consulted for a psiphon_failure row.
       WHEN 'psiphon' THEN FALSE
+      -- TD-101 Phase 3 (2026-08-20): narrowed from "any non-NULL
+      -- bootstrap failure" to bogon only -- every other non-NULL value
+      -- now routes to FAILED instead (see the ooni_verdict CASE below
+      -- and this file's header for the full reasoning; this is a narrow
+      -- carve-out, not a blanket rule).
       WHEN 'dnscheck' THEN CASE
-        WHEN s.dnscheck_bootstrap_failure IS NOT NULL THEN TRUE
+        WHEN LOWER(COALESCE(s.dnscheck_bootstrap_failure, '')) = 'dns_bogon_error' THEN TRUE
         ELSE FALSE
       END
       -- tor (not implemented this phase) and any future/unrecognized
@@ -400,6 +460,46 @@ SELECT
     -- booleans) reached 100% substantive agreement with this rule,
     -- versus 78.8% before it -- see reports.md's 2026-08-15 TD-93 entry.
     WHEN signal_legacy_endpoint_nxdomain_only THEN 'FAILED'
+    -- TD-101 Phase 3 (2026-08-20). dnscheck's bootstrap layer reports six
+    -- distinct non-NULL failure values live (see this file's header for
+    -- the full distribution and the investigation each received before
+    -- this fix). dns_bogon_error is EXCEPTED from this branch, not
+    -- included: TD-55 already established it as a real, sampling-
+    -- validated manipulation signal (whole-session bogoning of DoH/DoT
+    -- resolver hostnames while messaging-app DNS resolved normally on
+    -- the same network-day), already classified BLOCKED @ 0.90 in
+    -- int.ooni_experiment_results.sql, and regression-locked by
+    -- tests/test_ooni_dns_bogon_classification.py -- routing it here too
+    -- would silently and partially revert that finding and produce a
+    -- live contradiction between result_state (BLOCKED) and this column
+    -- (FAILED) for the same rows. Every OTHER non-NULL value
+    -- (dns_nxdomain_error, generic_timeout_error, android_dns_cache_
+    -- no_data, dns_temporary_failure, dns_server_misbehaving) was
+    -- separately investigated this session and found NOT manipulation-
+    -- shaped -- dns_nxdomain_error in particular is dominated by a
+    -- handful of permanently-dead/typo'd DoH/DoT target hostnames in
+    -- OONI's own dnscheck target list (e.g. doh.appliedprivacy.ne --
+    -- almost certainly a typo for appliedprivacy.at -- 0/629 successes
+    -- across this table's entire ingestion window, 2023-06-12 through
+    -- 2025-03-05), the same probe/test-infrastructure-artifact shape
+    -- TD-47 Phase 1 already established for this test type's other
+    -- non-bogon failure signals. This predicate is self-contained
+    -- (excludes dns_bogon_error explicitly, does not rely on branch
+    -- ordering or on test_anomaly_flag's own narrowed dnscheck logic
+    -- above) because FAILED already outranks ANOMALOUS in this CASE's
+    -- precedence -- a predicate that only tested "IS NOT NULL" here
+    -- would silently swallow the bogon rows too. TD-47 Phase 1/Phase 2a's
+    -- answers-layer staging tables (stg.ooni_dnscheck_lookups, stg.ooni_
+    -- dnscheck_query_answers, stg.ooni_dnscheck_answer_bogon_flags) are
+    -- deliberately NOT joined here -- they characterize a structurally
+    -- different layer (per-resolver `lookups`, always resolving OONI's
+    -- own fixed example.org) than bootstrap (the DoH/DoT provider
+    -- hostname itself, resolved via the local system resolver), and
+    -- Phase 2a found zero live bogon hits there anyway -- see reports.md
+    -- for the full account.
+    WHEN dnscheck_bootstrap_failure IS NOT NULL
+      AND LOWER(COALESCE(dnscheck_bootstrap_failure, '')) != 'dns_bogon_error'
+      THEN 'FAILED'
     WHEN test_anomaly_flag IS TRUE THEN 'ANOMALOUS'
     WHEN test_anomaly_flag IS NULL THEN NULL
     ELSE 'OK'

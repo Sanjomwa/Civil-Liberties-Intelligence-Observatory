@@ -68,6 +68,39 @@ Real deltas, Finance Bill window (signal anomalous_count, before -> after):
 -31.2%). See reports.md's 2026-08-15 TD-93 entry for the full
 methodology and the external-validation matched-pair check this fix is
 based on.
+
+RE-FROZEN (TD-101 Phase 3, 2026-08-20): `ooni_verdict_weekly`'s `dnscheck`
+values changed after int.ooni_measurement_verdicts_candidate.sql's
+narrow bogon carve-out (dns_bogon_error keeps ANOMALOUS; every other
+non-NULL dnscheck_bootstrap_failure value newly routes to FAILED instead
+-- see that asset's header for the full TD-55/TD-101 reasoning, and
+tests/test_ooni_dnscheck_bootstrap_failed_classification.py for this
+fix's own static+live regression lock). `total_scored_measurements` is
+unchanged for every week (same TD-93 precedent: this fix only moves rows
+between ANOMALOUS and FAILED, both non-NULL, never into or out of the
+scored population). Only `dnscheck`'s `anomalous_count` moved -- every
+other test_name's numbers in this fixture are unchanged, confirmed via a
+live requery before re-freezing, not assumed. Real deltas, Finance Bill
+window (dnscheck anomalous_count, before -> after): 2024-05-11: 89->0,
+05-18: 68->0, 05-25: 1->0, 06-01: 3->0, 06-08: 2->0, 06-15: 36->0,
+06-22: 34->0, 06-29: 24->0, 07-06: 226->0, 07-13: 10->0. Window total:
+493 -> 0 (-493, -100%). Worth stating plainly, not just as a number: the
+entire flagship Finance Bill 2024 window contained ZERO real
+dns_bogon_error detections for dnscheck -- every one of the 493
+previously-ANOMALOUS dnscheck rows in this window was one of the other
+five bootstrap-failure values, all investigated this session and found
+probe/test-infrastructure-artifact-shaped, not manipulation-shaped (see
+int.ooni_measurement_verdicts_candidate.sql's header and reports.md for
+the full investigation, including the permanently-dead/typo'd DoH/DoT
+target hostnames -- e.g. doh.appliedprivacy.ne -- that dominate
+dns_nxdomain_error, this window's largest single non-bogon contributor
+at 07-06's 226). This is not a retraction of any prior flagship finding
+-- no deliverable document or incident report ever cited a dnscheck
+ANOMALOUS figure for this window (confirmed by grep across streamlit/
+before this fix, see reports.md) -- it corrects a structural
+misclassification (probe/test-infrastructure noise counted as
+"interference-consistent") that predates this session and was never
+part of the flagship narrative to begin with.
 """
 import json
 import os

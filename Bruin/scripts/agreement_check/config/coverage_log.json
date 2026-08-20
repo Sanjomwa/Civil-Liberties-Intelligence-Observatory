@@ -1,0 +1,139 @@
+{
+  "_comment": "Rotating-sample coverage log, TD-100/ADR-0013 steps 1-4. Tracks the last time monitor mode sampled each (test_type, clio_verdict, failure_type) signature cell, so the rotation prioritizes cells that have gone longest without coverage instead of resampling the same common cells every run. Written to by ooni_agreement_check.py after every monitor-mode run; safe to hand-edit (e.g. delete a cell to force it to the front of the next rotation), but not required.",
+  "schema_version": 1,
+  "cells": {
+    "signal|OK|none": {
+      "test_type": "signal",
+      "ooni_verdict": "OK",
+      "failure_type": "none",
+      "last_sampled_at": "2026-08-20T15:28:46.828120+00:00",
+      "sampled_count": 10
+    },
+    "signal|None|none": {
+      "test_type": "signal",
+      "ooni_verdict": null,
+      "failure_type": "none",
+      "last_sampled_at": "2026-08-20T15:28:50.093838+00:00",
+      "sampled_count": 10
+    },
+    "signal|FAILED|signal_legacy_nxdomain": {
+      "test_type": "signal",
+      "ooni_verdict": "FAILED",
+      "failure_type": "signal_legacy_nxdomain",
+      "last_sampled_at": "2026-08-20T15:28:53.311390+00:00",
+      "sampled_count": 10
+    },
+    "signal|ANOMALOUS|none": {
+      "test_type": "signal",
+      "ooni_verdict": "ANOMALOUS",
+      "failure_type": "none",
+      "last_sampled_at": "2026-08-20T15:28:56.984142+00:00",
+      "sampled_count": 10
+    },
+    "signal|None|signal_legacy_nxdomain": {
+      "test_type": "signal",
+      "ooni_verdict": null,
+      "failure_type": "signal_legacy_nxdomain",
+      "last_sampled_at": "2026-08-20T15:29:00.196444+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|OK|none": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "OK",
+      "failure_type": "none",
+      "last_sampled_at": "2026-08-20T15:39:08.412266+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|ANOMALOUS|none": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "ANOMALOUS",
+      "failure_type": "none",
+      "last_sampled_at": "2026-08-20T15:39:10.636085+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|OK|(null)": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "OK",
+      "failure_type": "(null)",
+      "last_sampled_at": "2026-08-20T19:41:26.082161+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|ANOMALOUS|dns_bogon_error": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "ANOMALOUS",
+      "failure_type": "dns_bogon_error",
+      "last_sampled_at": "2026-08-20T19:41:28.854083+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|ANOMALOUS|dns_nxdomain_error": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "ANOMALOUS",
+      "failure_type": "dns_nxdomain_error",
+      "last_sampled_at": "2026-08-20T16:15:43.976792+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|ANOMALOUS|generic_timeout_error": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "ANOMALOUS",
+      "failure_type": "generic_timeout_error",
+      "last_sampled_at": "2026-08-20T16:15:46.512816+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|ANOMALOUS|android_dns_cache_no_data": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "ANOMALOUS",
+      "failure_type": "android_dns_cache_no_data",
+      "last_sampled_at": "2026-08-20T16:15:49.084405+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|ANOMALOUS|dns_temporary_failure": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "ANOMALOUS",
+      "failure_type": "dns_temporary_failure",
+      "last_sampled_at": "2026-08-20T16:15:52.131134+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|ANOMALOUS|dns_server_misbehaving": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "ANOMALOUS",
+      "failure_type": "dns_server_misbehaving",
+      "last_sampled_at": "2026-08-20T16:15:55.957828+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|FAILED|dns_nxdomain_error": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "FAILED",
+      "failure_type": "dns_nxdomain_error",
+      "last_sampled_at": "2026-08-20T19:41:03.834802+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|FAILED|generic_timeout_error": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "FAILED",
+      "failure_type": "generic_timeout_error",
+      "last_sampled_at": "2026-08-20T19:41:14.155807+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|FAILED|android_dns_cache_no_data": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "FAILED",
+      "failure_type": "android_dns_cache_no_data",
+      "last_sampled_at": "2026-08-20T19:41:17.140108+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|FAILED|dns_temporary_failure": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "FAILED",
+      "failure_type": "dns_temporary_failure",
+      "last_sampled_at": "2026-08-20T19:41:20.029274+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|FAILED|dns_server_misbehaving": {
+      "test_type": "dnscheck",
+      "ooni_verdict": "FAILED",
+      "failure_type": "dns_server_misbehaving",
+      "last_sampled_at": "2026-08-20T19:41:22.821926+00:00",
+      "sampled_count": 10
+    }
+  }
+}
