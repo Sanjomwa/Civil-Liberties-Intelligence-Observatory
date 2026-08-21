@@ -55,14 +55,14 @@
       "test_type": "dnscheck",
       "ooni_verdict": "OK",
       "failure_type": "(null)",
-      "last_sampled_at": "2026-08-20T19:41:26.082161+00:00",
+      "last_sampled_at": "2026-08-21T17:01:00.478401+00:00",
       "sampled_count": 10
     },
     "dnscheck|ANOMALOUS|dns_bogon_error": {
       "test_type": "dnscheck",
       "ooni_verdict": "ANOMALOUS",
       "failure_type": "dns_bogon_error",
-      "last_sampled_at": "2026-08-20T19:41:28.854083+00:00",
+      "last_sampled_at": "2026-08-21T17:01:03.596112+00:00",
       "sampled_count": 10
     },
     "dnscheck|ANOMALOUS|dns_nxdomain_error": {
@@ -104,35 +104,63 @@
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "dns_nxdomain_error",
-      "last_sampled_at": "2026-08-20T19:41:03.834802+00:00",
+      "last_sampled_at": "2026-08-21T17:00:40.451267+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|generic_timeout_error": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "generic_timeout_error",
-      "last_sampled_at": "2026-08-20T19:41:14.155807+00:00",
+      "last_sampled_at": "2026-08-21T17:00:43.824185+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|android_dns_cache_no_data": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "android_dns_cache_no_data",
-      "last_sampled_at": "2026-08-20T19:41:17.140108+00:00",
+      "last_sampled_at": "2026-08-21T17:00:49.800373+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|dns_temporary_failure": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "dns_temporary_failure",
-      "last_sampled_at": "2026-08-20T19:41:20.029274+00:00",
+      "last_sampled_at": "2026-08-21T17:00:52.549939+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|dns_server_misbehaving": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "dns_server_misbehaving",
-      "last_sampled_at": "2026-08-20T19:41:22.821926+00:00",
+      "last_sampled_at": "2026-08-21T17:00:56.178070+00:00",
+      "sampled_count": 10
+    },
+    "telegram|OK|none": {
+      "test_type": "telegram",
+      "ooni_verdict": "OK",
+      "failure_type": "none",
+      "last_sampled_at": "2026-08-21T18:04:49.372494+00:00",
+      "sampled_count": 10
+    },
+    "telegram|ANOMALOUS|none": {
+      "test_type": "telegram",
+      "ooni_verdict": "ANOMALOUS",
+      "failure_type": "none",
+      "last_sampled_at": "2026-08-21T18:04:52.706330+00:00",
+      "sampled_count": 10
+    },
+    "whatsapp|OK|none": {
+      "test_type": "whatsapp",
+      "ooni_verdict": "OK",
+      "failure_type": "none",
+      "last_sampled_at": "2026-08-21T19:06:53.197534+00:00",
+      "sampled_count": 10
+    },
+    "whatsapp|ANOMALOUS|none": {
+      "test_type": "whatsapp",
+      "ooni_verdict": "ANOMALOUS",
+      "failure_type": "none",
+      "last_sampled_at": "2026-08-21T19:06:57.148927+00:00",
       "sampled_count": 10
     }
   }

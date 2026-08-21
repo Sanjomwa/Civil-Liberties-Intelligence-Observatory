@@ -1,0 +1,85 @@
+{
+  "_comment": "TD-105 (2026-08-21) pinned panel for the whatsapp_web_accessible fix. Unlike dnscheck's TD-101 fixture, whatsapp has a valid, non-degenerate oracle (OONI's own /api/v1/measurements) -- confirmed by the 2026-08-21 verification session's V1/V3/V4/V8 checks -- so OONI's live classification IS used as ground truth for rows driven by the fixed condition (whatsapp_web_status/whatsapp_web_accessible) and by conditions this fix left untouched but which independently checked out clean (registration_server_status, 89% agreement in the verification session). ONE EXCEPTION: the bug-(b) entry below (whatsapp_endpoints_blocked_count) uses CLIO's own OR-chain logic as ground truth, NOT OONI's live classification -- the verification session found this condition is genuinely heterogeneous (~50/50 agreement with OONI in a small sample), so OONI cannot serve as ground truth for it. That row is included specifically to prove the fix leaves this condition's classification behavior unchanged, not to claim it is correct.",
+  "entries": [
+    {
+      "measurement_id": "4f655e060f9d3c89b1daa51e20bf22a2dba9e956dcc28a802099291d8c21692e",
+      "report_id": "20250406T103950Z_whatsapp_KE_36926_n1_yMsgo4ZVSVy7LhZO",
+      "measurement_date": "2025-04-06",
+      "probe_asn": 36926,
+      "test_version": "0.9.0",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "OK",
+      "note": "Reclassified: test_version=0.9.0, whatsapp_web_status='blocked' via the obsolete plain-HTTP-leg bug, no other OR-chain condition true. OONI's own live API confirms OK -- this row was a false positive under the old whatsapp_web_status logic."
+    },
+    {
+      "measurement_id": "38a168b3feb659b92cb51873ebe867f94b91e728177986fd243e670d3eb6e1d4",
+      "report_id": "20230805T214310Z_whatsapp_KE_30844_n1_WlnSYDEVofS2B60r",
+      "measurement_date": "2023-08-05",
+      "probe_asn": 30844,
+      "test_version": "0.9.0",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "OK",
+      "note": "Second reclassified example, different probe_asn/date/year -- same shape as the first, confirming the fix isn't specific to one vantage point or one moment in time."
+    },
+    {
+      "measurement_id": "0d7dc00e30b78320699f9e5c3370957d4c923df04bccdad19433317ed31f1e4e",
+      "report_id": "20240726T180451Z_whatsapp_KE_37061_n1_hl2dj9JWf6YhuMWJ",
+      "measurement_date": "2024-07-26",
+      "probe_asn": 37061,
+      "test_version": "0.9.0",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Regression guard: test_version=0.9.0, whatsapp_web_accessible=TRUE (the old whatsapp_web_status='blocked' bug fired here too) but registration_server_status='blocked' independently -- must stay ANOMALOUS via the untouched registration-server condition. OONI's own live API confirms ANOMALOUS. Proves the fix doesn't accidentally suppress a row that has a second, real reason to be ANOMALOUS."
+    },
+    {
+      "measurement_id": "97aeeca8d78187dcf8354553965cb44ba0607c26254688acbffb532d7336e955",
+      "report_id": "20240725T135004Z_whatsapp_KE_12556_n1_IeeCcOPh7UwUz73o",
+      "measurement_date": "2024-07-25",
+      "probe_asn": 12556,
+      "test_version": "0.11.0",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Regression guard: test_version=0.11.0 (the fixed probe version, no plain-HTTP-leg bug), whatsapp_web_accessible=FALSE reflects a real HTTPS-leg failure. OONI's own live API confirms ANOMALOUS -- this row's verdict must be identical before and after the fix, since 0.11.0's whatsapp_web_status already matched raw $.requests[] exactly (confirmed 40/40 in Task 0.3)."
+    },
+    {
+      "measurement_id": "e8812223f7a92bde438731617edaea4cc4689c6548be0393476a725a83b8271a",
+      "report_id": "20250626T122425Z_whatsapp_KE_12455_n1_pUIyzpcLKo7rBXWf",
+      "measurement_date": "2025-06-26",
+      "probe_asn": 12455,
+      "test_version": "0.11.0",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Second 0.11.0-real-failure regression guard, different probe_asn/date."
+    },
+    {
+      "measurement_id": "4ddc511c92330176e172a48712008967d7ab3bbf645a7f444a6ee5e5534d2bf1",
+      "report_id": "20240728T110354Z_whatsapp_KE_33771_n1_73YnRFKSgjkm9JDy",
+      "measurement_date": "2024-07-28",
+      "probe_asn": 33771,
+      "test_version": "0.11.0",
+      "before_fix_verdict": "OK",
+      "expected_ooni_verdict": "OK",
+      "note": "Regression guard: already-OK row, test_version=0.11.0, no OR-chain condition true before or after. OONI's own live API confirms OK."
+    },
+    {
+      "measurement_id": "416d25c8be0a577e6db164049392e3e26ade474f1a634ea7fb0ec5db6157dc31",
+      "report_id": "20250628T054359Z_whatsapp_KE_33771_n1_oP5LuBSDojINjt9z",
+      "measurement_date": "2025-06-28",
+      "probe_asn": 33771,
+      "test_version": "0.11.0",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Bug (c), explicitly untouched by this fix: registration_server_status='blocked' at test_version=0.11.0, whatsapp_web_accessible=TRUE (web check itself fine). OONI's own live API confirms ANOMALOUS -- consistent with the verification session's finding that registration_server_status is 89% genuinely correct and was deliberately left alone."
+    },
+    {
+      "measurement_id": "bff0dca0f6c3e0a61cea776c5b7f6d8bb6d0ff3d59a5ddd282cbe18ff5c1835a",
+      "report_id": "20240815T062156Z_whatsapp_KE_37052_n1_5LqtcziyTZxcyHJT",
+      "measurement_date": "2024-08-15",
+      "probe_asn": 37052,
+      "test_version": "0.11.0",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Bug (b), explicitly untouched by this fix: whatsapp_endpoints_blocked_count=3 (>0), whatsapp_web_accessible=TRUE and registration_server_status='ok' (no other driver). Ground truth here is CLIO's OWN unchanged OR-chain logic, NOT OONI's live API -- OONI's own live classification for this exact row is OK, not ANOMALOUS. This is expected and deliberate: the 2026-08-21 verification session found whatsapp_endpoints_blocked_count is genuinely heterogeneous (~50/50 agreement with OONI), so a disagreement here is not evidence this fix is wrong -- it's the same known, already-documented, explicitly-out-of-scope bug (b) issue, included specifically to prove this fix does not silently change bug (b)'s behavior in either direction."
+    }
+  ]
+}

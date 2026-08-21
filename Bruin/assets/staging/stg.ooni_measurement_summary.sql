@@ -80,6 +80,18 @@ description: |
   against OONI's own real classification. See that asset's header and
   reports.md's 2026-08-15 TD-93 entry for the full finding.
 
+  TD-105 (2026-08-21): added whatsapp_web_accessible, recomputing web-check
+  accessibility directly from $.requests[]'s https://web.whatsapp.com/
+  entry instead of trusting the probe-submitted whatsapp_web_status field,
+  which is unreliable at probe test_version=0.9.0 (a plain-HTTP-leg check
+  removed entirely in 0.11.0). whatsapp_web_status/whatsapp_web_failure are
+  left in place, untouched, for diagnostic/backward-compatibility value --
+  only int.ooni_measurement_verdicts_candidate.sql's whatsapp arm is
+  repointed to the new column. See that asset's header and reports.md's
+  2026-08-21 TD-105 entry for the full finding, including why bugs (b)
+  (whatsapp_endpoints_blocked_count) and (c) (registration_server_status)
+  were investigated and deliberately left untouched here.
+
 depends:
   - stg.ooni_measurements
 
@@ -225,6 +237,31 @@ SELECT
     AS whatsapp_endpoints_blocked_count,
   ARRAY_LENGTH(IFNULL(JSON_QUERY_ARRAY(raw_test_keys, '$.whatsapp_endpoints_dns_inconsistent'), ARRAY<STRING>[]))
     AS whatsapp_endpoints_dns_inconsistent_count,
+
+  -- TD-105 (2026-08-21): whatsapp_web_status is unreliable at probe
+  -- test_version 0.9.0 -- that probe version tests plain
+  -- http://web.whatsapp.com/ and marks the whole web check "failed"
+  -- (whatsapp_web_failure='http_unexpected_status_code') whenever the
+  -- response isn't exactly HTTP 302, regardless of whether the HTTPS
+  -- leg of the same URL succeeded. OONI's own backend scorer never reads
+  -- whatsapp_web_status -- it recomputes accessibility straight from
+  -- each request's own raw `failure` field. Probe 0.11.0 removes the
+  -- flawed plain-HTTP check entirely; confirmed live that every 0.11.0
+  -- whatsapp_web_status='blocked' row's whatsapp_web_failure already
+  -- matches this same $.requests[] HTTPS-leg failure field exactly
+  -- (40/40 sampled), so this recomputation is a no-op for 0.11.0 and
+  -- only changes behavior for 0.9.0 rows where the HTTPS leg actually
+  -- succeeded. LOGICAL_AND over the (confirmed, live) at-most-one
+  -- matching entry: TRUE if that entry's failure is null (accessible),
+  -- FALSE if non-null (a real HTTPS-leg failure), NULL if no entry
+  -- matches the URL at all -- confirmed 0/51,394 rows hit that case
+  -- today, kept as a defensive default-safe fallback rather than
+  -- assumed impossible. See reports.md's TD-105 session entry.
+  (
+    SELECT LOGICAL_AND(JSON_VALUE(elem, '$.failure') IS NULL)
+    FROM UNNEST(JSON_EXTRACT_ARRAY(raw_test_keys, '$.requests')) AS elem
+    WHERE JSON_VALUE(elem, '$.request.url') = 'https://web.whatsapp.com/'
+  ) AS whatsapp_web_accessible,
 
   -- telegram (ts-020-telegram.md) -- tcp/http blocking are real JSON
   -- booleans, confirmed live ("true"/"false" literals, not strings).

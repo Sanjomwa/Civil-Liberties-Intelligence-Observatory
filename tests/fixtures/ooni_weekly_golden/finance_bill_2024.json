@@ -391,7 +391,7 @@
       },
       "whatsapp": {
         "total_scored_measurements": 321,
-        "anomalous_count": 60
+        "anomalous_count": 25
       }
     },
     "2024-05-18": {
@@ -413,7 +413,7 @@
       },
       "whatsapp": {
         "total_scored_measurements": 368,
-        "anomalous_count": 68
+        "anomalous_count": 17
       }
     },
     "2024-05-25": {
@@ -435,7 +435,7 @@
       },
       "whatsapp": {
         "total_scored_measurements": 382,
-        "anomalous_count": 24
+        "anomalous_count": 2
       }
     },
     "2024-06-01": {
@@ -457,7 +457,7 @@
       },
       "whatsapp": {
         "total_scored_measurements": 324,
-        "anomalous_count": 20
+        "anomalous_count": 5
       }
     },
     "2024-06-08": {
@@ -479,7 +479,7 @@
       },
       "whatsapp": {
         "total_scored_measurements": 409,
-        "anomalous_count": 60
+        "anomalous_count": 5
       }
     },
     "2024-06-15": {
@@ -501,7 +501,7 @@
       },
       "whatsapp": {
         "total_scored_measurements": 571,
-        "anomalous_count": 68
+        "anomalous_count": 12
       }
     },
     "2024-06-22": {
@@ -523,7 +523,7 @@
       },
       "whatsapp": {
         "total_scored_measurements": 1217,
-        "anomalous_count": 133
+        "anomalous_count": 65
       }
     },
     "2024-06-29": {
@@ -545,7 +545,7 @@
       },
       "whatsapp": {
         "total_scored_measurements": 911,
-        "anomalous_count": 80
+        "anomalous_count": 29
       }
     },
     "2024-07-06": {
@@ -567,7 +567,7 @@
       },
       "whatsapp": {
         "total_scored_measurements": 802,
-        "anomalous_count": 72
+        "anomalous_count": 11
       }
     },
     "2024-07-13": {
@@ -589,7 +589,7 @@
       },
       "whatsapp": {
         "total_scored_measurements": 94,
-        "anomalous_count": 5
+        "anomalous_count": 2
       }
     }
   }

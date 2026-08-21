@@ -190,6 +190,41 @@ description: |
   assumptions (e.g. a probe update introducing a new
   signal_backend_status value this CASE doesn't recognize).
 
+  TD-105 (2026-08-21): whatsapp's test_anomaly_flag arm now uses
+  whatsapp_web_accessible (stg.ooni_measurement_summary.sql) in place of
+  whatsapp_web_status = 'blocked'. An eight-check verification session
+  (2026-08-21) found whatsapp_web_status unreliable specifically at probe
+  test_version=0.9.0 -- that probe version's own plain-HTTP check against
+  http://web.whatsapp.com/ marks the whole web check "failed" whenever the
+  response isn't exactly HTTP 302, regardless of whether the HTTPS leg of
+  the same URL succeeded, and OONI's own backend scorer never reads this
+  field at all. This produced a real, measured false-positive rate (32-
+  33/33 matched pairs of this exact shape disagreed with OONI's own live
+  classification) concentrated entirely in the obsolete 0.9.0 install
+  base (100/100 directly-inspected raw rows carry a Meta-origin response
+  signature with a null HTTPS-leg failure -- the HTTPS check succeeded
+  every time). Probe 0.11.0 removes the flawed check; confirmed live that
+  every 0.11.0 whatsapp_web_status='blocked' row's whatsapp_web_failure
+  already matches $.requests[]'s HTTPS-leg failure field exactly (40/40
+  sampled), so recomputing from raw data changes nothing for 0.11.0 and
+  only reclassifies 0.9.0 rows where the HTTPS leg actually succeeded.
+  This bug was confirmed dashboard-facing, not internal-only:
+  features.ooni_weekly_signals -> the National Stress Observatory page's
+  weekly-signal protocol selector renders whatsapp's anomalous_rate
+  directly from this classification chain, live, today. Two other
+  conditions in this same OR-chain were investigated in the same
+  verification session and found NOT to share this shape -- deliberately
+  left untouched here, not silently folded in:
+  whatsapp_endpoints_blocked_count > 0 (real, 1,042 rows, but
+  heterogeneous -- a small oracle check split ~50/50 against OONI's own
+  judgment, needs its own dedicated investigation before any fix) and
+  registration_server_status = 'blocked' (89% genuinely correct against
+  OONI's live classification across both probe versions; a small,
+  separate 2/562-row http_request_failed exception exists but is too
+  small and different in kind to fold into this fix). See reports.md's
+  2026-08-21 TD-105 session entries (verification and build) for the
+  full account.
+
 depends:
   - stg.ooni_measurement_summary
   - marts.dim_ooni_probe_version_accuracy
@@ -314,8 +349,40 @@ verdicts AS (
         WHEN s.whatsapp_endpoints_status IS NULL
           AND s.whatsapp_web_status IS NULL
           AND s.registration_server_status IS NULL THEN NULL
+        -- TD-105 (2026-08-21): whatsapp_web_status = 'blocked' replaced
+        -- with whatsapp_web_accessible IS FALSE. whatsapp_web_status is
+        -- the probe's OWN self-reported field, unreliable at probe
+        -- test_version=0.9.0 (a plain-HTTP-leg check against
+        -- http://web.whatsapp.com/ that OONI's own backend never reads,
+        -- and that fires on ~100% of 0.9.0 traffic regardless of whether
+        -- the HTTPS leg of the same URL succeeded -- confirmed via 100/100
+        -- directly-inspected raw rows and reproduced in OONI's own live
+        -- classification, which disagreed with CLIO's prior verdict on
+        -- 32-33/33 matched pairs of this exact shape). whatsapp_web_
+        -- accessible (stg.ooni_measurement_summary.sql) recomputes
+        -- straight from $.requests[]'s own https://web.whatsapp.com/
+        -- entry instead, matching what OONI's own backend actually does.
+        -- Deliberately `IS FALSE`, not `= FALSE` or a bare negation: the
+        -- NULL case (no matching request entry, confirmed 0/51,394 rows
+        -- live today) must NOT count as blocked, the same
+        -- inconclusive-not-blocked treatment this file gives missing data
+        -- elsewhere. Confirmed additive for already-correct rows: every
+        -- test_version=0.11.0 whatsapp_web_status='blocked' row's
+        -- whatsapp_web_failure already matches this same $.requests[]
+        -- entry's failure field exactly (40/40 sampled) -- 0.11.0's probe
+        -- removed the flawed plain-HTTP check entirely, so this
+        -- recomputation only changes behavior for test_version=0.9.0 rows
+        -- where the HTTPS leg actually succeeded. Two other conditions
+        -- investigated the same session and found NOT to share this
+        -- shape, deliberately left untouched here:
+        -- whatsapp_endpoints_blocked_count > 0 (real but heterogeneous,
+        -- ~50/50 against OONI's own judgment in a small check -- needs
+        -- its own dedicated investigation) and registration_server_status
+        -- (89% genuinely correct; a small 2/562-row http_request_failed
+        -- exception exists but is separate and too small to fold in
+        -- here). See reports.md's 2026-08-21 TD-105 session entry.
         WHEN s.whatsapp_endpoints_status = 'blocked'
-          OR s.whatsapp_web_status = 'blocked'
+          OR s.whatsapp_web_accessible IS FALSE
           OR s.registration_server_status = 'blocked'
           OR s.whatsapp_endpoints_blocked_count > 0
           OR s.whatsapp_endpoints_dns_inconsistent_count > 0 THEN TRUE
