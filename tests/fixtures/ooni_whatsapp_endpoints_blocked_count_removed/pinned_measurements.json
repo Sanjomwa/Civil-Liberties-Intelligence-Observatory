@@ -1,0 +1,55 @@
+{
+  "_comment": "TD-105 build (2026-08-22) pinned panel for the whatsapp_endpoints_blocked_count/whatsapp_endpoints_dns_inconsistent_count removal. Ground truth is OONI's own /api/v1/measurements API for every row -- unlike the fixture's earlier bug-(b) entry (still present in tests/fixtures/ooni_whatsapp_web_accessible_classification/pinned_measurements.json, now reclassified), this fixture only exists post-fix, so there is no CLIO-logic-as-ground-truth exception needed here. All 5 rows were fetched live and cross-checked against int.ooni_measurement_verdicts_candidate during the build session.",
+  "entries": [
+    {
+      "measurement_id": "4c92b7d2cd99e1be16ac047958f489300658ad210abf13c675318cc24bf9815a",
+      "report_id": "20240809T140555Z_whatsapp_KE_12455_n1_nf4EoBdFCGexD5YE",
+      "measurement_date": "2024-08-09",
+      "probe_asn": 12455,
+      "test_version": "0.11.0",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "OK",
+      "note": "Reclassified, low blocked_count bucket: whatsapp_endpoints_blocked_count=2, whatsapp_web_accessible=TRUE, registration_server_status='ok' -- blocked_count was the sole driver. OONI's own live API confirms OK (anomaly=false, scores.analysis.whatsapp_endpoints_accessible=true)."
+    },
+    {
+      "measurement_id": "4821d2c0ea4683657edd6f336fe2f46598e597a23903584b3a5f3ecdcf27ac0e",
+      "report_id": "20240219T035750Z_whatsapp_KE_329211_n1_2Z6RPIr8N0R07RnD",
+      "measurement_date": "2024-02-19",
+      "probe_asn": 329211,
+      "test_version": "0.11.0",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "OK",
+      "note": "Reclassified, highest blocked_count observed anywhere in the population (=15), sole driver otherwise clean. OONI's own live API confirms OK (anomaly=false, scores.analysis.whatsapp_endpoints_accessible=true) -- direct evidence the condition carried no real signal even at its most extreme observed value."
+    },
+    {
+      "measurement_id": "6b1461875f543438915174b3ffa9e8a3c52a1b15a00307e2aa1716818ecfed43",
+      "report_id": "20231210T113912Z_whatsapp_KE_33771_n1_KIN5KfDq91doVWjV",
+      "measurement_date": "2023-12-10",
+      "probe_asn": 33771,
+      "test_version": "0.11.0",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Regression guard: whatsapp_endpoints_blocked_count=7 (>0, would have independently triggered the old rule) AND whatsapp_web_accessible=FALSE (bug (a)'s untouched condition, the real driver). Must stay ANOMALOUS after removing blocked_count from the OR-chain. OONI's own live API confirms ANOMALOUS (anomaly=true) with no `analysis` key present -- branch precedence: OONI's own scorer never reached the endpoint-accessibility check here either, consistent with the web check already having failed."
+    },
+    {
+      "measurement_id": "89d6ac98ceb322d1539d2fdfb4a47d485c1a1ca3f702fe9fffcd95e354cf945d",
+      "report_id": "20230922T095620Z_whatsapp_KE_12455_n1_0RMK2s4v6LW0dviG",
+      "measurement_date": "2023-09-22",
+      "probe_asn": 12455,
+      "test_version": "0.11.0",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Regression guard: whatsapp_endpoints_blocked_count=4 (>0) AND registration_server_status='blocked' (bug (c)'s untouched condition, the real driver). Must stay ANOMALOUS after removing blocked_count from the OR-chain. OONI's own live API confirms ANOMALOUS (anomaly=true) with no `analysis` key present -- same branch-precedence mechanism as the row above, this time via the registration-server check failing first."
+    },
+    {
+      "measurement_id": "c3a18c69a1ff908ec9f67d55146f5ae8c1b27ac8b275561368bf6f2852eb77d3",
+      "report_id": "20230625T201231Z_whatsapp_KE_33771_n1_Tcewx2GYg5FdHxFm",
+      "measurement_date": "2023-06-25",
+      "probe_asn": 33771,
+      "test_version": "0.11.0",
+      "before_fix_verdict": "OK",
+      "expected_ooni_verdict": "OK",
+      "note": "Regression guard, unrelated to this fix: whatsapp_endpoints_blocked_count=0, no OR-chain condition true before or after. OONI's own live API confirms OK. Proves the fix does not touch rows that were never affected by blocked_count in the first place."
+    }
+  ]
+}

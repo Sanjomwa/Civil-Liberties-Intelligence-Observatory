@@ -22,6 +22,20 @@ this file, was explicitly out of scope. If a future edit changes any of
 the OTHER four OR-chain conditions, or the NULL-check branch, this
 file's static assertions must fail.
 
+UPDATE (TD-105 build, 2026-08-22): bug (b) (whatsapp_endpoints_blocked_
+count > 0 and the always-dead whatsapp_endpoints_dns_inconsistent_count
+> 0) received its own dedicated investigation and was found actively
+wrong (OONI's own scorer disables this exact rule in source, and two
+independent samples found 0/131 agreement once isolated from bug (a)/(c)
+as a confound) -- see tests/test_ooni_whatsapp_endpoints_blocked_count_
+removed.py for that fix's own regression lock. This file's static
+assertion below is updated accordingly: it now asserts the whatsapp
+OR-chain has exactly THREE conditions (whatsapp_endpoints_status,
+whatsapp_web_accessible, registration_server_status), not five --
+bug (b)'s two conditions are asserted ABSENT, not present. Bug (c)
+(registration_server_status) remains untouched and is still guarded
+here.
+
 Two layers of protection, same pattern as
 tests/test_ooni_dnscheck_bootstrap_failed_classification.py:
 
@@ -106,22 +120,38 @@ def test_whatsapp_web_check_uses_accessible_not_status():
 
 
 def test_whatsapp_other_orchain_conditions_untouched():
+    """Bug (c) (registration_server_status) must stay byte-for-byte
+    unchanged. Bug (b)'s two conditions (whatsapp_endpoints_blocked_count,
+    whatsapp_endpoints_dns_inconsistent_count) are asserted ABSENT, not
+    present -- TD-105's build session (2026-08-22) removed them; see
+    test_ooni_whatsapp_endpoints_blocked_count_removed.py for that fix's
+    own regression lock."""
     sql = _normalized(VERDICTS_CANDIDATE_SQL)
     assert (
         "WHEN s.whatsapp_endpoints_status = 'blocked' "
         "OR s.whatsapp_web_accessible IS FALSE "
-        "OR s.registration_server_status = 'blocked' "
-        "OR s.whatsapp_endpoints_blocked_count > 0 "
-        "OR s.whatsapp_endpoints_dns_inconsistent_count > 0 THEN TRUE"
+        "OR s.registration_server_status = 'blocked' THEN TRUE"
         in sql
     ), (
         "TD-105 regression: the whatsapp OR-chain's full text has drifted "
-        "from the exact shape TD-105 shipped -- bug (b) "
-        "(whatsapp_endpoints_blocked_count) and bug (c) "
-        "(registration_server_status) must stay byte-for-byte unchanged; "
-        "this fix touches ONLY the web-check condition. If this assertion "
-        "fails, check whether an unrelated edit reordered, removed, or "
-        "'cleaned up' one of the other four conditions."
+        "from the exact shape the TD-105 build session shipped -- bug (c) "
+        "(registration_server_status) must stay byte-for-byte unchanged, "
+        "and bug (b)'s two conditions must stay removed. This fix touches "
+        "ONLY the web-check condition. If this assertion fails, check "
+        "whether an unrelated edit reordered or changed one of the other "
+        "two conditions, or reintroduced bug (b)."
+    )
+    assert "OR s.whatsapp_endpoints_blocked_count > 0" not in sql, (
+        "TD-105 build regression: whatsapp_endpoints_blocked_count > 0 is "
+        "back in the OR-chain -- this condition was deliberately removed "
+        "(not thresholded) after two verification sessions found 0/131 "
+        "agreement with OONI once isolated from the bug (a)/(c) confound."
+    )
+    assert "OR s.whatsapp_endpoints_dns_inconsistent_count > 0" not in sql, (
+        "TD-105 build regression: whatsapp_endpoints_dns_inconsistent_count "
+        "> 0 is back in the OR-chain -- this field is permanently dead "
+        "(never populated by the probe, confirmed 0/51,394 live rows) and "
+        "was deliberately removed as dead weight."
     )
 
 
@@ -217,9 +247,15 @@ def test_live_whatsapp_reclassified_population_is_nonempty():
 @requires_bigquery
 def test_live_no_row_with_other_driver_true_is_missing_anomalous():
     """Structural, time-invariant regression guard for the additive claim:
-    any whatsapp row where endpoints_status/registration_server_status/
-    blocked_count/dns_inconsistent_count independently indicate blocking
-    must be ANOMALOUS, regardless of what the web-check condition says."""
+    any whatsapp row where endpoints_status/registration_server_status
+    independently indicate blocking must be ANOMALOUS, regardless of what
+    the web-check condition says. Updated by the TD-105 build session
+    (2026-08-22): whatsapp_endpoints_blocked_count/dns_inconsistent_count
+    are deliberately EXCLUDED from this list now -- they no longer drive
+    ooni_verdict at all, so a row with blocked_count>0 alone is expected
+    to be OK, not a violation. See
+    test_ooni_whatsapp_endpoints_blocked_count_removed.py for that fix's
+    own regression guard covering the removed conditions."""
     from google.cloud import bigquery
 
     client = bigquery.Client(project=PROJECT_ID)
@@ -231,16 +267,15 @@ def test_live_no_row_with_other_driver_true_is_missing_anomalous():
           AND (
             s.whatsapp_endpoints_status = 'blocked'
             OR s.registration_server_status = 'blocked'
-            OR s.whatsapp_endpoints_blocked_count > 0
-            OR s.whatsapp_endpoints_dns_inconsistent_count > 0
           )
           AND v.ooni_verdict != 'ANOMALOUS'
     """
     n = next(client.query(query).result()).n
     assert n == 0, (
         f"TD-105 additive-claim regression (live): {n} whatsapp rows have "
-        "a real driver (bug (b)/(c)'s conditions, untouched by this fix) "
-        "true but are NOT classified ANOMALOUS."
+        "a real driver (bug (c)'s condition or whatsapp_endpoints_status, "
+        "both untouched by this fix) true but are NOT classified "
+        "ANOMALOUS."
     )
 
 

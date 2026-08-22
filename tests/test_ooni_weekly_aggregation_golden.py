@@ -101,6 +101,29 @@ before this fix, see reports.md) -- it corrects a structural
 misclassification (probe/test-infrastructure noise counted as
 "interference-consistent") that predates this session and was never
 part of the flagship narrative to begin with.
+
+RE-FROZEN (TD-105 build, 2026-08-22): `ooni_verdict_weekly`'s `whatsapp`
+values changed after int.ooni_measurement_verdicts_candidate.sql removed
+whatsapp_endpoints_blocked_count > 0 and whatsapp_endpoints_dns_
+inconsistent_count > 0 from the whatsapp OR-chain entirely (not
+thresholded) -- see that asset's header and
+tests/test_ooni_whatsapp_endpoints_blocked_count_removed.py for this
+fix's own static+live regression lock. `total_scored_measurements` is
+unchanged for every week (same TD-93/TD-101 precedent: this fix only
+moves rows out of ANOMALOUS into OK, never into or out of the scored
+population). Only `whatsapp`'s `anomalous_count` moved -- every other
+test_name's numbers in this fixture are unchanged, confirmed via a live
+requery before re-freezing, not assumed. Real deltas, Finance Bill
+window (whatsapp anomalous_count, before -> after): 2024-05-11: 25->24,
+05-18: 17->15, 05-25: 2->2 (unchanged), 06-01: 5->5 (unchanged), 06-08:
+5->5 (unchanged), 06-15: 12->10, 06-22: 65->48, 06-29: 29->20, 07-06:
+11->7, 07-13: 2->2 (unchanged). Window total: 173 -> 138 (-35, -20.2%).
+The flagship 06-22 "Parliament stormed" week keeps a clear, real spike
+after re-freezing (48 anomalous out of 1,217 scored, still far above
+every other week's baseline of 2-24) -- this fix removes noise, it does
+not erase the flagship signal. See reports.md's 2026-08-21 and
+2026-08-22 TD-105 session entries for the full methodology and the two
+matched-pair verification sessions this fix is based on.
 """
 import json
 import os

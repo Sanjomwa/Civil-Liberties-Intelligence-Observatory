@@ -213,17 +213,30 @@ description: |
   weekly-signal protocol selector renders whatsapp's anomalous_rate
   directly from this classification chain, live, today. Two other
   conditions in this same OR-chain were investigated in the same
-  verification session and found NOT to share this shape -- deliberately
-  left untouched here, not silently folded in:
+  verification session: registration_server_status = 'blocked' (89%
+  genuinely correct against OONI's live classification across both probe
+  versions; a small, separate 2/562-row http_request_failed exception
+  exists but is too small and different in kind to fold into this fix)
+  was found NOT to share this shape and left untouched, while
   whatsapp_endpoints_blocked_count > 0 (real, 1,042 rows, but
   heterogeneous -- a small oracle check split ~50/50 against OONI's own
-  judgment, needs its own dedicated investigation before any fix) and
-  registration_server_status = 'blocked' (89% genuinely correct against
-  OONI's live classification across both probe versions; a small,
-  separate 2/562-row http_request_failed exception exists but is too
-  small and different in kind to fold into this fix). See reports.md's
-  2026-08-21 TD-105 session entries (verification and build) for the
-  full account.
+  judgment) was flagged as needing its own dedicated investigation.
+
+  TD-105 build (2026-08-22): that dedicated investigation happened (two
+  follow-up sessions, 2026-08-21 and 2026-08-22) and found
+  whatsapp_endpoints_blocked_count > 0 actively wrong, not just
+  imprecise -- OONI's own live scorer disables this exact rule in its
+  source ("Disabled due to bug in the probe
+  https://github.com/ooni/probe-engine/issues/341"), and restricted to
+  the population where blocked_count was the ONLY driver, OONI agreed
+  with CLIO's ANOMALOUS call 0/131 times across two independent samples.
+  Removed from the OR-chain entirely (not thresholded), along with the
+  permanently-dead whatsapp_endpoints_dns_inconsistent_count > 0 -- see
+  that arm's own inline comment below for the full mechanism (branch
+  precedence: OONI's endpoint-accessibility check is only ever reached
+  after web/registration checks already pass). See reports.md's
+  2026-08-21 and 2026-08-22 TD-105 session entries (verification and
+  build) for the full account.
 
 depends:
   - stg.ooni_measurement_summary
@@ -374,18 +387,48 @@ verdicts AS (
         -- recomputation only changes behavior for test_version=0.9.0 rows
         -- where the HTTPS leg actually succeeded. Two other conditions
         -- investigated the same session and found NOT to share this
-        -- shape, deliberately left untouched here:
-        -- whatsapp_endpoints_blocked_count > 0 (real but heterogeneous,
-        -- ~50/50 against OONI's own judgment in a small check -- needs
-        -- its own dedicated investigation) and registration_server_status
-        -- (89% genuinely correct; a small 2/562-row http_request_failed
-        -- exception exists but is separate and too small to fold in
-        -- here). See reports.md's 2026-08-21 TD-105 session entry.
+        -- shape: registration_server_status (89% genuinely correct; a
+        -- small 2/562-row http_request_failed exception exists but is
+        -- separate and too small to fold in here), left untouched, and
+        -- whatsapp_endpoints_blocked_count > 0, investigated further and
+        -- REMOVED below -- see the TD-105 build note.
+        --
+        -- TD-105 build (2026-08-22): whatsapp_endpoints_blocked_count > 0
+        -- and whatsapp_endpoints_dns_inconsistent_count > 0 REMOVED from
+        -- this OR-chain, not thresholded. Two follow-up verification
+        -- sessions (2026-08-21, 2026-08-22) found the condition actively
+        -- wrong, not just imprecise: OONI's own live scorer source
+        -- contains this exact endpoint-blocked-count rule, commented out,
+        -- with the note "Disabled due to bug in the probe
+        -- https://github.com/ooni/probe-engine/issues/341" -- OONI tried
+        -- it and abandoned it. Confirmed empirically against OONI's real
+        -- classification: restricted to the population where blocked_
+        -- count was the ONLY thing driving ANOMALOUS (whatsapp_web_
+        -- accessible not FALSE, registration_server_status = 'ok'), OONI
+        -- agreed with CLIO's ANOMALOUS call 0/131 times across two
+        -- independently-drawn samples, spanning the full blocked_count
+        -- range (1-15) and every magnitude bucket (the entire 25-row
+        -- 7+ bucket sole-driver population included, twice). The earlier
+        -- "high count usually means real interference" read was a
+        -- confound: high-blocked_count rows are disproportionately ones
+        -- where a web or registration failure ALSO occurred (only 18.4%
+        -- of the 7+ bucket is actually isolated from that), and OONI's
+        -- own scorer never reaches its endpoint-accessibility check at
+        -- all once the web/registration checks have already failed --
+        -- confirmed directly via OONI's API `scores.analysis` sub-object,
+        -- present only when that branch is reached: 0/151 fetched rows
+        -- this session showed `whatsapp_endpoints_accessible = false`,
+        -- and every ANOMALOUS row lacking a sole-blocked_count driver
+        -- (30/30 sampled) lacked the `analysis` key entirely, i.e. never
+        -- reached the endpoint check in the first place. whatsapp_
+        -- endpoints_dns_inconsistent_count > 0 is removed alongside it
+        -- as dead weight, not on its own merits -- confirmed permanently
+        -- 0/51,394 rows live, never populated by the probe. See reports.md's
+        -- 2026-08-21 and 2026-08-22 TD-105 session entries for the full
+        -- account.
         WHEN s.whatsapp_endpoints_status = 'blocked'
           OR s.whatsapp_web_accessible IS FALSE
-          OR s.registration_server_status = 'blocked'
-          OR s.whatsapp_endpoints_blocked_count > 0
-          OR s.whatsapp_endpoints_dns_inconsistent_count > 0 THEN TRUE
+          OR s.registration_server_status = 'blocked' THEN TRUE
         ELSE FALSE
       END
       WHEN 'telegram' THEN CASE
