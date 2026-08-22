@@ -88,12 +88,48 @@ materialization:
 
 SELECT * FROM UNNEST([
 
-    -- signal: the one real, sourced discard rule. Only 0.2.0 is < 0.2.2.
+    -- signal: TWO separate, sourced discard rules at THIS table's grain --
+    -- do not merge them. 0.2.0 (below) is the original, 2026-08-15 rule,
+    -- a genuine unconditional version-wide discard (OONI's own published
+    -- rule, confirmed version-wide by OONI itself, unlike 0.2.2 below).
+    -- 0.2.2's own TD-102 defect (the dead api.directory.signal.org
+    -- backend target) is real but, per a second review pass on
+    -- 2026-08-22, is NOT version-wide in practice -- only
+    -- signal_backend_status='blocked' rows are actually poisoned by it
+    -- (~19% of 0.2.2, confirmed below); the other ~81% are genuine,
+    -- OONI-agreed 'ok' measurements this table's flat per-version grain
+    -- cannot express. That rule is therefore expressed as an inline,
+    -- signal_backend_status-gated predicate in
+    -- int.ooni_measurement_verdicts_candidate.sql instead -- see that
+    -- file's own comment for the full mechanism and the rescoping
+    -- history. This row stays FALSE.
     STRUCT('signal' AS test_name, '0.2.0' AS test_version, TRUE AS is_known_bad_version,
       'ooni/pipeline af/fastpath/fastpath/core.py score_signal(), commit 09603b720a6303cd017406415b845a2a51649959 (ooni/probe#2344): test_version < 0.2.2 discarded for measurements on/after 2022-10-19 -- CLIO Kenya window (2023-06-01+) is always past that date, so this collapses to an unconditional discard for this version. 8,078 live rows.' AS sourced_from),
+    -- TD-102 (2026-08-22, characterization + build sessions), RESCOPED
+    -- (2026-08-22, second build session): this row was briefly TRUE
+    -- (version-wide discard) in the first TD-102 build session, then
+    -- reverted back to FALSE here once that session's own post-fix
+    -- validation found the "poisons every 0.2.2 measurement
+    -- unconditionally" premise did not hold against the real population
+    -- -- only 415/2,200 (18.9%) of 0.2.2 rows actually show
+    -- signal_backend_status='blocked'; the other 1,785 (81.1%) are
+    -- 'ok' and independently OONI-agreed 'ok' in a live-API matched-pair
+    -- sample (16/16). The underlying defect (a dead
+    -- https://api.directory.signal.org/ backend target, tested
+    -- unconditionally by 0.2.2, removed in 0.2.3 -- confirmed by
+    -- probe-cli source diff and live OONI API data) is real, but does
+    -- not poison the whole measurement every time, contrary to the
+    -- original source-diff-based reading of Signal's client failure
+    -- logic. Correctly scoped rule now lives as an inline
+    -- signal_backend_status='blocked' predicate in
+    -- int.ooni_measurement_verdicts_candidate.sql's probe_accuracy_gate
+    -- CASE (~415 rows), NOT here -- this table's flat per-version grain
+    -- cannot express a per-measurement-field condition. See
+    -- reports.md's 2026-08-22 TD-102 session entries (characterization,
+    -- first build, rescoping build) for the full account.
     STRUCT('signal', '0.2.2', FALSE,
-      'Same source as 0.2.0 -- 0.2.2 is the exact cutoff, NOT < 0.2.2, so scores.accuracy is not forced to 0.0 by this rule. 2,200 live rows.'),
-    STRUCT('signal', '0.2.3', FALSE, 'Above the 0.2.2 cutoff -- not discarded by the sourced rule. 6,844 live rows.'),
+      'TD-102 (2026-08-22, rescoped): a dead Signal backend target (https://api.directory.signal.org/), tested unconditionally by 0.2.2 and removed in 0.2.3, is real but only actually poisons signal_backend_status=blocked measurements (~415/2,200, 18.9%), not the whole version -- the other 1,785 ok-status rows are genuine and OONI-agreed. This row is deliberately FALSE; the narrower, correctly-scoped discard is an inline predicate in int.ooni_measurement_verdicts_candidate.sql keyed on signal_backend_status, since this table has no per-measurement-field grain to express that condition. SEPARATE from the 0.2.0 rule above (a genuine, OONI-confirmed version-wide rule) and from 0.2.3s own, different, date-gated defect. See reports.md 2026-08-22 TD-102 entries.'),
+    STRUCT('signal', '0.2.3', FALSE, 'Above the 0.2.2 cutoff -- not discarded by THIS rule (the 0.2.0 version cutoff). See int.ooni_measurement_verdicts_candidate.sql for a SEPARATE, date-gated TD-102 (2026-08-22) discard condition that applies to a subset of 0.2.3s own rows (measurement_start_time > 2023-11-06T16:00:00) -- expressed inline there, not here, since it needs a date grain this table does not have. 6,844 live rows.' AS sourced_from),
     STRUCT('signal', '0.2.4', FALSE, 'Above the 0.2.2 cutoff -- not discarded by the sourced rule. 1,146 live rows.'),
     STRUCT('signal', '0.2.5', FALSE, 'Above the 0.2.2 cutoff -- not discarded by the sourced rule. 32,186 live rows.'),
 

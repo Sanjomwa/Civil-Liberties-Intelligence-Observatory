@@ -382,8 +382,8 @@
         "anomalous_count": 0
       },
       "signal": {
-        "total_scored_measurements": 279,
-        "anomalous_count": 13
+        "total_scored_measurements": 197,
+        "anomalous_count": 3
       },
       "telegram": {
         "total_scored_measurements": 321,
@@ -404,8 +404,8 @@
         "anomalous_count": 0
       },
       "signal": {
-        "total_scored_measurements": 298,
-        "anomalous_count": 7
+        "total_scored_measurements": 189,
+        "anomalous_count": 1
       },
       "telegram": {
         "total_scored_measurements": 363,
@@ -426,8 +426,8 @@
         "anomalous_count": 0
       },
       "signal": {
-        "total_scored_measurements": 321,
-        "anomalous_count": 4
+        "total_scored_measurements": 214,
+        "anomalous_count": 2
       },
       "telegram": {
         "total_scored_measurements": 345,
@@ -448,8 +448,8 @@
         "anomalous_count": 0
       },
       "signal": {
-        "total_scored_measurements": 292,
-        "anomalous_count": 1
+        "total_scored_measurements": 205,
+        "anomalous_count": 0
       },
       "telegram": {
         "total_scored_measurements": 309,
@@ -470,8 +470,8 @@
         "anomalous_count": 0
       },
       "signal": {
-        "total_scored_measurements": 340,
-        "anomalous_count": 1
+        "total_scored_measurements": 275,
+        "anomalous_count": 0
       },
       "telegram": {
         "total_scored_measurements": 398,
@@ -492,7 +492,7 @@
         "anomalous_count": 0
       },
       "signal": {
-        "total_scored_measurements": 497,
+        "total_scored_measurements": 423,
         "anomalous_count": 4
       },
       "telegram": {
@@ -514,8 +514,8 @@
         "anomalous_count": 0
       },
       "signal": {
-        "total_scored_measurements": 1058,
-        "anomalous_count": 31
+        "total_scored_measurements": 998,
+        "anomalous_count": 30
       },
       "telegram": {
         "total_scored_measurements": 1139,
@@ -536,8 +536,8 @@
         "anomalous_count": 0
       },
       "signal": {
-        "total_scored_measurements": 784,
-        "anomalous_count": 6
+        "total_scored_measurements": 779,
+        "anomalous_count": 4
       },
       "telegram": {
         "total_scored_measurements": 841,
@@ -558,7 +558,7 @@
         "anomalous_count": 0
       },
       "signal": {
-        "total_scored_measurements": 698,
+        "total_scored_measurements": 688,
         "anomalous_count": 10
       },
       "telegram": {

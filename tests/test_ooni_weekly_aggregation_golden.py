@@ -124,6 +124,53 @@ every other week's baseline of 2-24) -- this fix removes noise, it does
 not erase the flagship signal. See reports.md's 2026-08-21 and
 2026-08-22 TD-105 session entries for the full methodology and the two
 matched-pair verification sessions this fix is based on.
+
+RE-FROZEN (TD-102 build, 2026-08-22): `ooni_verdict_weekly`'s `signal`
+values changed after TWO SEPARATE fixes landed for signal probe
+versions 0.2.2 (version-wide, marts.dim_ooni_probe_version_accuracy)
+and 0.2.3-post-2023-11-06T16:00:00 (date-gated, inline in
+int.ooni_measurement_verdicts_candidate.sql's probe_accuracy_gate) --
+see tests/test_ooni_signal_probe_version_discard.py for both fixes'
+own static+live regression lock. UNLIKE every prior re-freeze in this
+fixture's history (TD-93, TD-101, TD-105), `total_scored_measurements`
+is NOT held constant this time -- both TD-102 fixes DISCARD rows
+(route them to NULL, excluded from the scored population entirely),
+they do not just move rows between ANOMALOUS/FAILED/OK within it. Real
+deltas, Finance Bill window (signal total_scored_measurements /
+anomalous_count, before -> after): 2024-05-11: 279/13 -> 197/3, 05-18:
+298/7 -> 189/1, 05-25: 321/4 -> 214/2, 06-01: 292/1 -> 205/0, 06-08:
+340/1 -> 275/0, 06-15: 497/4 -> 423/4 (anomalous_count unchanged this
+week, denominator still shrank), 06-22: 1058/31 -> 998/30, 06-29:
+784/6 -> 779/4, 07-06: 698/10 -> 688/10 (anomalous_count unchanged,
+denominator still shrank), 07-13: 85/1 -> 85/1 (fully unchanged --
+zero 0.2.2/0.2.3 rows in this specific week). Window totals:
+scored 4,652 -> 4,053 (-599, -12.9%), anomalous 78 -> 55 (-23, -29.5%)
+-- the -23 anomalous delta matches TD-102's own verification session's
+independently-computed window-impact estimate exactly. Every other
+test_name's numbers in this fixture are unchanged, confirmed via a
+live requery before re-freezing, not assumed. See reports.md's
+2026-08-22 TD-102 session entries (characterization, verification,
+build) for the full methodology.
+
+RESCOPED (TD-102 rescoping build, 2026-08-22, same day): the paragraph
+above's description of the 0.2.2 mechanism as "version-wide" is now
+STALE -- a later session that same day found the version-wide premise
+did not hold against the real population (only 415/2,200, 18.9%, of
+0.2.2 rows are actually signal_backend_status='blocked'; the other
+1,785 are genuine, OONI-agreed 'ok' rows) and narrowed 0.2.2's fix to
+an inline signal_backend_status='blocked' predicate in
+int.ooni_measurement_verdicts_candidate.sql (marts.
+dim_ooni_probe_version_accuracy's 0.2.2 row is back to
+is_known_bad_version=FALSE). THE NUMBERS ABOVE REMAIN CORRECT AND WERE
+NOT RE-FROZEN -- verified live, not assumed: every one of the Finance
+Bill window's 71 0.2.2 rows happens to be signal_backend_status=
+'blocked', so the rescoped, narrower predicate discards the exact same
+rows the version-wide predicate did, within this specific window. The
+1,785-row restoration the rescoping actually accomplishes is real but
+lands entirely outside this window, elsewhere in 0.2.2's broader date
+range -- do not read the unchanged numbers above as evidence the
+rescoping had no effect. See reports.md's 2026-08-22 TD-102 rescoping
+session entry for the full account.
 """
 import json
 import os

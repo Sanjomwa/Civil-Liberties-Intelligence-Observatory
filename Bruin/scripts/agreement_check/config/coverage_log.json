@@ -6,35 +6,35 @@
       "test_type": "signal",
       "ooni_verdict": "OK",
       "failure_type": "none",
-      "last_sampled_at": "2026-08-20T15:28:46.828120+00:00",
+      "last_sampled_at": "2026-08-22T11:33:10.496218+00:00",
       "sampled_count": 10
     },
     "signal|None|none": {
       "test_type": "signal",
       "ooni_verdict": null,
       "failure_type": "none",
-      "last_sampled_at": "2026-08-20T15:28:50.093838+00:00",
+      "last_sampled_at": "2026-08-22T11:33:13.935336+00:00",
       "sampled_count": 10
     },
     "signal|FAILED|signal_legacy_nxdomain": {
       "test_type": "signal",
       "ooni_verdict": "FAILED",
       "failure_type": "signal_legacy_nxdomain",
-      "last_sampled_at": "2026-08-20T15:28:53.311390+00:00",
+      "last_sampled_at": "2026-08-22T10:00:56.093766+00:00",
       "sampled_count": 10
     },
     "signal|ANOMALOUS|none": {
       "test_type": "signal",
       "ooni_verdict": "ANOMALOUS",
       "failure_type": "none",
-      "last_sampled_at": "2026-08-20T15:28:56.984142+00:00",
+      "last_sampled_at": "2026-08-22T11:33:17.228766+00:00",
       "sampled_count": 10
     },
     "signal|None|signal_legacy_nxdomain": {
       "test_type": "signal",
       "ooni_verdict": null,
       "failure_type": "signal_legacy_nxdomain",
-      "last_sampled_at": "2026-08-20T15:29:00.196444+00:00",
+      "last_sampled_at": "2026-08-22T11:33:20.669583+00:00",
       "sampled_count": 10
     },
     "dnscheck|OK|none": {

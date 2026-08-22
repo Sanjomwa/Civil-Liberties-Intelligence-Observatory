@@ -238,6 +238,30 @@ description: |
   2026-08-21 and 2026-08-22 TD-105 session entries (verification and
   build) for the full account.
 
+  TD-102 (2026-08-22, characterization through build sessions):
+  probe_accuracy_gate now also discards signal test_version=0.2.3 rows
+  dated after OONI's own one-time November 2023 data-quality mutation
+  (measurement_start_time > 2023-11-06T16:00:00 -- see that CASE's own
+  inline comment for the full account and the exhaustive/near-exhaustive
+  verification behind it) -- a SEPARATE mechanism from signal
+  test_version=0.2.2's own, unrelated defect (a dead
+  api.directory.signal.org backend target). 0.2.2's fix started as a
+  version-wide dim_ooni_probe_version_accuracy discard in the first
+  build session, then was RESCOPED (same day, second build session)
+  to an inline signal_backend_status='blocked' predicate here instead,
+  once that first session's own post-fix validation found the
+  "poisons every measurement" premise did not hold against the real
+  population (only 415/2,200 rows, 18.9%, actually show
+  signal_backend_status='blocked'; the other 1,785 are genuine,
+  OONI-agreed 'ok' rows that should not be discarded). Do not conflate
+  any of these three mechanisms: 0.2.0 (dim table, genuinely
+  unconditional, OONI-confirmed version-wide) vs. 0.2.2 (inline,
+  status-gated, ~19% of the version) vs. 0.2.3 (inline, date-gated).
+  All three resolve to the same DISCARDED_BAD_PROBE_VERSION outcome
+  and precedence tier, deliberately -- see reports.md's 2026-08-22
+  TD-102 session entries (characterization, first build, rescoping
+  build).
+
 depends:
   - stg.ooni_measurement_summary
   - marts.dim_ooni_probe_version_accuracy
@@ -482,6 +506,73 @@ verdicts AS (
 
     CASE
       WHEN dim.is_known_bad_version IS TRUE THEN 'DISCARDED_BAD_PROBE_VERSION'
+      -- TD-102 (2026-08-22, characterization through build sessions).
+      -- signal test_version=0.2.3 measurements dated after OONI's own
+      -- one-time November 2023 ClickHouse data-quality mutation
+      -- (documented in OONI's own devops runbook, citing
+      -- ooni/probe#2627) are retroactively marked failed/unscoreable by
+      -- OONI's own backend (scores.msg="bad test_version",
+      -- scores.accuracy=0.0), because Signal decommissioned
+      -- textsecure-service.whispersystems.org on 2023-11-07 and probe
+      -- versions before 0.2.4 kept testing the now-dead host. Confirmed
+      -- exhaustively against OONI's live API: 0.2.3's ENTIRE pre-cutoff
+      -- population (12/12 rows) shows 0% disagreement (genuine
+      -- agreement, correctly left ANOMALOUS below); a 76-row post-cutoff
+      -- sample shows 100% disagreement (OONI's real verdict is FAILED,
+      -- not ANOMALOUS) -- a perfect split, zero exceptions on either
+      -- side. This is genuinely date-gated, unlike 0.2.2's SEPARATE,
+      -- unrelated, version-wide defect (a dead api.directory.signal.org
+      -- backend target tested unconditionally since 0.2.2 first shipped
+      -- -- see marts.dim_ooni_probe_version_accuracy's own 0.2.2 row for
+      -- that mechanism; do not conflate the two). Expressed as an inline
+      -- predicate here, not as a dim_ooni_probe_version_accuracy row,
+      -- because that table's grain is (test_name, test_version) only --
+      -- no date dimension -- and this is the only confirmed case in this
+      -- project needing one, per this project's own "no abstraction
+      -- before at least two concrete cases justify it" principle.
+      -- Deliberately reuses DISCARDED_BAD_PROBE_VERSION's exact existing
+      -- label and downstream NULL-routing (see the ooni_verdict CASE
+      -- below, unchanged by this fix) rather than inventing a new state:
+      -- OONI's own runbook states this class of correction "cannot be
+      -- reproduced by external researchers by [reprocessing
+      -- measurements]" -- CLIO's raw ingested JSON never reflects the
+      -- patch, so asserting a specific FAILED verdict sourced from a
+      -- non-reproducible OONI-side correction would be the wrong
+      -- provenance posture; DISCARDED_BAD_PROBE_VERSION's existing
+      -- "probe-side defect makes this measurement uninformative"
+      -- semantics are the correct fit. 1,223 live rows affected
+      -- (0.2.3's post-cutoff population), 0 rows of 0.2.3's 12-row
+      -- pre-cutoff population touched. See reports.md's 2026-08-22
+      -- TD-102 session entries (characterization, verification, build)
+      -- for the full account.
+      WHEN s.test_name = 'signal'
+        AND s.test_version = '0.2.3'
+        AND s.measurement_start_time > TIMESTAMP('2023-11-06T16:00:00')
+        THEN 'DISCARDED_BAD_PROBE_VERSION'
+      -- TD-102 (2026-08-22, RESCOPED in a second build session, same
+      -- day). The dead https://api.directory.signal.org/ backend
+      -- target signal 0.2.2 tests unconditionally (removed in 0.2.3)
+      -- is real, but a first build session's own post-fix validation
+      -- found it does NOT poison every 0.2.2 measurement the way the
+      -- original source-diff reading implied: of 0.2.2's 2,200 live
+      -- rows, only 415 (18.9%) show signal_backend_status='blocked';
+      -- the other 1,785 (81.1%) show 'ok' and are independently
+      -- OONI-agreed 'ok' in a live-API matched-pair sample (16/16 in
+      -- a 20-row check). Narrowed from a version-wide
+      -- dim_ooni_probe_version_accuracy discard (marts.
+      -- dim_ooni_probe_version_accuracy's 0.2.2 row is now back to
+      -- is_known_bad_version=FALSE -- see that table's own comment)
+      -- to exactly this: only rows where 0.2.2's dead-endpoint probe
+      -- actually manifested as a blocked measurement. SEPARATE from
+      -- 0.2.3's own, different, date-gated predicate immediately
+      -- above -- do not conflate the two. 415 live rows affected.
+      -- See reports.md's 2026-08-22 TD-102 session entries
+      -- (characterization, first build, rescoping build) for the
+      -- full account.
+      WHEN s.test_name = 'signal'
+        AND s.test_version = '0.2.2'
+        AND s.signal_backend_status = 'blocked'
+        THEN 'DISCARDED_BAD_PROBE_VERSION'
       WHEN dim.is_known_bad_version IS FALSE THEN 'SCORED'
       ELSE 'UNKNOWN_VERSION'
     END AS probe_accuracy_gate

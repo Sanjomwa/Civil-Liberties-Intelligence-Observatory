@@ -1,0 +1,102 @@
+{
+  "_comment": "TD-102 (2026-08-22, characterization + first build + RESCOPING build sessions) pinned panel for signal's three SEPARATE probe-version discard rules: 0.2.0 (pre-existing, version-wide, dim table), 0.2.2 (rescoped in the second build session from version-wide to an inline signal_backend_status='blocked' predicate in int.ooni_measurement_verdicts_candidate.sql, ~415/2,200 rows -- NOT the dim table anymore), and 0.2.3 post-2023-11-06T16:00:00 (date-gated, inline). Ground truth is OONI's own live /api/v1/measurements API for every row, fetched and cross-checked against the post-fix materialized table. RESCOPING NOTE: entries 1-3 replace the first build session's original 0.2.2 pair -- that session's own row 2 (OONI-real=OK, measurement_id 9a24100d63e37cb1cf0ad8231d73358083529a86d550d631d59853c629650171) was discarded under the version-wide rule; under the corrected, narrower rule it is now RESTORED to OK, and its expected_ooni_verdict/note below reflect that. A second restore example (entry 3) was added in the rescoping session to strengthen coverage of the newly-important 'OK rows must NOT be discarded' claim, which the first build session did not itself verify as a claim worth checking.",
+  "entries": [
+    {
+      "measurement_id": "01759ec1c6d622645e139d53c8f9fbc8e87a8f869b12d89962d28ebc0ae1ed61",
+      "report_id": "20231026T081222Z_signal_KE_328977_n1_2RseYowIFKQW8CUT",
+      "test_version": "0.2.2",
+      "measurement_start_time": "2023-10-26T08:12:27Z",
+      "signal_backend_failure": "dns_server_misbehaving",
+      "signal_backend_status": "blocked",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": null,
+      "note": "0.2.2 discard, rescoped fix (signal_backend_status='blocked' inline predicate, not the dim table): dead api.directory.signal.org backend target poisons this measurement, which does show the blocked status the rescoped predicate keys on. OONI's own live API agrees this measurement is not a real ANOMALOUS detection (anomaly=true, failure=true, accuracy=0.0 -- OONI's own real verdict is FAILED, not ANOMALOUS). Still discarded (NULL) after the rescoping, unchanged from the first build session."
+    },
+    {
+      "measurement_id": "9a24100d63e37cb1cf0ad8231d73358083529a86d550d631d59853c629650171",
+      "report_id": "20230704T200750Z_signal_KE_15399_n1_0rw5QPTg8y27Kjic",
+      "test_version": "0.2.2",
+      "measurement_start_time": "2023-07-04T20:07:53Z",
+      "signal_backend_failure": null,
+      "signal_backend_status": "ok",
+      "before_fix_verdict": "OK",
+      "expected_ooni_verdict": "OK",
+      "note": "RESCOPING CHANGED THIS ROW'S EXPECTATION: under the first build session's version-wide 0.2.2 discard, this measurement was incorrectly discarded (NULL) even though its own CLIO classification was already OK and OONI's own live API independently agrees it is OK (anomaly=false, failure=false, accuracy=None -- not the discard signature). Under the rescoped, signal_backend_status-gated predicate, this row's status is 'ok', not 'blocked', so it is correctly NOT discarded -- restored to OK. This is the central example motivating the rescoping: the version-wide rule was throwing away genuine, OONI-agreed evidence like this row."
+    },
+    {
+      "measurement_id": "98b28c0dedc5512bc891ff2f94a088297f4f3b4b5a00d993f63e751ccd527341",
+      "report_id": "20230719T203926Z_signal_KE_33771_n1_SkZL6JKgW0amY9BL",
+      "test_version": "0.2.2",
+      "measurement_start_time": "2023-07-19T20:39:27Z",
+      "signal_backend_failure": null,
+      "signal_backend_status": "ok",
+      "before_fix_verdict": "OK",
+      "expected_ooni_verdict": "OK",
+      "note": "Second 0.2.2 restore example, added during the rescoping build session (not in the original first-build fixture) to independently cover the 'ok-status rows are correctly restored, not discarded' claim beyond the single row above. OONI's own live API confirms OK (anomaly=false, failure=false, accuracy=None)."
+    },
+    {
+      "measurement_id": "3575142ee9407333f3942dfe27f37367c4b8b6b00e106c1e2abd67c69ea447f2",
+      "report_id": "20241227T054435Z_signal_KE_36866_n1_q1SzVi1wedKMljKe",
+      "test_version": "0.2.3",
+      "measurement_start_time": "2024-12-27T05:44:36Z",
+      "signal_backend_failure": "dns_nxdomain_error",
+      "before_fix_verdict": "FAILED",
+      "expected_ooni_verdict": null,
+      "note": "0.2.3 post-cutoff discard (date-gated fix): before this fix, this row was classified FAILED via TD-93's legacy-endpoint NXDOMAIN carve-out (signal_legacy_endpoint_nxdomain_only=TRUE). After this fix, probe_accuracy_gate's earlier-precedence discard check now intercepts it first, reclassifying FAILED -> NULL -- a real, correct, and expected interaction (not a TD-93 regression): OONI's own live API confirms this measurement's own real backend classification is ALSO the discard-before-scoring signature (failure=true, accuracy=0.0), not a clean NXDOMAIN-based failure OONI would have reached scoring for. TD-93's own rule is completely unchanged; only rows this fix's earlier-precedence check now also claims are affected."
+    },
+    {
+      "measurement_id": "366dbf97aebd5ef456864e0250ad68ec5c5f3ea0fb9bc6a6986e70e3594722ec",
+      "report_id": "20241027T145945Z_signal_KE_12455_n1_Opu0w8PFnStnRhjX",
+      "test_version": "0.2.3",
+      "measurement_start_time": "2024-10-27T14:59:44Z",
+      "signal_backend_failure": "dns_nxdomain_error",
+      "before_fix_verdict": "FAILED",
+      "expected_ooni_verdict": null,
+      "note": "Second 0.2.3 post-cutoff discard example, same TD-93-interaction shape as the row above, different date/probe_asn. OONI's own live API confirms failure=true, accuracy=0.0."
+    },
+    {
+      "measurement_id": "acc6d5699a581c9a841ea635896223e192125450c11a9ccd1a5093b3d612434d",
+      "report_id": "20230924T114612Z_signal_KE_15399_n1_PfBhW9BNOoF1aLFy",
+      "test_version": "0.2.3",
+      "measurement_start_time": "2023-09-24T11:46:27Z",
+      "signal_backend_failure": "generic_timeout_error",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Regression guard: 0.2.3 PRE-cutoff (part of the exhaustively-verified 12-row population entirely unaffected by the date-gated fix). OONI's own live API confirms ANOMALOUS (anomaly=true, failure=false) -- a genuine detection, correctly untouched. Must stay ANOMALOUS after this fix."
+    },
+    {
+      "measurement_id": "689c27a3dea794b8759f180e54381d144e74fa926a4d6d8eb8c7e260db06fa18",
+      "report_id": "20231029T200125Z_signal_KE_12455_n1_7LAFsBLik9N3tYEN",
+      "test_version": "0.2.3",
+      "measurement_start_time": "2023-10-29T20:01:48Z",
+      "signal_backend_failure": "dns_nxdomain_error",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Second 0.2.3 pre-cutoff regression guard -- also has signal_backend_failure='dns_nxdomain_error' (like the discarded post-cutoff rows above) but signal_legacy_endpoint_nxdomain_only is FALSE here (a genuine current-spec-endpoint NXDOMAIN, TD-93's own carve-out correctly does not touch it), AND it predates the 2023-11-06 cutoff -- doubly confirms this is a real detection, not an artifact of either mechanism. OONI's own live API confirms ANOMALOUS."
+    },
+    {
+      "measurement_id": "2ffe688973d6e7aa10fe16d8488d43d50615d85b7207f763eb2b7f3c8b4a0ce2",
+      "report_id": "20240112T003234Z_signal_KE_30844_n1_Y33fF90QkRKDzo33",
+      "test_version": "0.2.4",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Regression guard: test_version=0.2.4, unrelated to and unaffected by either TD-102 fix (0.2.4 removed the dead api.directory.signal.org target entirely, and postdates the November 2023 event cleanly). OONI's own live API confirms ANOMALOUS. Must stay ANOMALOUS, byte-for-byte, after this fix."
+    },
+    {
+      "measurement_id": "33ea43d44bf1086ae1e38dc32451a62a23a922e77f29d692214bb33c13704e34",
+      "report_id": "20241202T095108Z_signal_KE_37061_n1_HfaM4uR1RJyQCWLp",
+      "test_version": "0.2.5",
+      "before_fix_verdict": "ANOMALOUS",
+      "expected_ooni_verdict": "ANOMALOUS",
+      "note": "Second regression guard, test_version=0.2.5, same unaffected shape as the 0.2.4 row above. OONI's own live API confirms ANOMALOUS."
+    },
+    {
+      "measurement_id": "23fe1cbd6be3293d1b5f57b51b627dc27cdb6b0c41bc5877de39f5d95fc0cc70",
+      "report_id": "20230919T053719Z_signal_KE_328490_n1_inGreyksA79VUC1w",
+      "test_version": "0.2.0",
+      "before_fix_verdict": null,
+      "expected_ooni_verdict": null,
+      "note": "Regression guard: test_version=0.2.0, discarded by the PRE-EXISTING TD-91/TD-87-Phase-2 rule (unrelated to and untouched by both of this session's TD-102 fixes). Included to prove neither new fix disturbs the original 0.2.0 discard mechanism. Not independently re-verified against OONI's live API this session -- that mechanism was established and verified in an earlier session; this guard only checks CLIO's own before/after state is unchanged."
+    }
+  ]
+}
