@@ -8,22 +8,22 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  KCLIO interpretation layer for ACLED event vocabulary.
-  Version: 4.0 — Production-ready for KCLIO Phase 1.
+  CLIO interpretation layer for ACLED event vocabulary.
+  Version: 4.0 — Production-ready for CLIO Phase 1.
 
   ──────────────────────────────────────────────────────────────────────
   SCOPE
   ──────────────────────────────────────────────────────────────────────
-  This asset translates ACLED source vocabulary into KCLIO analytical
-  vocabulary. It records what KCLIO inferred from what ACLED said.
+  This asset translates ACLED source vocabulary into CLIO analytical
+  vocabulary. It records what CLIO inferred from what ACLED said.
   It does not modify what ACLED said.
 
   Staging owns:     what ACLED said.
-  This asset owns:  what KCLIO inferred.
+  This asset owns:  what CLIO inferred.
 
   DEPENDENCY CHAIN:
     stg.acled_conflict_events       → ACLED source facts
-    int.acled_event_classification  → KCLIO inference    ← this asset
+    int.acled_event_classification  → CLIO inference    ← this asset
     feat.acled_pressure_signals     → signal engineering
     int.acled_pressure_regimes      → regime classification
 
@@ -47,7 +47,7 @@ description: |
     maximises historical comparability and reduces maintenance burden.
 
   Principle 3 — dual contribution via independent boolean flags.
-    A single event contributes to multiple KCLIO pressure dimensions.
+    A single event contributes to multiple CLIO pressure dimensions.
     Example:
       event_type:            Protests
       sub_event_type:        Excessive force against protesters
@@ -64,7 +64,7 @@ description: |
 
   Principle 5 — classification uncertainty and methodology risk
     are separate concepts and must be separated in the schema.
-    classification_confidence: how certain is KCLIO's inference
+    classification_confidence: how certain is CLIO's inference
       for this specific event.
     methodology_risk_level: how likely is cross-country methodology
       variation to affect interpretation of this event_type.
@@ -84,7 +84,7 @@ description: |
   OUTPUTS
   ──────────────────────────────────────────────────────────────────────
 
-  pressure_domain               — primary KCLIO pressure category
+  pressure_domain               — primary CLIO pressure category
   is_suppression_marker         — civic activity + directed response
   is_civic_response             — act directed at protests/assembly
   severity_tier                 — fatality-based severity (V1)
@@ -200,9 +200,9 @@ columns:
   - name: pressure_domain
     type: string
     description: |
-      KCLIO primary pressure domain. Derived from event_type only.
+      CLIO primary pressure domain. Derived from event_type only.
       Values: PROTEST, DISORDER, VIOLENCE, STRATEGIC, UNCLASSIFIED.
-      This is KCLIO classification. Not ACLED classification.
+      This is CLIO classification. Not ACLED classification.
     checks:
       - name: not_null
       - name: accepted_values
@@ -232,7 +232,7 @@ columns:
   - name: severity_tier
     type: string
     description: |
-      KCLIO severity classification.
+      CLIO severity classification.
       severity_methodology_version = FATALITY_ONLY_V1.
         NONE:    0 fatalities
         LOW:     1–2 fatalities
@@ -258,7 +258,7 @@ columns:
   - name: classification_confidence
     type: string
     description: |
-      KCLIO certainty in this specific classification.
+      CLIO certainty in this specific classification.
       Distinct from methodology_risk_level.
       HIGH:   unambiguous inference from stable ACLED vocabulary.
       MEDIUM: clear event_type, sub_event_type has some variability.
@@ -490,7 +490,7 @@ classified AS (
 -- Derive methodology_risk_level and is_ambiguous_event after classified CTE
 -- so that methodology_risk_level can correctly reference pressure_domain.
 -- Fix: WHEN pressure_domain = 'UNCLASSIFIED' (not event_type = 'UNCLASSIFIED',
--- which could never match — UNCLASSIFIED is a KCLIO value, not an ACLED value).
+-- which could never match — UNCLASSIFIED is a CLIO value, not an ACLED value).
 with_risk AS (
 
     SELECT
@@ -541,7 +541,7 @@ SELECT
     fatalities,
     population_exposure,
 
-    -- ── KCLIO CLASSIFICATION ─────────────────────────────────────────────────
+    -- ── CLIO CLASSIFICATION ─────────────────────────────────────────────────
     pressure_domain,
     is_suppression_marker,
     is_civic_response,

@@ -16,7 +16,7 @@ description: |
   preservation. It records what ACLED said. It does not infer what
   ACLED means.
 
-  All KCLIO interpretation — sub_event_category, pressure_domain,
+  All CLIO interpretation — sub_event_category, pressure_domain,
   suppression markers — lives in int.acled_event_classification.
   That boundary is the same boundary maintained between
   stg.ooni_tcp_observations and int.ooni_experiment_results.
@@ -72,7 +72,7 @@ description: |
   sub_event_category     — lives in int.acled_event_classification
   pressure_domain        — lives in int.acled_event_classification
   suppression markers    — lives in int.acled_event_classification
-  Any KCLIO inference    — lives downstream of this asset
+  Any CLIO inference    — lives downstream of this asset
 
 owner: civil-liberties-pipeline
 
@@ -143,7 +143,7 @@ columns:
     description: |
       ACLED sub-event classification.
       Preserved verbatim. Not interpreted here.
-      Classification into KCLIO pressure domains happens
+      Classification into CLIO pressure domains happens
       in int.acled_event_classification.
     checks:
       - name: not_null
@@ -219,7 +219,7 @@ columns:
   - name: spatial_precision
     type: string
     description: |
-      KCLIO-labelled spatial precision tier.
+      CLIO-labelled spatial precision tier.
       ADMIN1_CENTROID: all rows from this weekly aggregate pipeline.
       EVENT_PRECISE: reserved for future event-level ingestion.
       Spatial Diffusion Score must document this value in outputs.
@@ -313,7 +313,7 @@ SELECT
 
     -- ── ACLED SOURCE FIELDS — VERBATIM ──────────────────────────────────────
     -- These fields record what ACLED said.
-    -- No KCLIO interpretation is applied here.
+    -- No CLIO interpretation is applied here.
     event_type,
     sub_event_type,
     disorder_type,

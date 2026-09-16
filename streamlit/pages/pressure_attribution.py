@@ -301,7 +301,7 @@ else:
         "ACLED grain: weekly aggregates anchored to Saturday. Nothing in "
         "this data distinguishes which day within the week an event "
         "occurred (minimum detectable lag: 7 days). classification_"
-        "confidence and methodology_risk_level are KCLIO's own per-row "
+        "confidence and methodology_risk_level are CLIO's own per-row "
         "qualifiers (int.acled_event_classification, ACLED_INTELLIGENCE_"
         "FRAMEWORK_V1)."
     )
