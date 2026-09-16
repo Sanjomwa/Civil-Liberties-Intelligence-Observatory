@@ -80,12 +80,13 @@ def require_dev(env: str) -> None:
 ENV = resolve_env(fallback="dev")
 require_dev(ENV)
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
 
 def materialize():
-    base_path = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/acled"
-    csv_file = Path(base_path) / \
-        "Africa_aggregated_data_up_to_week_of-2026-03-14.csv"
-    parquet_out = Path(base_path) / "acled_conflict_events.parquet"
+    base_path = PROJECT_ROOT / "data/dev/acled"
+    csv_file = base_path / "Africa_aggregated_data_up_to_week_of-2026-03-14.csv"
+    parquet_out = base_path / "acled_conflict_events.parquet"
 
     print(f"📂 Reading ACLED CSV: {csv_file.name}")
 

@@ -21,6 +21,7 @@ materialization:
 import os
 import pandas as pd
 from datetime import datetime
+from pathlib import Path
 from google.cloud import bigquery
 
 
@@ -42,8 +43,9 @@ PROJECT_ID = os.getenv(
     "GOOGLE_CLOUD_PROJECT",
     "encoded-joy-485413-k5"
 )
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 GCS_BUCKET = "civil-liberties-data"
-LOCAL_FILE = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/acled/acled_conflict_events.parquet"
+LOCAL_FILE = PROJECT_ROOT / "data/dev/acled/acled_conflict_events.parquet"
 TABLE = "acled_conflict_events"
 
 ENV = resolve_env(fallback="staging")
