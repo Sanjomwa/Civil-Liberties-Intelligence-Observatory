@@ -1247,6 +1247,13 @@ confidence_ceiling_computed AS (
         --   OR methodology risk TRUE (with valid z-scores)
         --   OR any dominant sparse flag TRUE (z-score exists but thin)
         --   OR threshold_adjacent on dominant family
+        --
+        --   Note: this branch's premise (a family can have a thin-but-present
+        --   z-score while another family is fully UNKNOWN) does not currently
+        --   occur in practice — see TD-136 in technical-debt-inventory.md.
+        --   The upstream feature asset's signal_valid gate currently makes
+        --   all three families' z-scores all-or-nothing, so this branch is
+        --   reachable only if/when TD-136's Option A is implemented.
         -- HIGH: all dominant conditions satisfied
         CASE
             -- BLOCKER-002 WIRING: stable_insufficient_data_case is computed

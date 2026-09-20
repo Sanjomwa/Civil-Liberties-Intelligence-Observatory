@@ -75,6 +75,20 @@ description: |
         AND NOT (signal_valid = FALSE due to global conditions)
       Equivalent per-family logic applies to violence and suppression.
 
+  Known deviation from spec, tracked as TD-136 (found 2026-09-18,
+  confirmed against live data 2026-09-20): the signal_valid gate
+  implemented below is stricter than the per-family-independence design
+  stated above, including the "NOT (signal_valid = FALSE due to global
+  conditions)" line just above. In the current code, signal_valid is a
+  flat OR across all per-family AND global flags, not the global flags
+  alone — so a sparse or zero-variance condition in any one family
+  currently suppresses all three z-scores together, not just its own.
+  This affects roughly 37% of Kenya's backfilled weeks (564 of 1,523).
+  This is a known, deliberate deferral pending a quantified decision on
+  whether to loosen the code to match this spec — not an oversight this
+  comment is unaware of. See technical-debt-inventory.md TD-136 for
+  full detail and status.
+
   ──────────────────────────────────────────────────────────────────────
   VARIANCE GOVERNANCE
   ──────────────────────────────────────────────────────────────────────
@@ -835,6 +849,10 @@ with_signal_valid AS (
 --   A globally valid signal does not emit a z-score for a family
 --   whose own validity conditions are not met.
 --   A family failure does not suppress other families' z-scores.
+--
+--   TD-136: this last claim does not hold in the CASE expressions below —
+--   see the "Known deviation from spec" note in this file's header
+--   (PER-FAMILY VALIDITY ARCHITECTURE section) for the confirmed detail.
 -- ═══════════════════════════════════════════════════════════════════════════
 SELECT
     -- grain
