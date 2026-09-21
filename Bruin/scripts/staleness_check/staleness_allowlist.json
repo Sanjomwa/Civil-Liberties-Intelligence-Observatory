@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "downstream": "intelligence.acled_pressure_regimes",
+    "upstream": "features.acled_pressure_signals",
+    "td_ref": "TD-136",
+    "reason": "Option E shadow columns materialized 2026-09-21; observation-only, deliberately not cascaded to the regime engine (cutover deferred past OTF review).",
+    "added": "2026-09-21",
+    "remove_when": "TD-136 Option A cuts over and intelligence.acled_pressure_regimes is rematerialized. Do NOT prune on a 'no longer matches' warning alone — a routine run_acled_regime_week.py steady-state run clears the inversion without resolving TD-136."
+  }
+]
