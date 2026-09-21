@@ -500,6 +500,36 @@ columns:
     description: Pipeline execution timestamp.
     checks:
       - name: not_null
+
+  # ── TD-136 SHADOW COLUMNS (Option E) — observation only ──────────────
+  - name: shadow_global_conditions_valid
+    type: boolean
+    description: >
+      TD-136 shadow column (Option E), observation only. TRUE when neither global
+      validity condition fires (low_event_density_flag, high_methodology_risk_flag).
+      This is the global-only validity term this file's header has always specified
+      for per-family z-score gating; the live signal_valid column additionally folds
+      in all six per-family flags, which is the TD-136 bug. Not consumed by any
+      downstream asset. Slated for deletion at the TD-136 Option A cutover, when
+      signal_valid's own per-family usage is corrected in place.
+  - name: shadow_protest_pressure_z
+    type: float
+    description: >
+      TD-136 shadow column (Option E), observation only. Identical to
+      protest_pressure_z except gated on shadow_global_conditions_valid instead of
+      signal_valid. Populated whenever shadow_global_conditions_valid AND NOT
+      sparse_protest_baseline_flag AND NOT protest_zero_variance_flag. Is a strict
+      superset of protest_pressure_z: never NULL where protest_pressure_z is
+      non-NULL, and never a different value where both are non-NULL. Not consumed
+      downstream.
+  - name: shadow_violence_pressure_z
+    type: float
+    description: >
+      Same as shadow_protest_pressure_z, for the violence family.
+  - name: shadow_suppression_z
+    type: float
+    description: >
+      Same as shadow_protest_pressure_z, for the suppression family.
 @bruin */
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -832,7 +862,16 @@ with_signal_valid AS (
             OR violence_zero_variance_flag
             OR suppression_zero_variance_flag
             OR high_methodology_risk_flag
-        ) AS signal_valid
+        ) AS signal_valid,
+
+        -- TD-136 (Option E, shadow): the header-specified global-only validity term.
+        -- Deliberately omits all six per-family flags. Term-for-term identical to
+        -- signal_valid above except for those omissions — no added COALESCE, no
+        -- reordering, so the observed diff is attributable to one change only.
+        NOT (
+            low_event_density_flag
+            OR high_methodology_risk_flag
+        ) AS shadow_global_conditions_valid
 
     FROM with_flags
 )
@@ -978,7 +1017,35 @@ SELECT
         'FATALITY_ONLY_V1'
     ) AS severity_methodology_version,
 
-    CURRENT_TIMESTAMP() AS computed_at
+    CURRENT_TIMESTAMP() AS computed_at,
+
+    -- ─── TD-136 SHADOW COLUMNS (Option E) — observation only, not consumed ───
+    -- Do not read these from intelligence.acled_pressure_regimes or any mart.
+    shadow_global_conditions_valid,
+
+    CASE
+        WHEN shadow_global_conditions_valid
+             AND NOT sparse_protest_baseline_flag
+             AND NOT protest_zero_variance_flag
+        THEN ROUND(SAFE_DIVIDE(protest_pressure_index - COALESCE(protest_baseline_12w, 0), protest_stddev_eff), 4)
+        ELSE NULL
+    END AS shadow_protest_pressure_z,
+
+    CASE
+        WHEN shadow_global_conditions_valid
+             AND NOT sparse_violence_baseline_flag
+             AND NOT violence_zero_variance_flag
+        THEN ROUND(SAFE_DIVIDE(violence_pressure_index - COALESCE(violence_baseline_12w, 0), violence_stddev_eff), 4)
+        ELSE NULL
+    END AS shadow_violence_pressure_z,
+
+    CASE
+        WHEN shadow_global_conditions_valid
+             AND NOT sparse_suppression_baseline_flag
+             AND NOT suppression_zero_variance_flag
+        THEN ROUND(SAFE_DIVIDE(suppression_intensity_index - COALESCE(suppression_baseline_12w, 0), suppression_stddev_eff), 4)
+        ELSE NULL
+    END AS shadow_suppression_z
 
 FROM with_signal_valid
 ORDER BY week_start_date;
