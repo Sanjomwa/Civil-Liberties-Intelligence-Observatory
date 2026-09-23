@@ -7,7 +7,7 @@ This file orients any future Claude session working in this folder. Read it firs
 
 CLIO (Civil Liberties Intelligence Observatory) fuses internet-censorship measurement (OONI), conflict event data (ACLED), and platform/legal takedown-pressure signals (Google Transparency Report, Lumen Database) into attributed, confidence-qualified findings about civil-liberties pressure. It is a Bruin-orchestrated BigQuery pipeline (raw → staging → intermediate → features → intelligence → marts → reporting) with a read-only Streamlit dashboard on top.
 
-## The project has two completed phases behind it — know which one you're in
+## The project has three phases, two complete and one current — know which one you're in
 
 1. **The Constitution Project** (complete, frozen, historical context only). A philosophical/scientific inquiry into what CLIO's recurring engineering patterns might imply about evidence, uncertainty, and reasoning as a general discipline. Its conclusion, stated plainly by its own final document: CLIO is not currently a general reasoning architecture, most of what looked novel reduces to existing fields (metrology, database provenance theory, psychometrics, epistemology), and further progress requires operational evidence, not more theory. **Do not extend, rewrite, or treat these documents as implementation specifications.** They now live in `clio_constituion_project/` at this folder's root (moved there by the project owner, not by any automated process): the eight `.docx` files from Deliverable 1 through the Executive Summary. Indexed, not duplicated, at `docs/04-research/README.md`.
 2. **The CLIO Project Zero Review** (complete). The first implementation-focused review — technical, product, commercial, strategic, and competitive assessment of the actual repository and business documents, plus the `docs/00-06` documentation structure this project now uses. Lives at `CLIO_Project_Zero_Review.docx`, with its commercial/product content split into `docs/01-product/` and `docs/05-business/`.
@@ -86,4 +86,4 @@ Architecture review (read-only, module-boundary-first, flags open questions rath
 
 ## Before starting implementation work
 
-Read `docs/02-architecture/implementation-roadmap.md` and start at Step 0. It is two verification tasks, not a redesign, and the rest of the roadmap is sequenced on their answers.
+Step 0 of `implementation-roadmap.md` closed on 2026-07-04 and should not be restarted. For current state, read the most recent entries in `decision-log.md`'s narrative section, then the open items in `technical-debt-inventory.md` relevant to the task. `implementation-roadmap.md` is for sequencing questions only, and may lag behind the decision log.

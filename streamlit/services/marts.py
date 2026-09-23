@@ -579,6 +579,8 @@ def get_finance_bill_incident():
             final_confidence_score,
             regime_primary_regime,
             regime_confidence_level,
+            insufficient_history_flag,
+            zero_variance_flag,
             reporting_version,
             snapshot_at
         FROM `{REPORTING}.protocol_repression_correlation_mart`
@@ -605,6 +607,8 @@ def get_finance_bill_incident():
             "final_confidence_score",
             "regime_primary_regime",
             "regime_confidence_level",
+            "insufficient_history_flag",
+            "zero_variance_flag",
             "reporting_version",
             "snapshot_at",
         ],
@@ -623,6 +627,8 @@ def get_finance_bill_incident():
             "final_confidence_score": "numeric",
             "regime_primary_regime": "string",
             "regime_confidence_level": "string",
+            "insufficient_history_flag": "any",
+            "zero_variance_flag": "any",
             "reporting_version": "string",
             "snapshot_at": "datetime",
         },

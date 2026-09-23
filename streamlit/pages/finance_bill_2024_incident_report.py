@@ -98,10 +98,13 @@ st.info(f"""
   protocol data): **{crisis_days} of {total_days} days** in this window are
   classified `CRISIS`.
 
-This is a conflict-confirmed window with weak-to-absent protocol-layer
-statistical correlation, not a synchronized-escalation finding. The two
-evidence sources disagree on strength -- that disagreement is the honest
-result, not something to resolve toward the stronger-sounding claim.
+This is a conflict-confirmed window. The protocol-layer correlation
+measure did not reach its moderate threshold here, but in its current
+form it has not reached that threshold anywhere in its history, so read
+this as "no correlation detected by this measure", not as evidence that
+network interference and conflict pressure were unrelated. The two
+evidence sources are shown side by side rather than resolved toward the
+stronger-sounding claim.
 """)
 
 st.divider()

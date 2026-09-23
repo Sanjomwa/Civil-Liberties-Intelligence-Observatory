@@ -7,11 +7,20 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
-  Measures statistically validated relationship between protocol-level
-  censorship anomalies and country-level repression pressure.
+  Computes an exploratory rolling Pearson correlation (rolling_pressure_corr,
+  a 31-row/protocol window) between protocol-level censorship anomalies and
+  country-level repression pressure. No significance test is applied anywhere
+  in this pipeline -- correlation_state/alignment_state labels are threshold
+  bands on the raw coefficient, not a tested or statistically validated
+  relationship.
 
-  v3 recalibrates correlation confidence weighting and suppresses synthetic
-  variance amplification from low-confidence protocol windows.
+  This is reporting_version 'protocol_repression_correlation_mart_v4' (see
+  the literal at the bottom of the SELECT). A prior version of this
+  description claimed v3 "suppresses synthetic variance amplification from
+  low-confidence protocol windows" -- a later audit found the input-side
+  confidence weighting does not reliably do this and can amplify variance in
+  some windows instead. That claim is dropped here rather than restated;
+  see TD-142 in technical-debt-inventory.md for the correction.
 
   ADR-0004 / TD-44 / TD-45 (2026-07-05, v4): composite_pressure_score (read
   from marts.fact_country_pressure_daily) no longer includes a Lumen
@@ -382,6 +391,12 @@ SELECT
     END AS correlation_state,
 
     CASE
+        WHEN insufficient_history_flag
+            THEN 'NO_CLEAR_ALIGNMENT'
+
+        WHEN zero_variance_flag
+            THEN 'NO_CLEAR_ALIGNMENT'
+
         WHEN rolling_pressure_corr >= 0.55
              AND z_anomaly > 0
              AND z_pressure > 0

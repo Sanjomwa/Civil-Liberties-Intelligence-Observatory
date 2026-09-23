@@ -458,17 +458,21 @@ else:
         series here move at their own weekly grain and are shown against
         the same Saturday-anchored regime bands as the chart above -- but
         visible movement in a series is not the same claim as a *tested*
-        statistical relationship. Lag-correlation between these exact two
-        series and ACLED's regime severity has been computed and tested at
-        every lag from -2 to +2 weeks
-        (`intelligence.ooni_acled_lag_correlation`, ADR-0011). The honest
-        result, system-wide across all history, is weak or absent almost
-        everywhere -- the one exception ever found (a single
-        `MODERATE_RELATIONSHIP` week) was traced to a data-quality artifact
-        and resolved (TD-93), and no `STRONG_RELATIONSHIP` week has ever
-        occurred. This chart does not re-test that finding live; see
-        **Methodology & Statistical Guardrails** for the full historical
-        disclosure.
+        statistical relationship. Lag-correlation between these two series
+        and ACLED's regime severity is computed at every lag from -2 to +2
+        weeks
+        (`intelligence.ooni_acled_lag_correlation`, ADR-0011). Across all
+        history it has not produced a `STRONG_RELATIONSHIP` week, and the
+        one `MODERATE_RELATIONSHIP` week ever found was traced to a
+        data-quality artifact and resolved (TD-93). Read that as "no
+        relationship detected by this measure", not as evidence that the
+        two are unrelated: the measure has not yet been independently
+        audited, it damps both its inputs and its output by sample quality
+        (the same pattern found in the protocol-repression correlation
+        mart), and it correlates against the
+        regime ordering (STABLE through CRISIS), which ranks categories
+        rather than measuring intensity. This chart does not re-test any
+        of this live.
         """)
 
 st.divider()
