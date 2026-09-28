@@ -5,8 +5,7 @@ __pycache__/
 
 # data files
 /data
-/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data
-/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/Bruin/data
+/Bruin/data
 # Ignore database files
 *.db
 *.parquet
@@ -218,11 +217,8 @@ marimo/_lsp/
 __marimo__/
 
 .bruin.yml
-/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/.bruin.yml
 
-/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/streamlit/.streamlit/secrets.toml.bak
-/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/logs
-streamlit/.streamlit/secrets.toml
+streamlit/.streamlit/secrets.toml*
 
 logs/runs
 logs/*.log
