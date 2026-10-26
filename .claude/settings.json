@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "ask": [
+      "Edit(/Bruin/assets/intelligence/acled_pressure_regimes.sql)"
+    ]
+  }
+}

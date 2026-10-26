@@ -478,3 +478,7 @@ A documentation-and-housekeeping-only session, run against the clean `4c4b0ca` t
 Full before/after `check-ignore` tables, the exact `.gitignore` diff, and the quoted Opus 4.8 advisor consult are in `reports.md`.
 
 Neither `technical-debt-inventory.md`'s per-severity summary table nor any SQL asset was touched by this fix-up session beyond the one description-line edit above; the TD-141 `alignment_state` CASE change and every other file from the prior session's uncommitted work were left exactly as they were. No `git add`/`commit`/`push`/`stash`/`restore` was run.
+
+### 2026-10-26 — Claude Code editing guardrails
+
+Added a rule to `CLAUDE.md` that sessions edit tracked files with the Edit and Write tools rather than `sed -i`, shell redirects or file-writing scripts (from Claude Code 2.1.309, `/rewind` does not restore `sed -i` changes, and permission rules don't cover scripts that open files themselves), and a project `.claude/settings.json` with an `ask` permission rule on `Bruin/assets/intelligence/acled_pressure_regimes.sql`, so that any change to the frozen regime asset prompts even under auto-accept. No code or data changed.
