@@ -490,3 +490,7 @@ Added `.claude/settings.local.json` to `.gitignore` (Claude Code's personal sett
 ### 2026-10-28 — Pre-rename path removed from six more assets (TD-153)
 
 The Google Transparency (detailed and requests, ingest and load), Lumen load and OONI load assets hardcoded `/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/...`, the repository's name before the 2026-07-06 rename, which a fresh Codespace no longer matches. Each now computes its data path from `Path(__file__).resolve().parents[3]`, the pattern TD-134 applied to the ACLED assets. Verified by `py_compile`, a path check that didn't run the assets, a repo-wide grep and `bruin validate`; no asset was run and nothing was rematerialized. The README's reproducibility note now says the source files have to be obtained separately but are found relative to the repository root. Logged and resolved as TD-153.
+
+### 2026-10-28 — Content-check hook installs itself (TD-132 follow-on)
+
+The TD-132 pre-commit content check lived only in an untracked `.git/hooks/pre-commit`, so a fresh clone or new Codespace silently lost it. A tracked installer, `Bruin/scripts/content_check/install_hook.sh`, now writes the hook, refuses to overwrite an unrelated existing hook, installs PyYAML if it's missing, and notes when the gitignored local denylist is absent. It runs on Codespace creation from `.devcontainer/devcontainer.json` and can be run by hand on any other clone. Tested in a throwaway clone. The local denylist itself still has to be recreated by hand, by design.
