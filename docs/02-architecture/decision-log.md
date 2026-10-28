@@ -482,3 +482,7 @@ Neither `technical-debt-inventory.md`'s per-severity summary table nor any SQL a
 ### 2026-10-26 — Claude Code editing guardrails
 
 Added a rule to `CLAUDE.md` that sessions edit tracked files with the Edit and Write tools rather than `sed -i`, shell redirects or file-writing scripts (from Claude Code 2.1.309, `/rewind` does not restore `sed -i` changes, and permission rules don't cover scripts that open files themselves), and a project `.claude/settings.json` with an `ask` permission rule on `Bruin/assets/intelligence/acled_pressure_regimes.sql`, so that any change to the frozen regime asset prompts even under auto-accept. No code or data changed.
+
+### 2026-10-28 — Docs and config pass
+
+Added `.claude/settings.local.json` to `.gitignore` (Claude Code's personal settings file; the shared `.claude/settings.json` stays tracked). In `technical-debt-inventory.md`: replaced TD-141/TD-142's stale pointers to a gap note that no longer exists with direct references to TD-138 (ported 2026-09-24); added TD-145 to TD-152 (network-coverage disclosure, ACLED baseline contamination, a STOP crosswalk with the 2026-10-26 finding that no STOP dataset licence is stated, Voidly evaluation, the `ALL_NORMAL` sub-label rename, the protest-plus-violence rule gap, IODA as a future input, and per-run OONI provenance); added a TD-120 note on the course app's calendar mapping; folded TD-141/TD-142 into the severity summary and replaced the running Total with a recount (141). No code or data changed.
