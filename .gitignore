@@ -254,6 +254,10 @@ docs/CLIO_Finance_Bill_2024_Incident_Report_final.pdf
 # owner's own later action.
 reports.md
 
+# Claude Code personal settings (2026-10-28) - per-user permission choices written by
+# Claude Code itself. The shared project rules live in the tracked .claude/settings.json.
+.claude/settings.local.json
+
 # TD-132 pre-commit content-check denylist companion (2026-09-02) - holds the actual
 # real sensitive strings (names, quoted private reasoning) this project has had to
 # redact once already. Must never be tracked: committing it would leak exactly the
