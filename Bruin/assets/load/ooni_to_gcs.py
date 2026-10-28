@@ -30,15 +30,16 @@ from pathlib import Path
 import pandas as pd
 from google.cloud import bigquery, storage
 
+# Repo root, computed from this file's location (TD-134/TD-153 pattern)
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
 
 PROJECT_ID = os.getenv(
     "GOOGLE_CLOUD_PROJECT",
     "encoded-joy-485413-k5"
 )
 GCS_BUCKET = "civil-liberties-data"
-LOCAL_FILE = Path(
-    "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/ooni/ooni_measurements.parquet"
-)
+LOCAL_FILE = PROJECT_ROOT / "data/dev/ooni/ooni_measurements.parquet"
 TABLE = "ooni_measurements"
 
 

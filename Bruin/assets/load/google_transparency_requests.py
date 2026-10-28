@@ -21,7 +21,11 @@ materialization:
 import os
 import pandas as pd
 from datetime import datetime
+from pathlib import Path
 from google.cloud import bigquery
+
+# Repo root, computed from this file's location (TD-134/TD-153 pattern)
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 def resolve_env(fallback: str = "staging") -> str:
@@ -43,7 +47,7 @@ PROJECT_ID = os.getenv(
     "encoded-joy-485413-k5"
 )
 GCS_BUCKET = "civil-liberties-data"
-LOCAL_FILE = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google/google_transparency_requests.parquet"
+LOCAL_FILE = PROJECT_ROOT / "data/dev/google/google_transparency_requests.parquet"
 TABLE = "google_transparency_requests"
 
 ENV = resolve_env(fallback="staging")

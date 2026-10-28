@@ -26,7 +26,11 @@ materialization:
 
 import os
 import pandas as pd
+from pathlib import Path
 from google.cloud import bigquery
+
+# Repo root, computed from this file's location (TD-134/TD-153 pattern)
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 def resolve_env(fallback: str = "staging") -> str:
@@ -48,7 +52,7 @@ PROJECT_ID = os.getenv(
     "encoded-joy-485413-k5"
 )
 GCS_BUCKET = "civil-liberties-data"
-LOCAL_FILE = "/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/lumen/lumen_requests.parquet"
+LOCAL_FILE = PROJECT_ROOT / "data/dev/lumen/lumen_requests.parquet"
 TABLE = "lumen_requests"
 
 ENV = resolve_env(fallback="staging")

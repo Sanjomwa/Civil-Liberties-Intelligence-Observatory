@@ -53,6 +53,9 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
+# Repo root, computed from this file's location (TD-134/TD-153 pattern)
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
 
 def resolve_env(fallback: str = "dev") -> str:
     for k in ("BRUIN_ENV", "BRUIN_ENVIRONMENT", "BRUIN_PIPELINE_ENVIRONMENT"):
@@ -95,7 +98,7 @@ def resolve_csv_file(base_path: Path) -> Path:
 
 
 def materialize():
-    base_path = Path("/workspaces/Civil-Liberties-and-Censorship-Analysis-with-Bruin/data/dev/google")
+    base_path = PROJECT_ROOT / "data/dev/google"
     csv_file = resolve_csv_file(base_path)
     parquet_out = base_path / "google_transparency_requests.parquet"
 
