@@ -129,6 +129,14 @@ Bruin orchestrates the full analytical workflow:
 
 ## Dashboard Walkthrough
 
+### Welcome
+
+The landing page: what CLIO is and isn't, a one-line guide to every page, a suggested reading order, and what to check before relying on a finding.
+What it demonstrates
+A plain-language entry point that states the platform's limits before any number appears.
+
+---
+
 ### National Stress Observatory
 
 High-level national observability surface showing:
@@ -141,20 +149,13 @@ A country-scale analytical overview built from governed feature marts.
 
 ---
 
-### Protocol Regime Monitor
+### Protocol Intelligence
 
-Tracks protocol-specific behavior across:
-• DNS
-• HTTP
-• TCP
-• TLS
-Shows:
-• anomaly shifts
-• regime classifications
-• signal volatility
-• protocol escalation periods
+Protocol-level behavior across DNS, HTTP, TCP and TLS, in two tabs:
+• Stress Heatmap & Regime Ranking: the protocol stress heatmap, each protocol's regime evolution, and the current protocol ranking
+• Reliability & Per-App Breakdown: the observed state distribution, observation reliability, and a per-app, per-protocol-layer blocking breakdown
 What it demonstrates
-Protocol-level intelligence modeling rather than simple aggregate dashboards.
+Protocol-level intelligence modeling rather than simple aggregate dashboards. This page replaced the former standalone Protocol Regime Monitor (TD-16).
 
 ---
 
@@ -184,6 +185,7 @@ Includes statistical guardrails:
 • sample-quality controls
 What it demonstrates
 Explainable intelligence modeling with methodological safeguards.
+Two tabs: Protocol Drill-Down (one protocol over time) and Date Snapshot (every protocol on one date). Date Snapshot replaced the former separate Suppression Event Explorer page (TD-98).
 
 ---
 
@@ -197,6 +199,17 @@ Combines:
 • analytical interpretation
 What it demonstrates
 Real-world applicability of the platform during major civic events.
+
+---
+
+### Pressure Attribution
+
+Breaks the composite pressure score for any date into its named, sourced drivers:
+• conflict drivers (ACLED, weekly; 75% of the composite)
+• platform drivers (Google Transparency Report, half-yearly; 25%)
+• same-date OONI network measurement, shown as independent corroboration and not part of the score
+What it demonstrates
+Attributable scores: every number traces back to the evidence behind it.
 
 ---
 
