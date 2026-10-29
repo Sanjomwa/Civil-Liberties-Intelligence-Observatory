@@ -494,3 +494,7 @@ The Google Transparency (detailed and requests, ingest and load), Lumen load and
 ### 2026-10-28 — Content-check hook installs itself (TD-132 follow-on)
 
 The TD-132 pre-commit content check lived only in an untracked `.git/hooks/pre-commit`, so a fresh clone or new Codespace silently lost it. A tracked installer, `Bruin/scripts/content_check/install_hook.sh`, now writes the hook, refuses to overwrite an unrelated existing hook, installs PyYAML if it's missing, and notes when the gitignored local denylist is absent. It runs on Codespace creation from `.devcontainer/devcontainer.json` and can be run by hand on any other clone. Tested in a throwaway clone. The local denylist itself still has to be recreated by hand, by design.
+
+### 2026-10-29 — Bruin README page list and Signal percentage note (TD-128, TD-92)
+
+`Bruin/README.md`'s Dashboard Walkthrough now covers the live pages: Welcome and Pressure Attribution were added, and Protocol Intelligence replaced the retired Protocol Regime Monitor section; the Correlation Engine's two tabs are noted. Separately, TD-84's inventory entry now gives both readings of Signal's post-fix ANOMALOUS share, 15.1% of all 50,454 rows and 17.9% of the 42,376 scored rows, and points to TD-93's later count of 2,919. Earlier decision-log entries that quote 15.1% are left as written; this entry is the correction. Docs only.
