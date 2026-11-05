@@ -498,3 +498,7 @@ The TD-132 pre-commit content check lived only in an untracked `.git/hooks/pre-c
 ### 2026-10-29 — Bruin README page list and Signal percentage note (TD-128, TD-92)
 
 `Bruin/README.md`'s Dashboard Walkthrough now covers the live pages: Welcome and Pressure Attribution were added, and Protocol Intelligence replaced the retired Protocol Regime Monitor section; the Correlation Engine's two tabs are noted. Separately, TD-84's inventory entry now gives both readings of Signal's post-fix ANOMALOUS share, 15.1% of all 50,454 rows and 17.9% of the 42,376 scored rows, and points to TD-93's later count of 2,919. Earlier decision-log entries that quote 15.1% are left as written; this entry is the correction. Docs only.
+
+### 2026-11-05 — README: OONI file source and missing test types
+
+The README said the origin of the OONI `.jsonl.gz` files was undocumented. They come from OONI's public S3 bucket (`s3://ooni-data-eu-fra/raw/`), fetched by `scripts/download_ooni.ps1`, which the README now names. The same row now states that two of the eight test types the script requests, Web Connectivity and Facebook Messenger, are not in CLIO's corpus, although OONI holds about 5.1 million and 51,000 Kenya measurements of them for the pipeline's window; CLIO's OONI layer therefore does not cover website blocking. Docs only.
