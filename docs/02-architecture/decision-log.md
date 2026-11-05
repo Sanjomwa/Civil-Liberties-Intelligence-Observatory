@@ -506,3 +506,7 @@ The README said the origin of the OONI `.jsonl.gz` files was undocumented. They 
 ### 2026-11-05 — OONI download script: folder-name fix and the Web Connectivity gap (TD-155)
 
 Web Connectivity and Facebook Messenger were missing from CLIO's OONI corpus because `scripts/download_ooni.ps1` filtered on `web_connectivity` and `facebook_messenger`, while OONI's bucket names those folders without the underscore; the patterns matched nothing and nothing warned. The script now uses the bucket's folder names, keeps Web Connectivity off by default because of its size (about 90 GB compressed for Kenya, 2023-06-01 to 2025-06-30, from OONI's file listings), and warns when a requested test produces no files. No data was downloaded or changed. Ingesting both tests is planned in TD-155.
+
+### 2026-11-05 — data_sources.md: OONI source files and test coverage
+
+The OONI section of `data_sources.md` now states where the raw files come from (OONI's public S3 bucket, via `scripts/download_ooni.ps1`) and which tests the corpus covers: six, without Web Connectivity or Facebook Messenger, for the reason recorded in TD-155. It also notes that the bucket's files don't carry OONI's `measurement_uid`. Docs only.
