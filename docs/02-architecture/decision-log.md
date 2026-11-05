@@ -502,3 +502,7 @@ The TD-132 pre-commit content check lived only in an untracked `.git/hooks/pre-c
 ### 2026-11-05 — README: OONI file source and missing test types
 
 The README said the origin of the OONI `.jsonl.gz` files was undocumented. They come from OONI's public S3 bucket (`s3://ooni-data-eu-fra/raw/`), fetched by `scripts/download_ooni.ps1`, which the README now names. The same row now states that two of the eight test types the script requests, Web Connectivity and Facebook Messenger, are not in CLIO's corpus, although OONI holds about 5.1 million and 51,000 Kenya measurements of them for the pipeline's window; CLIO's OONI layer therefore does not cover website blocking. Docs only.
+
+### 2026-11-05 — OONI download script: folder-name fix and the Web Connectivity gap (TD-155)
+
+Web Connectivity and Facebook Messenger were missing from CLIO's OONI corpus because `scripts/download_ooni.ps1` filtered on `web_connectivity` and `facebook_messenger`, while OONI's bucket names those folders without the underscore; the patterns matched nothing and nothing warned. The script now uses the bucket's folder names, keeps Web Connectivity off by default because of its size (about 90 GB compressed for Kenya, 2023-06-01 to 2025-06-30, from OONI's file listings), and warns when a requested test produces no files. No data was downloaded or changed. Ingesting both tests is planned in TD-155.
