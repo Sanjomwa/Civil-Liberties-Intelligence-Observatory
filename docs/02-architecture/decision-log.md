@@ -510,3 +510,7 @@ Web Connectivity and Facebook Messenger were missing from CLIO's OONI corpus bec
 ### 2026-11-05 — data_sources.md: OONI source files and test coverage
 
 The OONI section of `data_sources.md` now states where the raw files come from (OONI's public S3 bucket, via `scripts/download_ooni.ps1`) and which tests the corpus covers: six, without Web Connectivity or Facebook Messenger, for the reason recorded in TD-155. It also notes that the bucket's files don't carry OONI's `measurement_uid`. Docs only.
+
+### 2026-11-10 — README: retracted Signal DNS claim removed from the flagship paragraph
+
+The README's Finance Bill 2024 paragraph still described the report's OONI corroboration as a same-day spike in DNS-blocking signals concentrated on Signal. That finding was retracted in July 2026 (a classification bug counted Signal's health-check hostname `uptime.signal.org` as blocking; the corrected count for that day is zero). The paragraph now says so. Docs only.
