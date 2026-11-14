@@ -1,0 +1,26 @@
+name: features.detector_validation_v1
+type: bq.seed
+description: "Which detector app-specific flags have been checked against documented events, by test and country. A missing row means unchecked. Add a row only after a check specified in advance; one row per test_name and iso2."
+parameters:
+  path: ./detector_validation_v1.csv
+columns:
+  - name: test_name
+    type: string
+    checks:
+      - name: not_null
+  - name: iso2
+    type: string
+    checks:
+      - name: not_null
+  - name: validation_status
+    type: string
+    checks:
+      - name: not_null
+  - name: checked_from
+    type: date
+  - name: checked_to
+    type: date
+  - name: evidence
+    type: string
+    checks:
+      - name: not_null

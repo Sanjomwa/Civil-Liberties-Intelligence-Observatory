@@ -48,6 +48,7 @@ description: |
 
 depends:
   - int.ooni_measurement_verdicts
+  - features.detector_validation_v1
 
 materialization:
   type: table
@@ -154,10 +155,8 @@ SELECT
    AND (SELECT COUNTIF(t != det.test_name)
         FROM UNNEST(IFNULL(n.flagged_tests, ARRAY<STRING>[])) AS t) = 0) AS app_specific_flag,
   'v1.0' AS detector_version,
-  CASE
-    WHEN det.test_name = 'telegram' AND '{{ var.iso2 }}' = 'KE'
-      THEN 'checked_ke_2023_2025'
-    ELSE 'unchecked'
-  END AS validation_status
+  COALESCE(v.validation_status, 'unchecked') AS validation_status
 FROM det
 LEFT JOIN near AS n ON n.nd = det.d
+LEFT JOIN `{{ var.project_id }}.features.detector_validation_v1` AS v
+  ON v.test_name = det.test_name AND v.iso2 = '{{ var.iso2 }}'
