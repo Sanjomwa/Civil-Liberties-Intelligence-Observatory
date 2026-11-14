@@ -563,6 +563,8 @@ Core methods:
 - Protocol inference evaluates DNS, HTTP, TCP, and TLS regime behavior.
 - Pressure correlation modeling aligns protocol anomalies with national pressure signals.
 
+> **Retired pending removal (2026-11-14, ADR-0016).** The rolling OONI–pressure correlation is no longer used for findings. It is being replaced by an episode-based method; see [ADR-0016](docs/02-architecture/adr/0016-episode-based-method-replaces-rolling-correlation.md).
+
 Correlation outputs include:
 
 - `SYNCHRONIZED_ESCALATION`

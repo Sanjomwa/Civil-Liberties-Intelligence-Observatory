@@ -18,7 +18,7 @@ Replace the coupling score with three separate, checkable parts.
 
 1. **Detection.** `features.ooni_app_block_detector_daily` flags candidate app blocks from CLIO's own per-measurement verdicts, with a rule fixed in advance (baseline, z and excess thresholds in the asset's header), plus an app-specific flag that separates an app-level block from a general connectivity failure. It uses no OONI labels, findings or reports.
 2. **Exposure.** A frozen, versioned and hashed list of documented episodes (blocks, outages, throttling, and offline events such as exam periods), built from public sources other than ACLED or CLIO under a written procedure: two independent builds, compared, source-checked, then frozen. It will be loaded as a warehouse table.
-3. **Association.** A pre-registered event study at daily grain: does the outcome move around episodes more than around matched placebo windows? It uses shift-permutation p-values and a minimum effect stated in advance. "Cannot tell with this corpus" is a valid published result. Analyses with ACLED outcomes are run by the maintainer outside any AI session, in line with ACLED's terms.
+3. **Association.** An event study, specified in advance, using weekly outcome windows around daily-dated episodes: does the outcome move around episodes more than around matched placebo windows? It uses shift-permutation p-values and a minimum effect to be stated in a frozen registration before any verdict-capable run. "Cannot tell with this corpus" is a valid published result. Analyses with ACLED outcomes are run by the maintainer outside any AI session, under the project's interim practice for ACLED's terms of use (not reviewed by ACLED).
 
 ## Transition
 
@@ -33,5 +33,19 @@ This step is additive. `rolling_pressure_corr`, its labels and the tables that r
 ## Step 2 notes (2026-11-14)
 
 - The frozen Kenya episode list v1.0 is loaded as `features.shutdown_episodes_v1_0` (4 episodes: 2 included, 2 ambiguous). It is the exposure input for step 3.
-- The app-specific flag is validated for Telegram only, against the known exam-period blocks. The WhatsApp (9 days) and Signal (4 days) app-specific flags have not been checked against any known event and must not be reported as findings until they are.
-- `rolling_pressure_corr` is labelled retired pending removal in the docs and dashboard. It is removed once step 3 is in place.
+- The app-specific flag has been checked for Telegram only: in one run specified in advance, it flagged both documented exam-period Telegram blocks from their first day. That is two events, not a detection rate. The WhatsApp (9 days) and Signal (4 days) app-specific flags have not been checked against any known event and must not be reported as findings until they are.
+- `rolling_pressure_corr` is labelled retired pending removal in the docs and dashboard. Removal waits until a replacement display exists, the pages that read it are updated, and any related review is complete.
+
+## Step 3 notes (2026-11-14)
+
+- A first Kenya run of the event study was made on 2026-11-14. The maintainer ran it himself; no AI system was given ACLED data. The analysis code was written with AI assistance and tested on synthetic data only, and only summary output was returned to an AI session. This is the project's interim practice under ACLED's terms of use; ACLED has not reviewed it.
+- Data: ACLED aggregated weekly data (Armed Conflict Location & Event Data, acleddata.com), the release covering weeks up to 2026-03-14, Kenya, aggregated by CLIO into weekly national series; and the frozen episode list v1.0.
+- The analysis code and the episode list were fixed and hashed before the run. One setting was not: the analysis period (2016 onwards, the years the episode search covered) was chosen after a trial run on the full history had been seen. The estimates were the same in both.
+- Outcome windows are weekly because the aggregated data is weekly; episodes are dated to the day. "Daily grain" in the Decision section was wrong and is corrected.
+- With two exam-period episodes, the Kenya run is descriptive by design. It gives no verdict, and none is reported. Two episodes are too few to say anything about effects in either direction.
+- Corrections to earlier text in this ADR:
+  - "Pre-registered": the plan was specified in advance through dated decisions, a hashed script and a hashed episode list. It has not yet been frozen as a single registration, and the analysis period was set after the trial run.
+  - "A minimum effect stated in advance": none has yet been stated for ACLED outcomes. The only minimum effect on record is for the Telegram anomaly rate.
+  - The episode list v1.0 contains network restrictions only, not offline events, and came from a partial search of the sources its procedure names.
+  - The retired label is on the two dashboard pages that display the measure, in three documents, and (from this change) on the Methodology page and in the README.
+- Tests that can give a verdict wait for a frozen registration and the regional episode lists.

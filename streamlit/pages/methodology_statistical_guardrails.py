@@ -250,6 +250,7 @@ st.divider()
 # CORRELATION STRENGTH: HISTORICAL TRACK RECORD
 # ============================================================
 
+st.caption("Retired pending removal (ADR-0016): the rolling correlation is no longer used for findings; this record is kept for transparency.")
 st.subheader("Correlation Strength: Historical Track Record")
 
 try:
