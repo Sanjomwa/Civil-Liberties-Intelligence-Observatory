@@ -174,6 +174,15 @@ def read_asset_name(path: Path) -> str:
     except OSError as exc:
         log.error("cannot read asset file %s: %s", path, exc)
         sys.exit(EXIT_REFUSED)
+    if path.name.endswith((".asset.yml", ".asset.yaml")):
+        # YAML assets (e.g. bq.seed) have no @bruin header; the name is the
+        # top-level `name:` line. Stdlib only. A seed has no SQL body, so
+        # there is no query to audit ("seed asset: no query to audit").
+        yml_name = re.search(r"^name:\s*(\S+)\s*$", text, re.M)
+        if not yml_name:
+            log.error("YAML asset %s declares no top-level name:", path)
+            sys.exit(EXIT_REFUSED)
+        return yml_name.group(1).strip("\"'")
     header = re.search(r'@bruin(.*?)@bruin\s*(?:\*/|""")', text, re.S)
     if not header:
         log.error("no @bruin header found in %s", path)

@@ -155,4 +155,6 @@ erDiagram
     }
 ```
 
+> **Retired pending removal (2026-11-14, ADR-0016).** This rolling correlation did not hold up and is no longer used for findings. It stays in the warehouse until the episode-based method replaces it; see ADR-0016. (Applies to `rolling_pressure_corr` in `protocol_repression_correlation_mart` above.)
+
 Verify this diagram against the live repo before relying on it for a schema change — re-run `bruin validate` and re-query `INFORMATION_SCHEMA.COLUMNS` rather than trusting this document to have stayed current, per this project's own verify-before-acting discipline.

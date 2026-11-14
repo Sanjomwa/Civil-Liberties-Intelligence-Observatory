@@ -145,6 +145,7 @@ with tab_drilldown:
 
         c1, c2, c3, c4 = st.columns(4)
 
+        st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
         c1.metric(
             "Rolling Correlation",
             f"{latest_protocol['rolling_pressure_corr']:.2f}"
@@ -200,6 +201,7 @@ with tab_drilldown:
             f"{protocol} Rolling Pressure Correlation"
         )
 
+        st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
         st.plotly_chart(
             fig,
             use_container_width=True
@@ -325,6 +327,7 @@ with tab_drilldown:
 
         st.subheader("Current Protocol Correlation Ranking")
 
+        st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
         st.dataframe(
             latest_all[
                 [
@@ -367,6 +370,7 @@ with tab_snapshot:
             len(event_date_df)
         )
 
+        ec2.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
         ec2.metric(
             "Avg Correlation",
             f"{event_date_df['rolling_pressure_corr'].mean():.2f}"
@@ -409,6 +413,7 @@ with tab_snapshot:
             "Protocol Alignment Heatmap"
         )
 
+        st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
         st.plotly_chart(
             heat,
             use_container_width=True
@@ -449,6 +454,7 @@ with tab_snapshot:
             "Protocol Correlation Ranking"
         )
 
+        st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
         st.plotly_chart(
             fig_rank,
             use_container_width=True
@@ -506,6 +512,7 @@ with tab_snapshot:
 
         st.subheader("Event Intelligence Table")
 
+        st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
         st.dataframe(
             event_date_df[
                 [

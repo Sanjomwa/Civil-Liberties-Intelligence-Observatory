@@ -1,0 +1,15 @@
+name: features.shutdown_episodes_v1_0
+type: bq.seed
+description: "Frozen list of Kenya internet-restriction episodes, version 1.0 (2026-11-14), built by two blind builds and source checks. Used as the exposure input for the ADR-0016 episode method. Do not edit; a change means a new version file. SHA-256 of the CSV: 20c09c4605ba75de9bb86f53dd0dbcddda7d42c183060e9a11f48626de73cd43."
+parameters:
+  path: ./shutdown_episodes_v1_0.csv
+columns:
+  - name: episode_id
+    type: string
+    checks:
+      - name: not_null
+      - name: unique
+  - name: start_date
+    type: date
+  - name: end_date
+    type: date

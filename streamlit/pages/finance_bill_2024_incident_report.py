@@ -161,6 +161,7 @@ apply_layout(
     "Protocol Synchronization Matrix"
 )
 
+st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
 st.plotly_chart(sync, use_container_width=True)
 
 _window_min = df["rolling_pressure_corr"].min()
@@ -281,6 +282,7 @@ else:
         "rolling_pressure_corr", key=lambda s: s.abs(), ascending=False
     ).head(20)
 
+st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
 st.dataframe(
     display_rows[
         [

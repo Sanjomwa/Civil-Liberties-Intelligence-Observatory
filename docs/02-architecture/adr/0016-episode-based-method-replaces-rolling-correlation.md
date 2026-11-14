@@ -29,3 +29,9 @@ This step is additive. `rolling_pressure_corr`, its labels and the tables that r
 - Kenya alone yields only a few documented episodes, so Kenya results are descriptive; tests need more countries.
 - The detector is built for multi-day blocks of an app. A one-day or partial block may not cross its thresholds. A flag is a candidate event, not a confirmed block, and never a statement about cause.
 - A connectivity failure (a cable fault, for example) can still produce an app-specific flag if it reaches one app's measurements first; the flag only partly separates the two.
+
+## Step 2 notes (2026-11-14)
+
+- The frozen Kenya episode list v1.0 is loaded as `features.shutdown_episodes_v1_0` (4 episodes: 2 included, 2 ambiguous). It is the exposure input for step 3.
+- The app-specific flag is validated for Telegram only, against the known exam-period blocks. The WhatsApp (9 days) and Signal (4 days) app-specific flags have not been checked against any known event and must not be reported as findings until they are.
+- `rolling_pressure_corr` is labelled retired pending removal in the docs and dashboard. It is removed once step 3 is in place.
