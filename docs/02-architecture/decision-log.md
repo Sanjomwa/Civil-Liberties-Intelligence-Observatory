@@ -514,3 +514,7 @@ The OONI section of `data_sources.md` now states where the raw files come from (
 ### 2026-11-10 — README: retracted Signal DNS claim removed from the flagship paragraph
 
 The README's Finance Bill 2024 paragraph still described the report's OONI corroboration as a same-day spike in DNS-blocking signals concentrated on Signal. That finding was retracted in July 2026 (a classification bug counted Signal's health-check hostname `uptime.signal.org` as blocking; the corrected count for that day is zero). The paragraph now says so. Docs only.
+
+### 2026-11-14 — ADR-0016: episode-based method replaces the rolling correlation (step 1: detector)
+
+ADR-0016 records the decision to replace `rolling_pressure_corr` with three parts: a daily app-block detector, a frozen list of documented episodes, and a pre-registered event study. Step 1 adds `features.ooni_app_block_detector_daily` (detector v1.0), materialized through `safe_materialize.py`; it has no downstream assets. The step is additive: no existing table, mart or dashboard changed, and no published number changed.
