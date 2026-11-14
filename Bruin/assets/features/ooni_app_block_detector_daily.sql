@@ -10,9 +10,11 @@ tags:
 
 description: |
   Daily app-block detector (ADR-0016). One row per measurement_date x
-  test_name for telegram, whatsapp and signal, from CLIO's own verdicts
+  test_name for telegram, whatsapp and signal, on days with at least one
+  qualifying baseline day (days without a baseline are omitted), from CLIO's own verdicts
   (int.ooni_measurement_verdicts, scored rows only: ooni_verdict IS NOT
-  NULL). No OONI labels, findings or reports are used.
+  NULL). No OONI findings, reports or confirmed-blocking labels are used;
+  the verdicts derive from fields OONI's probe writes.
 
   RULE (detector v1.0, fixed in advance; change it only by a new ADR):
   rate r = ANOMALOUS / scored. Baseline = median r over days d-35 to d-8
@@ -26,6 +28,17 @@ description: |
   app-level block from a general connectivity failure, in which all apps
   move together; it only partly separates them (a connectivity failure
   can still hit one app's measurements first).
+
+  The latest day's app_specific_flag is provisional: it looks one day
+  ahead, so it can change when the next day loads.
+
+  validation_status says whether a test's app_specific_flag has been
+  checked against documented events. 'checked_ke_2023_2025' (Telegram,
+  Kenya only) means one run specified in advance flagged both documented
+  exam-period Telegram blocks from their first day: two events, not a
+  detection rate. 'unchecked' means no check has been made; flags with
+  this status must not be reported as findings. In that Kenya check,
+  isolated one-day flags were more often unexplained than documented.
 
   r_anomalous_or_failed is reported alongside and is not used by the rule.
 
@@ -53,6 +66,12 @@ columns:
     type: string
     checks:
       - name: not_null
+  - name: validation_status
+    type: string
+    checks:
+      - name: not_null
+      - name: accepted_values
+        value: [checked_ke_2023_2025, unchecked]
 @bruin */
 
 WITH daily AS (
@@ -134,6 +153,11 @@ SELECT
   (IFNULL(det.flag, FALSE)
    AND (SELECT COUNTIF(t != det.test_name)
         FROM UNNEST(IFNULL(n.flagged_tests, ARRAY<STRING>[])) AS t) = 0) AS app_specific_flag,
-  'v1.0' AS detector_version
+  'v1.0' AS detector_version,
+  CASE
+    WHEN det.test_name = 'telegram' AND '{{ var.iso2 }}' = 'KE'
+      THEN 'checked_ke_2023_2025'
+    ELSE 'unchecked'
+  END AS validation_status
 FROM det
 LEFT JOIN near AS n ON n.nd = det.d
