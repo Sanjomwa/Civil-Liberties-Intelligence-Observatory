@@ -1,6 +1,6 @@
 # ADR-0016: Replace the rolling OONI–pressure correlation with an episode-based method
 
-- **Status:** Accepted (2026-11-14). Step 1 of 3 built (the detector); steps 2 and 3 to follow.
+- **Status:** Accepted (2026-11-14). Steps 1–3 done for Kenya (2026-11-14). Regional design registered 2026-11-15 (see Step 4 notes).
 - **Date:** 2026-11-14
 - **Deciders:** Sam (sole owner)
 - **Supersedes / Superseded by:** none
@@ -49,3 +49,10 @@ This step is additive. `rolling_pressure_corr`, its labels and the tables that r
   - The episode list v1.0 contains network restrictions only, not offline events, and came from a partial search of the sources its procedure names.
   - The retired label is on the two dashboard pages that display the measure, in three documents, and (from this change) on the Methodology page and in the README.
 - Tests that can give a verdict wait for a frozen registration and the regional episode lists.
+
+## Step 4 notes (2026-11-15)
+
+- The regional phase was redesigned before any outcome data for it was read. Exam-period restrictions are too few in the region to test anything, so Kenya's exam-period blocks stay a described case series. The regional study compares national elections with a documented internet restriction starting on or before polling day against elections in the same country with no documented restriction, using randomization inference on the election labels within each country. Kenya's weekly series had already been read for the exam case study; Kenya has no restricted election in the period, so it does not enter the primary comparison.
+- The design, decision rules, outcome windows and analysis code version were fixed in a registration frozen on 2026-11-15, before any outcome data for the election analysis was read. Its SHA-256 is `7efc4b805179a5dae70ecdfb1cb9fad920b9ac6bd1557d574b4391a5bd9c1a4a`. The text will be published with the first results that can give a verdict, so the hash can be checked against it. The election-list build procedure was frozen with it (SHA-256 `8f9a8c2172eec38d0b0290beba562e7f3528f33f2b99a48fc71eff7467e929c8`).
+- A fall in recorded protest after restrictions that include outages will not be reported as suppression: outages also cut the reporting the outcome data depends on.
+- Next: two independent blind builds of the election list. How closely they agree is reported as evidence of how reproducible documented-restriction lists are. Outcome runs come later.
