@@ -4,11 +4,10 @@ import streamlit as st
 
 from core.state import init_state
 from core.config import COUNTRY
-from core.constants import REGIME_STATES
+from core.constants import REGIME_EXPERIMENTAL_NOTE, REGIME_STATES
 from core.filters import render_sidebar
 from core.theme import apply_layout, pressure_level_color, regime_color, inject_css
 from services.marts import (
-    get_conflict_drivers,
     get_ooni_corroboration,
     get_platform_drivers,
     get_pressure_attribution_daily,
@@ -131,6 +130,8 @@ with c4:
         regime_color(regime),
     )
 
+st.info(REGIME_EXPERIMENTAL_NOTE)
+
 if pd.notna(regime) and regime in REGIME_STATES:
     st.markdown(
         f"Regime engine classifies the week of **{week_start}** as "
@@ -226,87 +227,10 @@ st.caption(
 st.divider()
 
 
-# ============================================================
-# CONFLICT DRIVERS (weekly grain)
-# ============================================================
-
-st.subheader(f"Conflict drivers — ACLED week of {week_start}")
-
-conflict_df = get_conflict_drivers(week_start)
-
-if conflict_df.empty:
-    st.info("No classified ACLED rows for this week.")
-else:
-    wk = conflict_df.iloc[0]
-    st.markdown(
-        f"This week's conflict input: **{int(wk['week_conflict_events'])} "
-        f"events**, **{int(wk['week_fatalities'])} fatalities** across "
-        f"{conflict_df['admin1'].nunique()} counties. Each row below is a "
-        f"classified ACLED weekly-aggregate record; its share is of the "
-        f"week's pre-log intensity mass (events + 3×fatalities), not of "
-        f"the log-scale score."
-    )
-
-    top = conflict_df.head(15).copy()
-    top["driver"] = (
-        top["sub_event_type"] + " — " + top["admin1"]
-    )
-
-    fig2 = px.bar(
-        top.sort_values("weekly_intensity_share"),
-        x="weekly_intensity_share",
-        y="driver",
-        orientation="h",
-        color="pressure_domain",
-        hover_data=["event_type", "events", "fatalities",
-                    "severity_tier", "classification_confidence"],
-    )
-    apply_layout(fig2, "Top drivers by share of weekly conflict intensity mass")
-    st.plotly_chart(fig2, use_container_width=True)
-
-    st.dataframe(
-        top[[
-            "weekly_intensity_rank", "event_type", "sub_event_type",
-            "admin1", "events", "fatalities", "weekly_intensity_share",
-            "pressure_domain", "is_suppression_marker", "severity_tier",
-            "classification_confidence", "methodology_risk_level",
-        ]].rename(columns={
-            "weekly_intensity_rank": "#",
-            "event_type": "ACLED event type",
-            "sub_event_type": "Sub-event type",
-            "admin1": "County",
-            "events": "Events",
-            "fatalities": "Fatalities",
-            "weekly_intensity_share": "Intensity share",
-            "pressure_domain": "Pressure domain",
-            "is_suppression_marker": "Suppression marker",
-            "severity_tier": "Severity",
-            "classification_confidence": "Classification confidence",
-            "methodology_risk_level": "Methodology risk",
-        }),
-        use_container_width=True,
-        hide_index=True,
-    )
-
-    notes = conflict_df[conflict_df["classification_note"].notna()]
-    if not notes.empty:
-        with st.expander("Classification notes for this week's rows"):
-            for _, n in notes.head(10).iterrows():
-                st.markdown(
-                    f"- **{n['sub_event_type']} — {n['admin1']}**: "
-                    f"{n['classification_note']}"
-                )
-
-    st.caption(
-        "ACLED grain: weekly aggregates anchored to Saturday. Nothing in "
-        "this data distinguishes which day within the week an event "
-        "occurred (minimum detectable lag: 7 days). classification_"
-        "confidence and methodology_risk_level are CLIO's own per-row "
-        "qualifiers (int.acled_event_classification, ACLED_INTELLIGENCE_"
-        "FRAMEWORK_V1)."
-    )
-
-st.divider()
+# Item 29 (2026-11-16): the per-week ACLED conflict-drivers section (raw
+# weekly event/fatality counts and the county-by-sub-event breakdown) was
+# removed from public view. get_conflict_drivers() in services/marts.py is
+# kept, unused.
 
 
 # ============================================================

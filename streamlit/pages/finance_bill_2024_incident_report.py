@@ -2,13 +2,24 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 
-from core.config import COUNTRY
 from core.state import init_state
 from core.filters import render_sidebar
 from core.theme import apply_layout, confidence_color, inject_css
 from services.marts import get_finance_bill_incident
 from components.status import render_confidence_badge
 from components.trust import render_trust_strip, attribution_footer
+
+
+ADR_0016_URL = (
+    "https://github.com/Sanjomwa/Civil-Liberties-Intelligence-Observatory/"
+    "blob/main/docs/02-architecture/adr/"
+    "0016-episode-based-method-replaces-rolling-correlation.md"
+)
+
+RETIRED_CAPTION = (
+    "Retired pending removal (ADR-0016): this rolling correlation is no "
+    "longer used for findings."
+)
 
 
 # ============================================================
@@ -30,33 +41,39 @@ render_sidebar()
 # DATA
 # ============================================================
 
-df, asn_df = get_finance_bill_incident()
+# Item 29 (2026-11-16): the second result (the per-ASN profile) is no longer
+# displayed on this page; the query function is unchanged.
+df, _asn_df = get_finance_bill_incident()
 
 if df.empty:
-    st.warning("No Finance Bill 2024 intelligence available.")
+    st.warning("No Finance Bill 2024 data available.")
     st.stop()
 
 latest = df.iloc[-1]
 
 
 # ============================================================
+# FIGURES USED IN THE TEXT (computed, never hardcoded)
+# ============================================================
+
+total_rows = len(df)
+total_days = int(df["measurement_date"].nunique())
+sync_rows = int((df["alignment_state"] == "SYNCHRONIZED_ESCALATION").sum())
+strong_or_moderate_rows = int(
+    df["correlation_state"].isin(["STRONG_RELATIONSHIP", "MODERATE_RELATIONSHIP"]).sum()
+)
+zero_variance_rows = int((df["correlation_state"] == "ZERO_VARIANCE_WINDOW").sum())
+weak_rows = int((df["correlation_state"] == "WEAK_OR_NO_RELATIONSHIP").sum())
+max_abs_corr = df["rolling_pressure_corr"].abs().max()
+alignment_counts = df["alignment_state"].value_counts()
+correlation_counts = df["correlation_state"].value_counts()
+
+
+# ============================================================
 # HEADER
 # ============================================================
 
-st.title("📘 Finance Bill 2024 Incident Report")
-
-st.caption(f"""
-A forensic reconstruction of protocol-level suppression behavior
-during {COUNTRY}'s Finance Bill 2024 protest period.
-
-This report analyzes:
-
-• synchronized protocol escalation  
-• repression-pressure coupling  
-• divergence windows  
-• escalation maturity progression
-""")
-
+st.title("Finance Bill 2024: what the retired correlation method showed")
 
 render_trust_strip(
     reporting_version=latest["reporting_version"],
@@ -68,50 +85,49 @@ st.divider()
 
 
 # ============================================================
-# EXEC SUMMARY
+# WHAT THIS PAGE SHOWS
 # ============================================================
 
-st.subheader("Executive Summary")
+if sync_rows == 0 and strong_or_moderate_rows == 0:
+    result_sentence = (
+        "The method found no alignment in this period."
+    )
+else:
+    result_sentence = (
+        "The method's labels are reported below exactly as computed."
+    )
 
-alignment_counts = df["alignment_state"].value_counts()
-correlation_counts = df["correlation_state"].value_counts()
-sync_rows = int((df["alignment_state"] == "SYNCHRONIZED_ESCALATION").sum())
-strong_or_moderate_rows = int(
-    df["correlation_state"].isin(["STRONG_RELATIONSHIP", "MODERATE_RELATIONSHIP"]).sum()
+st.info(
+    f"This page shows the result of the rolling OONI–pressure correlation "
+    f"for the Finance Bill 2024 protest period. CLIO retired this method in "
+    f"[ADR-0016]({ADR_0016_URL}).\n\n"
+    f"{result_sentence} Of {total_rows} protocol-day rows ({total_days} "
+    f"days), **{sync_rows}** were labelled `SYNCHRONIZED_ESCALATION` and "
+    f"**{strong_or_moderate_rows}** reached the moderate (0.55) or strong "
+    f"(0.82) correlation threshold. The largest correlation magnitude in "
+    f"the window was **{max_abs_corr:.2f}**.\n\n"
+    "This result is reported because CLIO reports results whatever they show."
 )
-crisis_days = int(
-    df.loc[df["regime_primary_regime"] == "CRISIS", "measurement_date"].nunique()
+
+st.warning(
+    "The disruption on 25 June 2024 was mainly a drop in connectivity. "
+    "OONI's app tests largely cannot see a connectivity drop, so this page "
+    "cannot assess that disruption."
 )
-total_days = int(df["measurement_date"].nunique())
-total_rows = len(df)
 
-st.info(f"""
-**What this window's {total_rows} protocol-day rows ({total_days} days x 4 protocols) actually show:**
-
-- Alignment: **{sync_rows} of {total_rows}** rows are `SYNCHRONIZED_ESCALATION`
-  (protocol anomaly rising together with national pressure). Full breakdown: """
-    + ", ".join(f"{v} {k}" for k, v in alignment_counts.items()) + f"""
-- Correlation strength: **{strong_or_moderate_rows} of {total_rows}** rows reach
-  `STRONG_RELATIONSHIP` or `MODERATE_RELATIONSHIP`. Full breakdown: """
-    + ", ".join(f"{v} {k}" for k, v in correlation_counts.items()) + f"""
-- ACLED path A (independent conflict-event classification, not derived from OONI
-  protocol data): **{crisis_days} of {total_days} days** in this window are
-  classified `CRISIS`.
-
-This is a conflict-confirmed window. The protocol-layer correlation
-measure did not reach its moderate threshold here, but in its current
-form it has not reached that threshold anywhere in its history, so read
-this as "no correlation detected by this measure", not as evidence that
-network interference and conflict pressure were unrelated. The two
-evidence sources are shown side by side rather than resolved toward the
-stronger-sounding claim.
-""")
+st.markdown(
+    "Full label breakdown for this window. Alignment: "
+    + ", ".join(f"{v} {k}" for k, v in alignment_counts.items())
+    + ". Correlation strength: "
+    + ", ".join(f"{v} {k}" for k, v in correlation_counts.items())
+    + "."
+)
 
 st.divider()
 
 
 # ============================================================
-# PRESSURE TIMELINE
+# COMPOSITE PRESSURE INDEX
 # ============================================================
 
 daily = df.groupby("measurement_date").agg({
@@ -128,21 +144,22 @@ fig.add_trace(go.Scatter(
 
 apply_layout(
     fig,
-    "National Pressure Escalation Timeline"
+    "Composite pressure index, daily, Finance Bill 2024 window"
 )
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.markdown("""
-Pressure acceleration coincides with major public
-mobilization phases.
-""")
+st.caption(
+    "Plots `composite_pressure_score`: a log-scaled index built from ACLED "
+    "weekly conflict data (75%) and Google Transparency Report data (25%). "
+    "It moves in weekly steps. It does not include OONI data."
+)
 
 st.divider()
 
 
 # ============================================================
-# PROTOCOL SYNCHRONIZATION
+# ROLLING CORRELATION BY PROTOCOL AND DAY
 # ============================================================
 
 sync = px.density_heatmap(
@@ -158,10 +175,10 @@ sync = px.density_heatmap(
 
 apply_layout(
     sync,
-    "Protocol Synchronization Matrix"
+    "Rolling OONI–pressure correlation, by protocol and day"
 )
 
-st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
+st.caption(RETIRED_CAPTION)
 st.plotly_chart(sync, use_container_width=True)
 
 _window_min = df["rolling_pressure_corr"].min()
@@ -171,17 +188,16 @@ st.markdown(f"""
 Color scale fixed to [-1, 1] so shading reflects the real magnitude of
 `rolling_pressure_corr`, not this window's own narrow range. Values in this
 window run **{_window_min:.2f} to {_window_max:.2f}** -- well below the 0.55
-MODERATE-relationship threshold on this same scale. This heatmap does not
-measure cross-protocol coordination; each cell is one protocol's own
-correlation with national pressure, computed independently of every other
-protocol.
+moderate threshold on this same scale. Each cell is one protocol's own
+correlation with the composite pressure index, computed independently of
+every other protocol.
 """)
 
 st.divider()
 
 
 # ============================================================
-# ALIGNMENT STATES
+# ALIGNMENT STATE LABELS
 # ============================================================
 
 align = (
@@ -204,16 +220,17 @@ fig2 = px.bar(
 
 apply_layout(
     fig2,
-    "Observed Alignment State Distribution"
+    "Alignment state labels, count of protocol-day rows"
 )
 
+st.caption(RETIRED_CAPTION)
 st.plotly_chart(fig2, use_container_width=True)
 
 st.divider()
 
 
 # ============================================================
-# DIVERGENCE
+# PROTOCOL STRESS VS COMPOSITE INDEX
 # ============================================================
 
 fig3 = px.scatter(
@@ -226,21 +243,21 @@ fig3 = px.scatter(
 
 apply_layout(
     fig3,
-    "Stress Divergence Analysis"
+    "OONI protocol stress score vs. composite pressure index, per protocol-day"
 )
 
 st.plotly_chart(fig3, use_container_width=True)
 
-st.markdown("""
-Divergence windows reveal protocol-specific interference
-outside broader pressure escalation.
-""")
+st.caption(
+    "Each point is one protocol on one day. Colour is the `divergence_state` "
+    "label from the same retired correlation mart."
+)
 
 st.divider()
 
 
 # ============================================================
-# CORRELATION WINDOWS
+# STRONGEST CORRELATION VALUES
 # ============================================================
 
 qualifying = df[
@@ -250,39 +267,34 @@ qualifying = df[
     ])
 ]
 
-zero_variance_rows = int((df["correlation_state"] == "ZERO_VARIANCE_WINDOW").sum())
-weak_rows = int((df["correlation_state"] == "WEAK_OR_NO_RELATIONSHIP").sum())
-max_abs_corr = df["rolling_pressure_corr"].abs().max()
-
 if not qualifying.empty:
-    st.subheader("High Confidence Suppression Windows")
+    st.subheader("Protocol-day rows at or above the moderate threshold")
     st.markdown(
         f"**{len(qualifying)} of {total_rows}** protocol-day rows in this window "
-        "reach the STRONG or MODERATE correlation threshold. Shown below, sorted "
+        "reach the strong or moderate correlation threshold. Shown below, sorted "
         "by correlation magnitude."
     )
     display_rows = qualifying.sort_values(
         "rolling_pressure_corr", key=lambda s: s.abs(), ascending=False
     )
 else:
-    st.subheader("Strongest Available Correlation Windows (none reached the moderate threshold)")
+    st.subheader("Largest correlation values in this window (none reached the moderate threshold)")
     st.markdown(f"""
-    **No protocol-day row in this window reaches the MODERATE (>=0.55) or STRONG
-    (>=0.82) correlation threshold.** The strongest observed here is
+    **No protocol-day row in this window reaches the moderate (>=0.55) or strong
+    (>=0.82) correlation threshold.** The largest observed here is
     **{max_abs_corr:.2f}**. Of {total_rows} protocol-day rows: **{weak_rows}**
     are `WEAK_OR_NO_RELATIONSHIP` (a computable but weak correlation) and
     **{zero_variance_rows}** are `ZERO_VARIANCE_WINDOW` (correlation undefined,
     not merely weak -- zero variance in the underlying series over the rolling
     window). The table below shows the {min(20, len(df))} rows with the largest
     correlation magnitude, sorted by `ABS(rolling_pressure_corr)` to match the
-    mart's own threshold definition -- it is not a "high confidence" reading,
-    just the closest this window comes to one.
+    mart's own threshold definition.
     """)
     display_rows = df.sort_values(
         "rolling_pressure_corr", key=lambda s: s.abs(), ascending=False
     ).head(20)
 
-st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
+st.caption(RETIRED_CAPTION)
 st.dataframe(
     display_rows[
         [
@@ -299,76 +311,32 @@ st.dataframe(
     hide_index=True
 )
 
-# ============================================================
-# MAJOR ASN SPIKE PROFILE
-# ============================================================
-
 st.divider()
 
-st.subheader("Major Provider ASN Spike Analysis")
-
-st.caption("""
-ASN behavior profile is a full-history snapshot (asn_behavior_profile_mart
-has no date dimension) -- not scoped to the Finance Bill 2024 window like
-the sections above.
-""")
-
-fig4 = px.bar(
-    asn_df.sort_values(
-        "behavioral_priority_score",
-        ascending=False
-    ),
-    x="display_asn",
-    y="behavioral_priority_score",
-    color="avg_weighted_blocking"
-)
-
-apply_layout(
-    fig4,
-    f"Major {COUNTRY} Provider Suppression Signal Intensity"
-)
-
-st.plotly_chart(
-    fig4,
-    use_container_width=True
-)
-
-st.markdown(f"""
-These are large {COUNTRY} network providers whose subscriber networks
-showed elevated blocking signals in their overall observed history, not
-specifically during the Finance Bill window above. As with all OONI-derived
-findings on this dashboard, "blocking" here means observed as unreachable
-from a probe on that provider's network — it does not establish that the
-provider itself performed the blocking, as opposed to upstream/transit
-interference or a destination service's own geoblocking (TD-95).
-""")
 
 # ============================================================
-# FINAL ASSESSMENT
+# RESULT
 # ============================================================
 
-st.subheader("Statistical Assessment")
+st.subheader("Result")
 
 if strong_or_moderate_rows > 0:
-    st.success(f"""
+    st.markdown(f"""
     **{strong_or_moderate_rows} of {total_rows}** protocol-day rows in this
-    window reach the STRONG or MODERATE correlation threshold.
+    window reach the strong or moderate correlation threshold of the retired
+    method.
     """)
 else:
-    st.warning(f"""
-    No protocol-day row in this window reaches the STRONG (>=0.82) or
-    MODERATE (>=0.55) correlation threshold; the strongest observed is
-    **{max_abs_corr:.2f}**. ACLED path A independently classifies
-    **{crisis_days} of {total_days} days** in this window `CRISIS`. The
-    conflict-event evidence and the protocol-layer correlation evidence do
-    not agree in strength here -- that disagreement is the honest result,
-    not a synchronized-suppression finding.
+    st.markdown(f"""
+    No protocol-day row in this window reaches the strong (>=0.82) or
+    moderate (>=0.55) correlation threshold of the retired method; the
+    largest observed is **{max_abs_corr:.2f}**. This is a null result for
+    this method. It is not evidence about whether interference did or did
+    not happen.
     """)
 
 st.caption(
-    "This mart's correlation-strength thresholds (STRONG >= 0.82, MODERATE "
-    f">= 0.55) are not reached by any protocol-day row in this window (max "
-    f"observed here: {max_abs_corr:.2f}). These thresholds have never been "
+    "These thresholds (strong >= 0.82, moderate >= 0.55) have never been "
     "reached in this mart's full history either -- see **Methodology & "
     "Statistical Guardrails** for the complete disclosure."
 )
@@ -377,7 +345,7 @@ _confidence_series = df["final_confidence_level"].dropna()
 modal_confidence = _confidence_series.mode().iloc[0] if not _confidence_series.empty else None
 
 render_confidence_badge(
-    "Confidence level (modal)",
+    "Retired mart's confidence label (modal)",
     modal_confidence if modal_confidence else "N/A",
     confidence_color(modal_confidence) if modal_confidence else confidence_color("INSUFFICIENT_DATA"),
 )

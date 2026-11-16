@@ -1,5 +1,4 @@
 import streamlit as st
-import plotly.express as px
 import plotly.graph_objects as go
 
 from core.state import init_state
@@ -115,70 +114,10 @@ c4.metric(
 st.divider()
 
 
-# ============================================================
-# SIGNAL PROFILE
-# ============================================================
-
-fig = go.Figure()
-
-fig.add_trace(go.Bar(
-    x=[
-        "Evidence Maturity",
-        "Evidence Reliability",
-        "Measurement Coverage",
-        "Blocking Signal Intensity"
-    ],
-    y=[
-        row["maturity_adjusted_signal"],
-        row["data_reliability_score"],
-        row["coverage_ratio"],
-        row["avg_weighted_blocking"]
-    ]
-))
-
-apply_layout(
-    fig,
-    f"{asn} Behavioral Signal Profile"
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-st.markdown("""
-**Plain English**
-
-Higher values indicate stronger and more statistically trustworthy
-evidence of interference observed from probes on this network — not
-confirmation that this network itself is the point of interference.
-""")
-
-st.divider()
-
-
-# ============================================================
-# ASN RANKING
-# ============================================================
-
-fig2 = px.bar(
-    df.head(20),
-    x="display_asn",
-    y="behavioral_priority_score",
-    color="behavioral_class"
-)
-
-apply_layout(
-    fig2,
-    "Top ASN Behavioral Priority Ranking"
-)
-
-st.plotly_chart(fig2, use_container_width=True)
-
-st.markdown(f"""
-This ranks {COUNTRY} networks by the strength and reliability of their
-blocking-related evidence -- networks combining a strong signal with
-consistent measurement coverage rank highest.
-""")
-
-st.divider()
+# Item 29 (2026-11-16): the per-ASN "Behavioral Signal Profile" chart
+# (with "Blocking Signal Intensity") and the "Top ASN Behavioral Priority
+# Ranking" chart were removed from public view: both put an ASN beside a
+# blocking/censorship-evidence score.
 
 
 # ============================================================

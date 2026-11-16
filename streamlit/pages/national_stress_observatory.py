@@ -5,6 +5,7 @@ import streamlit as st
 import plotly.graph_objects as go
 
 from core.config import COUNTRY
+from core.constants import REGIME_EXPERIMENTAL_NOTE
 from core.state import init_state
 from core.filters import render_sidebar
 from core.theme import (
@@ -256,6 +257,8 @@ if regime_df.empty or regime_df["regime_primary_regime"].isna().all():
 else:
     regime_valid = regime_df[regime_df["regime_primary_regime"].notna()]
     latest_regime = regime_valid.iloc[-1]
+
+    st.info(REGIME_EXPERIMENTAL_NOTE)
 
     b1, b2, b3, b4 = st.columns(4)
 

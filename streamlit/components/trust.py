@@ -82,6 +82,15 @@ ATTRIBUTION_SOURCES = {
 }
 
 
+ACLED_ATTRIBUTION_HTML = (
+    "Source: Armed Conflict Location &amp; Event Data (ACLED), "
+    "acleddata.com. Aggregated weekly data for Kenya, release covering "
+    "weeks up to 2026-03-14, accessed March 2026. CLIO transformed the "
+    "data (log-scaled composite indices and experimental regime labels); "
+    "no ACLED records or raw counts are shown."
+)
+
+
 def _format_access_date(value):
     if value is None:
         return None
@@ -123,7 +132,9 @@ def attribution_footer(sources, snapshot_at=None):
     # literal, unparsed text instead of a link.
     parts = []
 
-    for key in known:
+    # Item 29: ACLED gets its own verbatim statement below, so it is left
+    # out of this generic line rather than attributed twice.
+    for key in [k for k in known if k != "ACLED"]:
         src = ATTRIBUTION_SOURCES[key]
         piece = f'<a href="{src["url"]}" target="_blank">{src["name"]}</a>'
 
@@ -149,7 +160,17 @@ def attribution_footer(sources, snapshot_at=None):
     )
 
     with st.container():
-        st.markdown(
-            f'<div class="clio-attribution">{" | ".join(segments)}</div>',
-            unsafe_allow_html=True,
-        )
+        if parts:
+            st.markdown(
+                f'<div class="clio-attribution">{" | ".join(segments)}</div>',
+                unsafe_allow_html=True,
+            )
+
+        # Item 29 (2026-11-16): ACLED's full attribution statement, rendered
+        # verbatim as its own block on every page that passes "ACLED".
+        # "&" is escaped because this sits inside a raw HTML div.
+        if "ACLED" in known:
+            st.markdown(
+                f'<div class="clio-attribution">{ACLED_ATTRIBUTION_HTML}</div>',
+                unsafe_allow_html=True,
+            )

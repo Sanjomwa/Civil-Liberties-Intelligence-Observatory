@@ -22,7 +22,7 @@ pages = st.navigation([
     # and told the same weak-correlation story in two separate nav entries.
     st.Page("pages/protocol_repression_correlation_engine.py", title="Protocol ↔ Repression Correlation Engine", icon="📡"),
     st.Page("pages/asn_behavioral_intelligence.py", title="ASN Behavioral Intelligence", icon="🧬"),
-    st.Page("pages/finance_bill_2024_incident_report.py", title="Finance Bill 2024 Incident Report", icon="📘"),
+    st.Page("pages/finance_bill_2024_incident_report.py", title="Finance Bill 2024 (retired method)", icon="📘"),
     st.Page("pages/methodology_statistical_guardrails.py", title="Methodology & Statistical Guardrails", icon="🧠"),
     st.Page("pages/pressure_attribution.py", title="Pressure Attribution", icon="🧾"),
 ])

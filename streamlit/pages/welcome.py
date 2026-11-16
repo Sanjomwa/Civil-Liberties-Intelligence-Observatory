@@ -79,8 +79,8 @@ Transparency Report) into attributed, confidence-qualified findings about
 civil-liberties pressure. Kenya is the current pilot country — the
 methodology is built to generalize, not to stay Kenya-only.
 
-Every score on this dashboard traces back to named, sourced evidence with an
-explicit confidence level. Where evidence is sparse or a statistical window
+Each page names its data sources. Several measures are experimental or
+retired and are labelled as such on the page. Where evidence is sparse or a statistical window
 is unreliable, the platform says so rather than manufacturing false
 precision.
 """
@@ -120,8 +120,8 @@ page_guide = [
      "escalation window; merged from the former separate Suppression Event Explorer page, TD-98)."),
     ("🧬 ASN Behavioral Intelligence",
      "Network-level (ASN) ranking by blocking intensity, behavioral priority, and evidence maturity."),
-    ("📘 Finance Bill 2024 Incident Report",
-     "CLIO's flagship validated case study — a forensic reconstruction of the June–July 2024 protest period."),
+    ("📘 Finance Bill 2024: what the retired correlation method showed",
+     "A case study of the old correlation method's null result for the June–July 2024 protest period, and why the method was retired."),
     ("🧠 Methodology & Statistical Guardrails",
      "How every signal is validated, weighted, and guarded against overstatement before it reaches a score."),
     ("🧾 Pressure Attribution",
@@ -147,7 +147,7 @@ with col_a:
     st.markdown(
         """
         1. 🧾 Pressure Attribution — see *why* pressure is elevated right now
-        2. 📘 Finance Bill 2024 Incident Report — the flagship validated case
+        2. 📘 Finance Bill 2024 (retired method) — the Finance Bill 2024 case study (a null result for a retired method)
         3. 🧠 Methodology & Statistical Guardrails — how to responsibly cite a finding
         """
     )

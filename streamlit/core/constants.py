@@ -124,6 +124,16 @@ REGIME_STATES = {
     "CRISIS": "#FF3B5C",
 }
 
+# Item 29 (2026-11-16): shown once, near the first ACLED path A regime
+# display, on every page that shows regime labels.
+REGIME_EXPERIMENTAL_NOTE = (
+    "Regime labels come from an experimental classifier that has not been "
+    "validated. It has known misses: for example, a week in late June 2025 "
+    "with dozens of recorded events and many fatalities across most "
+    "counties is labelled STABLE with high confidence. Read the labels as a "
+    "rough description, not an assessment."
+)
+
 # TD-96 fix (2026-08-17): CRISIS/SEVERE were both #B42318, which measured
 # 2.95:1 contrast against PALETTE["bg"] (#0D0D0F) -- below the 3:1 WCAG
 # floor -- and had lower luminance than CONFLICT and ESCALATION, two
