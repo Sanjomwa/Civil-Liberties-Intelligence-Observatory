@@ -56,7 +56,7 @@ def score_band_label(value):
 # HEADER
 # ============================================================
 
-st.title("🛰️ ASN Behavioral Intelligence")
+st.title("🛰️ Network Measurement Profiles (ASN)")
 
 st.warning(
     "Scores on this page describe OONI measurements taken from probes on "

@@ -59,7 +59,7 @@ latest = df.iloc[-1] if not df.empty else event_df.iloc[-1]
 # HEADER
 # ============================================================
 
-st.title("📡 Protocol ↔ Repression Correlation Engine")
+st.title("📡 Protocol Anomalies vs. Composite Index")
 
 st.caption("""
 Compares protocol-level OONI anomaly measures with the composite pressure

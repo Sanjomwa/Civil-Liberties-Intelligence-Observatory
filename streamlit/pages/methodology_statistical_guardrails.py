@@ -356,8 +356,8 @@ As of 2026-07-05, `legal_pressure_score` is no longer a term in
 only. `legal_pressure_score` and `legal_pressure_is_synthetic` remain
 in the underlying tables (schema, CTE, and provenance-flag machinery
 kept in place for a future real Lumen-equivalent), but no longer affect
-any figure on the National Stress Observatory, Protocol ↔ Repression
-Correlation Engine (Date Snapshot tab), or Finance Bill 2024 (retired
+any figure on the National Stress Observatory, Protocol Anomalies vs.
+Composite Index (Date Snapshot tab), or Finance Bill 2024 (retired
 method) pages.
 
 A real, per-row `is_synthetic` flag is still carried from the staging

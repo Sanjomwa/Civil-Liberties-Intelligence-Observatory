@@ -117,11 +117,11 @@ page_guide = [
      "Country-level composite pressure index (experimental), protocol escalation load, and the ACLED regime classification."),
     ("🔗 Protocol Intelligence",
      "Protocol-level (DNS/TCP/TLS/HTTP) regime classification, stress heatmap, and per-app blocking breakdown."),
-    ("📡 Protocol ↔ Repression Correlation Engine",
+    ("📡 Protocol Anomalies vs. Composite Index",
      "Protocol anomaly measures compared with the composite pressure index, using a correlation method that is "
      "labelled as retired -- two tabs: Protocol Drill-Down (one protocol over time) and Date Snapshot (every "
      "protocol's values on one date; merged from a former separate page, TD-98)."),
-    ("🧬 ASN Behavioral Intelligence",
+    ("🧬 Network Measurement Profiles (ASN)",
      "Per-network (ASN) measurement profiles: an experimental measurement anomaly score and evidence "
      "reliability for OONI probes on each network. Not a ranking of operators."),
     ("📘 Finance Bill 2024: what the retired correlation method showed",

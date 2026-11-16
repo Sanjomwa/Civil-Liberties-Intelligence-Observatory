@@ -161,7 +161,7 @@ with tab_regime:
     baseline. Bright regions indicate elevated statistical anomaly for
     that specific protocol -- this does not measure coordination or
     synchronization across protocols; see the Protocol-Repression
-    Correlation Engine page for that separate, independently-computed
+    Protocol Anomalies vs. Composite Index page for that separate, independently-computed
     concept.
     """)
 

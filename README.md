@@ -75,9 +75,9 @@ Country-level view of the composite pressure index (experimental), driven primar
 
 Splits CLIO's composite pressure index (experimental) for a chosen date into its two arithmetic inputs (ACLED weekly conflict intensity, Google Transparency platform pressure), with that day's OONI measurements shown alongside rather than as a composite input. This shows how the number was derived; it does not explain why conditions were as they were.
 
-### Protocol ↔ Repression Correlation Engine
+### Protocol Anomalies vs. Composite Index
 
-![](docs/images/screenshot-protocol-repression-correlation-engine.png)
+![Protocol Anomalies vs. Composite Index page](docs/images/screenshot-protocol-repression-correlation-engine.png)
 
 Compares protocol-level OONI anomaly measures with the composite pressure index: the rolling correlation between them and the measures derived from it — all labelled as retired (ADR-0016) and no longer used for findings — and how far the two series diverge; a second tab shows every protocol's values on one chosen date.
 
@@ -87,9 +87,9 @@ Compares protocol-level OONI anomaly measures with the composite pressure index:
 
 Protocol-level regime classification for DNS, HTTP, TCP, and TLS — stress heatmap, per-protocol regime evolution, and a ranking on the latest date in range in one tab; observation-reliability composition and the per-app/per-protocol-layer blocking breakdown (Telegram vs. WhatsApp vs. Signal vs. Psiphon) in the other. Consolidates what were two separate, largely-duplicative pages (TD-16) into one, removing the duplication rather than just relocating it.
 
-### ASN Behavioral Intelligence
+### Network Measurement Profiles (ASN)
 
-![](docs/images/screenshot-asn-behavioral-intelligence.png)
+![Network Measurement Profiles (ASN) page](docs/images/screenshot-asn-behavioral-intelligence.png)
 
 Per-network (ASN) measurement profiles: an experimental measurement anomaly score and evidence reliability for OONI probes on each network. A score describes how often tests from probes on that network looked anomalous; it does not show what the network operator did, since blocking seen from a network can come from upstream or transit networks or the destination service itself.
 
@@ -115,8 +115,8 @@ Key intelligence surfaces (7 pages beyond Welcome):
 
 - National Stress Observatory
 - Protocol Intelligence (regime classification, stress heatmap, per-app blocking breakdown)
-- Protocol ↔ Repression Correlation Engine (TD-98: two tabs — Protocol Drill-Down, Date Snapshot — merged from the former separate Suppression Event Explorer page)
-- ASN Behavioral Intelligence
+- Protocol Anomalies vs. Composite Index (TD-98: two tabs — Protocol Drill-Down, Date Snapshot — merged from the former separate Suppression Event Explorer page)
+- Network Measurement Profiles (ASN)
 - Finance Bill 2024 (retired method)
 - Methodology & Statistical Guardrails
 - Pressure Attribution
@@ -294,9 +294,9 @@ Generated from the repository's tracked files (`git ls-files`), not the local wo
 |   |   `-- config.toml
 |   |-- pages/                # Welcome + 7 pages: National Stress Observatory,
 |   |   |                     # Protocol Intelligence (consolidated, TD-16),
-|   |   |                     # Protocol Repression Correlation Engine (two tabs,
+|   |   |                     # Protocol Anomalies vs. Composite Index (two tabs,
 |   |   |                     # merged with the former Suppression Event Explorer
-|   |   |                     # page, TD-98), ASN Behavioral Intelligence, Finance
+|   |   |                     # page, TD-98), Network Measurement Profiles (ASN), Finance
 |   |   |                     # Bill 2024 (retired method), Methodology &
 |   |   |                     # Statistical Guardrails, Pressure Attribution
 |   |-- services/
