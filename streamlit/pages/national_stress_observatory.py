@@ -70,7 +70,7 @@ latest = df.iloc[-1]
 st.title("National Stress Observatory")
 
 st.caption(
-    f"Country-level digital suppression pressure across {COUNTRY} "
+    f"Country-level composite pressure index (experimental) for {COUNTRY} "
     "(data currently covers June 2023 – June 2025)"
 )
 
@@ -94,7 +94,7 @@ st.divider()
 
 metric_row([
     (
-        "Current Pressure",
+        "Composite Index (latest date)",
         f"{latest['composite_pressure_score']:.2f}"
     ),
     (
@@ -116,8 +116,9 @@ st.metric(
     f"{latest['max_protocol_stress_score']:.1f}",
     help=(
         "intelligence.protocol_signal_regimes' statistically-qualified "
-        "protocol_stress_score (0-100, z-score-based), surfaced here as "
-        "same-day corroboration. Not a term in Current Pressure -- "
+        "protocol_stress_score (0-100, z-score-based), shown here alongside "
+        "the composite as a separate measurement. Not a term in the "
+        "composite index -- "
         "composite_pressure_score is conflict (75%) and platform (25%) "
         "only, per ADR-0004/ADR-0006."
     )
@@ -133,14 +134,14 @@ st.divider()
 st.subheader("National Digital Pressure Trend")
 
 st.markdown(f"""
-This chart shows {COUNTRY}'s **observed national digital pressure**
+This chart shows {COUNTRY}'s **composite pressure index (experimental)**
 -- `composite_pressure_score`, conflict (75%) and platform (25%),
 per ADR-0004 -- and the documented pressure-level thresholds it is
 banded against (ADR-0004).
 
 **How to read this**
 
-- **Coral / Orange line** → current observed pressure conditions
+- **Coral / Orange line** → the composite index value on each date
 - **Dotted reference lines** → the SEVERE / ELEVATED / MODERATE
   thresholds `fact_country_pressure_daily` bands `pressure_level` on
 """)
@@ -191,11 +192,12 @@ st.divider()
 st.subheader("Protocol Escalation Load")
 
 st.markdown("""
-This shows how many monitored protocols experienced elevated
-interference conditions on each day.
+This shows how many monitored protocols had OONI measurements classed
+as anomalous against their own baseline on each day.
 
-Large spikes often indicate broader network-level stress rather
-than isolated protocol instability.
+A day when several protocols are elevated at once is a measurement
+pattern, not evidence of what caused it; it can reflect network
+conditions, measurement coverage, or changes at the services tested.
 """)
 
 fig3 = go.Figure()
@@ -264,7 +266,7 @@ else:
 
     with b1:
         render_state_badge(
-            "Current Regime",
+            "Regime (latest week)",
             latest_regime["regime_primary_regime"],
             regime_color(latest_regime["regime_primary_regime"]),
         )

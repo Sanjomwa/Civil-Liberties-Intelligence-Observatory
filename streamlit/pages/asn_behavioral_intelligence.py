@@ -36,6 +36,21 @@ if df.empty:
 
 latest = df.iloc[0]
 
+# Item 32 (2026-11-16): display-only labels for the mart's behavioral_class
+# values (asn_behavior_profile_mart.sql bands behavioral_priority_score at
+# 1.00 / 0.35 / 0.05). The raw values ("..._SIGNAL_PROVIDER") read as a
+# statement about the operator; these describe the score band only.
+SCORE_BAND_LABELS = {
+    "HIGH_SIGNAL_PROVIDER": "High (score ≥ 1.00)",
+    "ELEVATED_SIGNAL_PROVIDER": "Elevated (score ≥ 0.35)",
+    "VARIABLE_BEHAVIOR": "Moderate (score ≥ 0.05)",
+    "STABLE": "Low (score < 0.05)",
+}
+
+
+def score_band_label(value):
+    return SCORE_BAND_LABELS.get(value, value)
+
 
 # ============================================================
 # HEADER
@@ -43,16 +58,23 @@ latest = df.iloc[0]
 
 st.title("🛰️ ASN Behavioral Intelligence")
 
+st.warning(
+    "Scores on this page describe OONI measurements taken from probes on "
+    "each network: how often tests from those probes looked anomalous. They "
+    "do not show what a network operator did. Blocking seen from a network "
+    "can come from upstream or transit networks, or from the destination "
+    "service itself. The scores are experimental and have not been validated."
+)
+
 st.caption(f"""
-Behavioral observability profiles across {COUNTRY} networks.
+Measurement profiles for OONI probes on {COUNTRY} networks.
 
-This reveals:
+Each profile summarizes:
 
-• which ASNs emit strongest censorship evidence
-• dominant protocol pressure signatures
-• network reliability maturity
-• escalation coupling behavior
-• observability concentration across providers
+• how often tests from probes on the network were measured as anomalous
+• which protocol's tests were most often anomalous
+• how much measurement coverage the network has (evidence reliability)
+• how many protocol-days a protocol's anomaly rate was elevated alongside, or apart from, other protocols
 
 **ASN here is the network OONI probes measured from, not a confirmed
 location of interference (TD-95).** These profiles reflect what was
@@ -92,7 +114,7 @@ row = asn_df.iloc[0]
 c1, c2, c3, c4 = st.columns(4)
 
 c1.metric(
-    "Behavioral Priority Score",
+    "Measurement anomaly score (experimental)",
     f"{row['behavioral_priority_score']:.3f}"
 )
 
@@ -107,8 +129,8 @@ c3.metric(
 )
 
 c4.metric(
-    "Behavioral Pattern",
-    row["behavioral_class"]
+    "Anomaly score band (experimental)",
+    score_band_label(row["behavioral_class"])
 )
 
 st.divider()
@@ -157,44 +179,53 @@ else:
     st.plotly_chart(fig3, use_container_width=True)
 
 st.markdown("""
-Coupled escalation means this ASN participates in wider synchronized
-multi-protocol suppression behavior.
+Counts are protocol-days. A coupled escalation day is a protocol-day when that
+protocol's anomaly rate, measured from probes on this network, was above its
+baseline and moved together with another protocol's anomaly rate. An isolated
+escalation day is one when it was above baseline without that co-movement. Both describe measurements, not
+what any network operator did.
 """)
 
 st.divider()
 
 
-# ============================================================
-# INSIGHT CARD
-# ============================================================
-
-st.subheader("Network Intelligence Summary")
-
-st.info(row["summary_insight"])
-
-st.divider()
+# Item 32 (2026-11-16): the "Network Intelligence Summary" card, which
+# displayed the mart's auto-generated summary_insight sentences, was
+# removed from public view (the sentences asserted blocking behavior the
+# measurements do not establish). get_asn_behavior() still returns the
+# column; it is just no longer displayed here or in the table below.
 
 
 # ============================================================
 # FULL TABLE
 # ============================================================
 
-st.subheader("ASN Intelligence Table")
+st.subheader("ASN Measurement Table")
+
+table_df = df[
+    [
+        "display_asn",
+        "network_class",
+        "dominant_protocol",
+        "behavioral_priority_score",
+        "behavioral_class",
+        "data_reliability_score",
+    ]
+].copy()
+table_df["behavioral_class"] = table_df["behavioral_class"].map(score_band_label)
 
 st.dataframe(
-    df[
-        [
-            "display_asn",
-            "network_class",
-            "dominant_protocol",
-            "behavioral_priority_score",
-            "behavioral_class",
-            "data_reliability_score",
-            "summary_insight"
-        ]
-    ],
+    table_df,
     use_container_width=True,
-    hide_index=True
+    hide_index=True,
+    column_config={
+        "display_asn": "ASN",
+        "network_class": "Network class",
+        "dominant_protocol": "Most often anomalous protocol",
+        "behavioral_priority_score": "Measurement anomaly score (experimental)",
+        "behavioral_class": "Anomaly score band (experimental)",
+        "data_reliability_score": "Evidence reliability",
+    },
 )
 
 st.divider()

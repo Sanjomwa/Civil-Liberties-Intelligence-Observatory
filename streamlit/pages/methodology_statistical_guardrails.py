@@ -32,11 +32,10 @@ st.title("🧠 Methodology & Statistical Guardrails")
 
 st.caption(f"""
 Formal statistical controls, anomaly logic, confidence weighting,
-and inference protections used across {COUNTRY}'s Digital Repression
-Observability System.
+and inference protections used across this dashboard's {COUNTRY} pilot.
 
-This page explains **how every signal is validated before entering
-intelligence outputs.**
+This page explains **how each signal is checked and weighted before it
+reaches a score, and what has not been validated.**
 """)
 
 st.divider()
@@ -63,7 +62,7 @@ Transforms raw measurements into:
 
 - anomaly scores
 - rolling baselines
-- weighted interference indicators
+- confidence-weighted anomaly indicators
 - protocol reliability metrics
 
 **3. Intelligence Inference**
@@ -77,12 +76,12 @@ Applies:
 
 **4. Reporting Layer**
 
-Produces operational dashboards for:
+Produces historical dashboard views of:
 
-- national suppression pressure
-- protocol stress intelligence
-- ASN behavioral attribution
-- incident reconstruction
+- the composite pressure index (experimental)
+- protocol-level measurement anomalies
+- per-network (ASN) measurement anomaly scores (experimental)
+- the Finance Bill 2024 case study of a retired method
 """)
 
 st.divider()
@@ -124,7 +123,8 @@ protocol-day in `intelligence/protocol_relationships.sql`:
 `final_confidence_score = LEAST(1.0, 0.60 x sample_quality_score + 0.40 x
 strongest_relationship_confidence_score)`
 
-The displayed `rolling_pressure_corr` is this value multiplied through the
+The displayed `rolling_pressure_corr` (retired, ADR-0016; no longer used
+for findings) is this value multiplied through the
 full chain: the raw rolling `CORR()` between protocol anomaly and national
 pressure, x `sample_quality_score`, x `final_confidence_score` -- or, on the
 protocol-days where no `protocol_relationships` row exists to join at all
@@ -135,8 +135,8 @@ chain is why the displayed correlation sits well below the raw statistical
 correlation -- see "Correlation Strength: Historical Track Record" below.
 
 Low-confidence observations are mathematically suppressed before correlation
-scoring by the same multiplication -- this prevents sparse evidence from
-amplifying synthetic suppression signatures.
+scoring by the same multiplication -- this keeps sparse evidence from
+producing spuriously strong correlations.
 """)
 
 st.divider()
@@ -197,11 +197,11 @@ regimes = pd.DataFrame({
         "BELOW_BASELINE"
     ],
     "Meaning": [
-        "Normal protocol behavior",
-        "Moderate anomaly escalation",
-        "Strong suppression anomaly",
+        "Anomaly rate within its normal range",
+        "Anomaly rate moderately above baseline",
+        "Anomaly rate strongly above baseline",
         "Evidence too sparse",
-        "Suppressed anomaly activity"
+        "Anomaly rate below baseline"
     ]
 })
 
@@ -219,6 +219,8 @@ st.divider()
 # ============================================================
 
 st.subheader("Correlation Alignment States")
+
+st.caption("Retired pending removal (ADR-0016): alignment states are partly derived from the retired rolling correlation and are no longer used for findings.")
 
 alignment = pd.DataFrame({
     "State": [
@@ -354,8 +356,9 @@ As of 2026-07-05, `legal_pressure_score` is no longer a term in
 only. `legal_pressure_score` and `legal_pressure_is_synthetic` remain
 in the underlying tables (schema, CTE, and provenance-flag machinery
 kept in place for a future real Lumen-equivalent), but no longer affect
-any figure on the National Stress Observatory, Suppression Event
-Explorer, or Finance Bill 2024 Incident Report pages.
+any figure on the National Stress Observatory, Protocol ↔ Repression
+Correlation Engine (Date Snapshot tab), or Finance Bill 2024 (retired
+method) pages.
 
 A real, per-row `is_synthetic` flag is still carried from the staging
 layer through every downstream table. Lumen will be reconsidered for
@@ -393,7 +396,7 @@ JSONPath from an unrelated data shape. As a result, 386,617 of those
 misclassifying as `UNKNOWN` instead of `OK`.
 
 **Fixed** by deriving `handshake_success` from `tls_failure IS NULL`,
-matching OONI's own canonical TLS model. **Externally validated**
+matching OONI's own canonical TLS model. **Cross-checked**
 against OONI's own live API: 100/100 sampled reclassified rows
 confirmed present-and-null in OONI's own raw TLS handshake data, and
 all 361 real `BLOCKED` rows system-wide were individually checked --
@@ -433,9 +436,9 @@ st.success("""
 This observability framework was designed to prioritize:
 
 • statistical rigor  
-• false-positive suppression  
-• transparent inference logic  
-• reproducible censorship intelligence
+• guarding against false positives
+• transparent inference logic
+• reproducible measurement-derived indicators
 
 Every score, count, and classification shown on this dashboard is computed
 at render time from the pipeline's feature, intelligence, and reporting

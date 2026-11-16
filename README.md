@@ -1,6 +1,6 @@
 # CLIO — Civil Liberties Intelligence Observatory
 
-> An active intelligence platform that fuses internet-censorship measurement (OONI), conflict and protest event data (ACLED), and platform/legal takedown-pressure signals (Google Transparency Report) into attributed, confidence-qualified findings about civil-liberties pressure. Kenya is the current pilot country — the methodology is built to generalize, not to stay Kenya-only.
+> A historical observatory that shows internet-measurement results (OONI), ACLED's weekly aggregated conflict and protest data, and platform takedown-request counts (Google Transparency Report) side by side, and derives confidence-qualified, partly experimental indicators of civil-liberties pressure from them. The data is historical: OONI measurements run to June 2025 and ACLED weeks to the week of 2026-03-14. Kenya is the current pilot country — the methodology is built to generalize, not to stay Kenya-only.
 
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Bruin](https://img.shields.io/badge/Bruin-Orchestration-FF9900?style=for-the-badge)](https://getbruin.com/)
@@ -14,33 +14,33 @@
 
 CLIO (Civil Liberties Intelligence Observatory) is Kenya-**piloted**, not Kenya-only. It combines network measurements, conflict indicators, legal-pressure signals, and platform transparency data into governed BigQuery marts and Streamlit intelligence views. Country, dataset, and date-range settings are pipeline configuration variables rather than hardcoded assumptions, so the same methodology is designed to extend to additional countries as they're onboarded.
 
-Kenya's own data coverage is not a closed historical window, though it is honestly uneven across sources today: ACLED conflict-event history in the pipeline spans 1997 through 2026 and continues to extend as new weeks land, while the OONI/Google-Transparency-driven daily marts (the ones behind the composite pressure score) are currently bounded to a fixed June 2023 – June 2025 date-dimension window pending a data-spine widening — a real, disclosed limitation, not a claim that the project or its underlying measurement has stopped. This is an active, ongoing observatory, not a study that concluded in mid-2025. The project's flagship validated case study to date is the Finance Bill 2024 protests (see "Flagship Report" below), studied as one incident within that ongoing scope, not as its boundary.
+Kenya's data coverage is uneven across sources: ACLED's weekly aggregated conflict data in the pipeline runs from 1997 to the week of 2026-03-14, while the OONI/Google-Transparency-driven daily marts (the ones behind the composite pressure index) are bounded to a fixed June 2023 – June 2025 date-dimension window. The pipeline is not ingesting new data on a schedule; the dashboard shows a historical backfill, not live monitoring. The Finance Bill 2024 protests are the project's main case study to date (see "Case Study" below); it reports a null result for a method that has since been retired, and is not a validation of CLIO's indicators.
 
-The platform is designed to answer high-context analytical questions:
+The platform is designed to help examine questions such as:
 
-- Did network interference intensify during political stress windows?
-- Which protocols showed abnormal censorship behavior?
-- Which ASNs concentrated the strongest interference signals?
-- Did pressure indicators align around the Finance Bill 2024 period?
+- Did OONI measurement anomalies rise during political stress windows?
+- Which protocols' tests looked anomalous against their own baseline?
+- On which networks did probes record the most anomalous measurements? (This describes measurements, not what an operator did.)
+- Did pressure indicators move together around the Finance Bill 2024 period?
 - Which signals are statistically weak because of sparse data, low confidence, or zero variance?
 
-The platform reconstructs civil-liberties pressure from historical and ongoing evidence; it does not perform live operational surveillance.
+The platform derives civil-liberties pressure indicators from historical data; it does not perform live operational surveillance.
 
 ## Why This Matters
 
 Digital repression is rarely observable through one clean dataset. It can appear as protocol anomalies, DNS or TCP failures, platform removals, legal pressure, protest dynamics, and inconsistent measurement coverage.
 
-This project treats censorship analysis as an observability and inference problem. It fuses fragmented civil-liberties indicators into auditable statistical outputs, while preserving guardrails that prevent weak or sparse evidence from being overstated.
+This project treats censorship analysis as an observability and inference problem. It places fragmented civil-liberties indicators side by side and derives auditable statistical outputs from them, while preserving guardrails that prevent weak or sparse evidence from being overstated.
 
-The result is a production-oriented reference architecture for civil-liberties observability, analytical inference, and governed public-interest intelligence reconstruction.
+The result is a reference architecture for civil-liberties observability and analytical inference; several of its indicators are experimental or retired, and none has been validated.
 
 ---
 
-## Flagship Report: Finance Bill 2024
+## Case Study: Finance Bill 2024
 
-CLIO's first fully validated flagship deliverable reconstructs Kenya's June–July 2024 Finance Bill protests, connecting ACLED's categorical regime classification (a MOBILISATION reading from the Bill's May 11, 2024 tabling, escalating to CRISIS the week Parliament was stormed) and the platform's continuous composite pressure score — both substantially ACLED-driven by design (conflict intensity carries ~75-80% of the composite's weight; see "Pressure Attribution" below) — against OONI network-measurement corroboration, the report's only source independent of ACLED. An earlier version cited a same-day spike in high-confidence DNS-blocking signals concentrated on Signal as that corroboration; it was retracted in July 2026, because a classification bug had counted Signal's own health-check hostname (`uptime.signal.org`, which always resolves to loopback) as blocking. With the bug fixed, the count for that day is zero, and the report no longer cites OONI corroboration for the window. The report deliberately discloses, rather than smooths over, a real methodological disagreement between the categorical and continuous scoring approaches during the same window.
+CLIO's main case study looks at Kenya's June–July 2024 Finance Bill protest period. The dashboard page reports what the retired rolling correlation between OONI protocol anomalies and the composite pressure index (experimental; ~75% ACLED weekly conflict data, ~25% Google Transparency, no OONI input) showed for that window: no protocol-day row reached the moderate or strong threshold, a null result for that method, which CLIO has since retired (ADR-0016). The page also notes that the 25 June 2024 disruption was mainly a drop in connectivity, which OONI's app tests largely cannot see, so the page cannot assess it. An earlier version of the report cited a same-day spike in high-confidence DNS-blocking signals concentrated on Signal as OONI evidence for the window; it was retracted in July 2026, because a classification bug had counted Signal's own health-check hostname (`uptime.signal.org`, which always resolves to loopback) as blocking. With the bug fixed, the count for that day is zero. Separately, ACLED's experimental regime classifier (shown on the National Stress Observatory, not on this page) labels the week of the Bill's May 11, 2024 tabling MOBILISATION and the week Parliament was stormed CRISIS; that was checked against windows chosen after the fact, which is not validation, and the classifier has known misses (see `docs/02-architecture/methodology.md`).
 
-Every quantitative figure was independently re-verified against live BigQuery data. Lumen/legal-pressure data is deliberately excluded from the report, since it remains synthetic pending a real Lumen export — see "Data Licensing & Attribution" below. The full analysis is built as `streamlit/pages/finance_bill_2024_incident_report.py`; see "Live Dashboard" below for current access status.
+The page's figures were re-checked against BigQuery when it was written. Lumen/legal-pressure data is deliberately excluded from the report, since it remains synthetic pending a real Lumen export — see "Data Licensing & Attribution" below. The full analysis is built as `streamlit/pages/finance_bill_2024_incident_report.py`; see "Hosted Dashboard" below for current access status.
 
 ---
 
@@ -50,15 +50,15 @@ Every quantitative figure was independently re-verified against live BigQuery da
 
 ![](docs/images/screenshot-welcome.png)
 
-What CLIO is and isn't — an observatory fusing conflict-event data, internet-measurement data, and platform/legal takedown pressure into attributed, confidence-qualified findings, currently piloted in Kenya.
+What CLIO is and isn't — an observatory showing ACLED's weekly aggregated conflict data, OONI internet-measurement data, and platform takedown-request counts side by side, with confidence-qualified indicators derived from them, currently piloted in Kenya.
 
 ---
 
-### Finance Bill 2024 Incident Report
+### Finance Bill 2024 (retired method)
 
 ![](docs/images/screenshot-finance-bill-2024-incident-report.png)
 
-Focused reconstruction of the Finance Bill 2024 period, connecting protocol behavior, national pressure signals, and major-provider activity during a known political stress window.
+A case study of what the retired rolling-correlation method showed for the June–July 2024 Finance Bill protest period — a null result for that method — and why the method was retired (ADR-0016).
 
 <details>
 <summary>Six more dashboard pages</summary>
@@ -67,31 +67,31 @@ Focused reconstruction of the Finance Bill 2024 period, connecting protocol beha
 
 ![](docs/images/screenshot-national-stress-observatory.png)
 
-Executive view of national pressure movement, driven primarily by ACLED conflict intensity with platform-pressure signals alongside it, banded against MODERATE/ELEVATED/SEVERE thresholds and cross-checked against protocol-escalation load.
+Country-level view of the composite pressure index (experimental), driven primarily by ACLED conflict intensity with platform-pressure signals alongside it, banded against MODERATE/ELEVATED/SEVERE thresholds, with OONI protocol-escalation load shown alongside (not combined into it).
 
 ### Pressure Attribution
 
 ![](docs/images/screenshot-pressure-attribution.png)
 
-Decomposes CLIO's core cross-source pressure composite into its named, sourced arithmetic drivers (ACLED conflict intensity, Google Transparency platform pressure) for any date, with OONI shown as independent same-day corroboration rather than a composite input — an attributed, citable answer to "why is this composite at this level right now." The National Stress Observatory's own headline reading is a separate, faster-moving index that also draws on OONI signal directly; it is not yet decomposed on this or any dedicated view — read it as an early-warning flag, not (yet) a component-by-component explanation.
+Splits CLIO's composite pressure index (experimental) for a chosen date into its two arithmetic inputs (ACLED weekly conflict intensity, Google Transparency platform pressure), with that day's OONI measurements shown alongside rather than as a composite input. This shows how the number was derived; it does not explain why conditions were as they were.
 
 ### Protocol ↔ Repression Correlation Engine
 
 ![](docs/images/screenshot-protocol-repression-correlation-engine.png)
 
-The bridge between the political and technical evidence: tests whether protocol anomalies actually move with ACLED-derived repression pressure across rolling windows, and reconstructs every protocol's state on a chosen incident date.
+Compares protocol-level OONI anomaly measures with the composite pressure index: the rolling correlation between them and the measures derived from it — all labelled as retired (ADR-0016) and no longer used for findings — and how far the two series diverge; a second tab shows every protocol's values on one chosen date.
 
 ### Protocol Intelligence
 
 ![](docs/images/screenshot-protocol-intelligence.png)
 
-Protocol-level regime classification for DNS, HTTP, TCP, and TLS — stress heatmap, per-protocol regime evolution, and current ranking in one tab; observation-reliability composition and the per-app/per-protocol-layer blocking breakdown (Telegram vs. WhatsApp vs. Signal vs. Psiphon) in the other. Consolidates what were two separate, largely-duplicative pages (TD-16) into one, removing the duplication rather than just relocating it.
+Protocol-level regime classification for DNS, HTTP, TCP, and TLS — stress heatmap, per-protocol regime evolution, and a ranking on the latest date in range in one tab; observation-reliability composition and the per-app/per-protocol-layer blocking breakdown (Telegram vs. WhatsApp vs. Signal vs. Psiphon) in the other. Consolidates what were two separate, largely-duplicative pages (TD-16) into one, removing the duplication rather than just relocating it.
 
 ### ASN Behavioral Intelligence
 
 ![](docs/images/screenshot-asn-behavioral-intelligence.png)
 
-Provider-level accountability view — which specific networks carried the observed interference, ranked by blocking intensity, behavioral priority, and evidence maturity.
+Per-network (ASN) measurement profiles: an experimental measurement anomaly score and evidence reliability for OONI probes on each network. A score describes how often tests from probes on that network looked anomalous; it does not show what the network operator did, since blocking seen from a network can come from upstream or transit networks or the destination service itself.
 
 ### Methodology & Statistical Guardrails
 
@@ -103,9 +103,9 @@ Methodology view documenting how sparse data, confidence weighting, variance che
 
 ---
 
-## Live Dashboard
+## Hosted Dashboard
 
-Streamlit deployment:
+Streamlit deployment (the app is hosted; the data it shows is historical — OONI to June 2025, ACLED weeks to 2026-03-14):
 
 https://civil-lliberties-intelligence-observatory-toafjdj5xoc.streamlit.app/
 
@@ -117,7 +117,7 @@ Key intelligence surfaces (7 pages beyond Welcome):
 - Protocol Intelligence (regime classification, stress heatmap, per-app blocking breakdown)
 - Protocol ↔ Repression Correlation Engine (TD-98: two tabs — Protocol Drill-Down, Date Snapshot — merged from the former separate Suppression Event Explorer page)
 - ASN Behavioral Intelligence
-- Finance Bill 2024 Incident Report
+- Finance Bill 2024 (retired method)
 - Methodology & Statistical Guardrails
 - Pressure Attribution
 
@@ -297,7 +297,7 @@ Generated from the repository's tracked files (`git ls-files`), not the local wo
 |   |   |                     # Protocol Repression Correlation Engine (two tabs,
 |   |   |                     # merged with the former Suppression Event Explorer
 |   |   |                     # page, TD-98), ASN Behavioral Intelligence, Finance
-|   |   |                     # Bill 2024 Incident Report, Methodology &
+|   |   |                     # Bill 2024 (retired method), Methodology &
 |   |   |                     # Statistical Guardrails, Pressure Attribution
 |   |-- services/
 |   |   |-- bq.py
@@ -609,7 +609,7 @@ ruff check .
 
 Run commands and asset names tell you validation *exists*; they don't tell you what's actually been checked or what came back. This section states that plainly, with real numbers, not vague claims — full detail lives in `docs/02-architecture/technical-debt-inventory.md` and `docs/02-architecture/decision-log.md`; this is the top-line summary, not a duplicate of either.
 
-**ACLED regime classifier — golden-file regression tests.** `tests/test_acled_pressure_regimes_golden.py` asserts the ACLED "Path A" regime classifier's output against recorded fixtures for two real historical windows: the Finance Bill 2024 protests (2024-05-11 to 2024-07-13) and the Jan–Feb 2008 post-election violence. This is a drift check against already-validated, materialized BigQuery output, gated behind an opt-in `RUN_BIGQUERY_TESTS=1` environment variable — without it, both tests skip cleanly (2 skipped, offline, well under 1 second); re-run live for this section (2026-08-31) with the flag set and real BigQuery access, both windows pass (2 passed, ~11 seconds). The repository's full test suite (`pytest -q`, also re-run live for this section) currently reports 39 passed, 39 skipped — the skips are exclusively the BigQuery-gated tests across several files, not failures (grown from 16 passed/15 skipped since this section was last written, as new OONI classification test files landed).
+**ACLED regime classifier — golden-file regression tests.** `tests/test_acled_pressure_regimes_golden.py` asserts the ACLED "Path A" regime classifier's output against recorded fixtures for two real historical windows: the Finance Bill 2024 protests (2024-05-11 to 2024-07-13) and the Jan–Feb 2008 post-election violence. This is a drift check against previously reviewed, materialized BigQuery output (not a validation of the classifier), gated behind an opt-in `RUN_BIGQUERY_TESTS=1` environment variable — without it, both tests skip cleanly (2 skipped, offline, well under 1 second); re-run live for this section (2026-08-31) with the flag set and real BigQuery access, both windows pass (2 passed, ~11 seconds). The repository's full test suite (`pytest -q`, also re-run live for this section) currently reports 39 passed, 39 skipped — the skips are exclusively the BigQuery-gated tests across several files, not failures (grown from 16 passed/15 skipped since this section was last written, as new OONI classification test files landed).
 
 **A disclosed, self-found bug: 91.5% of the TLS observation table was misclassified for months.** `stg.ooni_tls_observations.handshake_success` was structurally `NULL` for 100% of 422,487 rows across every ingested app (Signal, WhatsApp, Telegram, Psiphon) — the extraction read a JSONPath (`$.status.success`) that belongs to a different OONI data shape than TLS handshake objects actually have. The consequence: 386,617 of 422,487 rows (91.5%) that should have read `OK` (a genuinely successful handshake) instead fell through to `UNKNOWN`. Found and fixed on this project's own initiative — not flagged by an outside party — and disclosed here rather than left to be found later in the commit history. Full before/after numbers per app, and the downstream cascade this fix was traced through, are in `technical-debt-inventory.md`'s TD-72 entry.
 
@@ -674,7 +674,7 @@ CLIO's evidence sources carry their own, separate licensing terms, re-verified d
 - **Google Transparency Report** — no source-specific reuse license could be located despite direct search; status is **Cannot Determine**, not assumed compliant.
 - **Lumen Database** — the platform's current Lumen-derived figures are synthetic placeholders, not real Lumen data, and are excluded from all live output (see "Data Model and Methodology" above).
 
-Because of the OONI and ACLED terms above, **CLIO's OONI- and ACLED-derived intelligence layer is treated as non-commercial and grant/public-interest-funded for the foreseeable term, not as a product for direct sale.** This project does not redistribute the underlying third-party datasets — only transforms them into attributed, confidence-qualified findings — but transformation does not, on its own, remove either source's NonCommercial restriction. The Finance Bill 2024 flagship report is released as free public-interest research, not a paid deliverable.
+Because of the OONI and ACLED terms above, **CLIO's OONI- and ACLED-derived intelligence layer is treated as non-commercial and grant/public-interest-funded for the foreseeable term, not as a product for direct sale.** This project does not redistribute the underlying third-party datasets — only transforms them into attributed, confidence-qualified findings — but transformation does not, on its own, remove either source's NonCommercial restriction. The Finance Bill 2024 case study is released as free public-interest research, not a paid deliverable.
 
 This posture governs CLIO's data and findings; it is separate from the MIT license on this repository's own code (see below).
 

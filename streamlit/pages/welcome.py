@@ -30,9 +30,9 @@ render_sidebar()
 st.title("🛰️ CLIO — Civil Liberties Intelligence Observatory")
 
 st.caption(
-    f"Monitoring network interference, protocol suppression patterns, and "
-    f"digital civil-liberties stress signals. {COUNTRY} is the current pilot "
-    f"country."
+    f"Historical network-measurement anomalies, aggregated conflict data, "
+    f"and derived civil-liberties pressure indicators. {COUNTRY} is the "
+    f"current pilot country."
 )
 
 st.divider()
@@ -73,11 +73,14 @@ st.subheader("What CLIO is")
 
 st.markdown(
     """
-CLIO fuses internet-censorship measurement (OONI), conflict and protest
-event data (ACLED), and platform/legal takedown-pressure signals (Google
-Transparency Report) into attributed, confidence-qualified findings about
-civil-liberties pressure. Kenya is the current pilot country — the
-methodology is built to generalize, not to stay Kenya-only.
+CLIO shows three kinds of evidence side by side: network-measurement
+results from OONI probes, ACLED's weekly aggregated conflict and protest
+data, and platform takedown-request counts from the Google Transparency
+Report. From these it derives confidence-qualified indicators of
+civil-liberties pressure, some of them experimental or retired. The data is
+historical: OONI measurements run to June 2025, and ACLED weeks run to the
+week of 2026-03-14. Kenya is the current pilot country — the methodology is
+built to generalize, not to stay Kenya-only.
 
 Each page names its data sources. Several measures are experimental or
 retired and are labelled as such on the page. Where evidence is sparse or a statistical window
@@ -92,8 +95,8 @@ st.markdown(
     """
 CLIO is **observational and historical, not operational**. It does not
 identify individuals, track users, exploit networks, or provide real-time
-operational surveillance. It reconstructs civil-liberties pressure from
-historical and ongoing evidence — it is not a live alerting system, and its
+operational surveillance. It derives civil-liberties pressure indicators
+from historical data — it is not a live alerting system, and its
 outputs are evidence-weighted indicators, not definitive proof of intent or
 causality. See the Methodology page's "Responsible Use" guidance before
 citing any finding.
@@ -111,21 +114,22 @@ st.subheader("What's on each page")
 
 page_guide = [
     ("📈 National Stress Observatory",
-     "Country-level composite pressure trend, baseline divergence, and suppression-window probability."),
+     "Country-level composite pressure index (experimental), protocol escalation load, and the ACLED regime classification."),
     ("🔗 Protocol Intelligence",
      "Protocol-level (DNS/TCP/TLS/HTTP) regime classification, stress heatmap, and per-app blocking breakdown."),
     ("📡 Protocol ↔ Repression Correlation Engine",
-     "Statistical alignment between protocol anomalies and national pressure -- two tabs: Protocol Drill-Down "
-     "(one protocol over time) and Date Snapshot (every protocol on one date, for reconstructing a specific "
-     "escalation window; merged from the former separate Suppression Event Explorer page, TD-98)."),
+     "Protocol anomaly measures compared with the composite pressure index, using a correlation method that is "
+     "labelled as retired -- two tabs: Protocol Drill-Down (one protocol over time) and Date Snapshot (every "
+     "protocol's values on one date; merged from a former separate page, TD-98)."),
     ("🧬 ASN Behavioral Intelligence",
-     "Network-level (ASN) ranking by blocking intensity, behavioral priority, and evidence maturity."),
+     "Per-network (ASN) measurement profiles: an experimental measurement anomaly score and evidence "
+     "reliability for OONI probes on each network. Not a ranking of operators."),
     ("📘 Finance Bill 2024: what the retired correlation method showed",
      "A case study of the old correlation method's null result for the June–July 2024 protest period, and why the method was retired."),
     ("🧠 Methodology & Statistical Guardrails",
-     "How every signal is validated, weighted, and guarded against overstatement before it reaches a score."),
+     "How each signal is checked, weighted, and guarded against overstatement before it reaches a score, and what has not been validated."),
     ("🧾 Pressure Attribution",
-     "Decomposes the composite pressure score into its named, sourced drivers for any date — why pressure is elevated, specifically."),
+     "Splits the composite pressure index for a chosen date into its two arithmetic inputs (ACLED weekly conflict intensity and Google Transparency platform pressure), with that day's OONI measurements shown alongside."),
 ]
 
 for label, desc in page_guide:
@@ -146,14 +150,15 @@ with col_a:
     st.markdown("**If you're a journalist or NGO / human-rights / legal reader**")
     st.markdown(
         """
-        1. 🧾 Pressure Attribution — see *why* pressure is elevated right now
+        1. 🧾 Pressure Attribution — see which inputs make up the composite index on a date
         2. 📘 Finance Bill 2024 (retired method) — the Finance Bill 2024 case study (a null result for a retired method)
         3. 🧠 Methodology & Statistical Guardrails — how to responsibly cite a finding
         """
     )
     st.caption(
-        "These are CLIO's two identified primary users — both need a citable, "
-        "attributed finding, not a raw score."
+        "These are CLIO's two identified primary users — both need to know "
+        "what a number was derived from and what it does not show, not just "
+        "a raw score."
     )
 
 with col_b:
@@ -177,8 +182,8 @@ st.subheader("Before you rely on a finding")
 
 st.warning(
     """
-    **Data coverage is uneven across sources.** ACLED conflict-event history
-    spans 1997–2026 and continues to extend. OONI/Google-Transparency-driven
+    **Data coverage is uneven across sources.** ACLED weekly aggregated
+    conflict data spans 1997 to the week of 2026-03-14. OONI/Google-Transparency-driven
     daily marts (behind the composite pressure score) are currently bounded
     to June 2023 – June 2025, pending a data-spine widening. This is a real,
     disclosed limitation — see the Methodology page for detail.

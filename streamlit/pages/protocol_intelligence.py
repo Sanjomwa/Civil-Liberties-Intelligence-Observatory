@@ -82,7 +82,7 @@ st.title("🔗 Protocol Intelligence")
 
 st.caption(
     f"Protocol-level regime classification, anomaly pressure, and statistical "
-    f"confidence across {COUNTRY}'s censorship surface (data currently covers "
+    f"confidence for OONI measurements in {COUNTRY} (data currently covers "
     f"June 2023 – June 2025). Consolidates the former Protocol Regime Monitor "
     f"and Protocol Stress Intelligence Observatory pages (TD-16) — both read "
     f"the same underlying mart; this page removes the duplication rather than "
@@ -132,7 +132,7 @@ c1.metric("Stress Score", _format_number(latest_protocol["protocol_stress_score"
 
 with c2:
     render_state_badge(
-        "Current State",
+        "State (latest date)",
         latest_protocol["protocol_state"],
         protocol_color(latest_protocol["protocol_state"]),
     )
@@ -155,10 +155,10 @@ with tab_regime:
     st.subheader("Protocol Stress Heatmap")
 
     st.markdown("""
-    This heatmap shows protocol-level digital stress over time across every
-    monitored protocol at once. Higher intensity means stronger statistically
-    abnormal interference behavior compared to historical baseline
-    performance. Bright regions indicate elevated statistical anomaly for
+    This heatmap shows protocol-level measurement anomalies over time across
+    every monitored protocol at once. Higher intensity means OONI tests on
+    that protocol looked more anomalous compared to their own historical
+    baseline. Bright regions indicate elevated statistical anomaly for
     that specific protocol -- this does not measure coordination or
     synchronization across protocols; see the Protocol-Repression
     Correlation Engine page for that separate, independently-computed
@@ -222,12 +222,13 @@ with tab_regime:
 
     st.divider()
 
-    st.subheader("Current Protocol Ranking")
+    st.subheader("Protocol Ranking (latest date in range)")
 
     st.markdown(
-        "Protocols ranked by current interference stress score — identifies "
-        "which protocol families are experiencing the strongest censorship "
-        "pressure right now."
+        "Protocols ranked by their latest protocol stress score in the "
+        "selected date range — which protocol families' OONI tests looked "
+        "most anomalous against their own baseline. The data ends in June "
+        "2025; this is not a current reading."
     )
 
     ranked = latest_all_protocols.sort_values("protocol_stress_score", ascending=False)
@@ -279,9 +280,9 @@ with tab_regime:
             f"observation volume in this range is {_volume_desc}, so "
             f"{_quiet_str}'s coverage is comparable to or higher than the "
             f"protocol(s) showing real signal. The near-universal 'normal' "
-            f"reading reflects genuine absence of measured interference at "
+            f"reading reflects an absence of measured anomalies at "
             f"that protocol layer in this data, not sparse or missing "
-            f"coverage -- though it does not rule out interference this "
+            f"coverage -- though it does not rule out blocking this "
             f"layer's tests are simply not well-suited to detect."
         )
 

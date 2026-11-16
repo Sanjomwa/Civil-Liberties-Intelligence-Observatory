@@ -54,15 +54,15 @@ latest = df.iloc[-1]
 st.title("🧾 Pressure Attribution")
 
 st.caption(f"""
-Decomposes {COUNTRY}'s composite pressure score into its named,
-sourced drivers for any date — an attributed, citable answer to
-"why is pressure at this level right now, specifically."
+Splits {COUNTRY}'s composite pressure index (experimental) for a chosen
+date into the inputs it is computed from. This shows how the number was
+derived; it does not explain why conditions were as they were.
 
 The composite has exactly two arithmetic inputs (ADR-0004 weights):
-ACLED conflict intensity (75%, weekly grain) and Google Transparency
-platform pressure (25%, semiannual grain). OONI network measurement
-is shown as independent same-day corroboration — it does not feed
-the composite arithmetically. Legal (Lumen) is benched (ADR-0004)
+ACLED conflict intensity (75%, from ACLED's weekly aggregated data) and
+Google Transparency platform pressure (25%, semiannual grain). OONI
+network measurements for the same day are shown alongside — they do not
+feed the composite arithmetically. Legal (Lumen) is benched (ADR-0004)
 and carries zero weight.
 """)
 
@@ -295,14 +295,13 @@ st.divider()
 # OONI CORROBORATION (daily grain — NOT a composite input)
 # ============================================================
 
-st.subheader(f"OONI network measurement, {date_str} — independent corroboration")
+st.subheader(f"OONI network measurement, {date_str} — shown alongside")
 
 st.markdown(
     "OONI probes measured the following on this exact date, per app and "
-    "protocol layer. **This evidence does not feed the composite score** "
-    "— it is independent, same-day network measurement that corroborates "
-    "(or fails to corroborate) pressure readings derived from conflict "
-    "and platform sources."
+    "protocol layer. **These measurements do not feed the composite score** "
+    "— they are separate, same-day network measurements shown beside the "
+    "conflict- and platform-derived readings above, not a check on them."
 )
 
 ooni_df = get_ooni_corroboration(pd.Timestamp(selected_date).date())
@@ -319,7 +318,7 @@ else:
         st.success(
             f"No blocking signals in {int(ooni_df['total_experiment_results'].sum()):,} "
             f"experiment results across {ooni_df['test_name'].nunique()} tests — "
-            "OONI does not corroborate network-layer interference on this date."
+            "this does not rule out conditions the probes did not measure."
         )
     else:
         top_sig = signals.iloc[0]

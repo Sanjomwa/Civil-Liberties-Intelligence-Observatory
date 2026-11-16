@@ -25,8 +25,8 @@ from core.config import COUNTRY, DATASETS, DEFAULT_END, DEFAULT_START, ISO2, PRO
 APP_NAME = "CLIO — Civil Liberties Intelligence Observatory"
 
 APP_TAGLINE = (
-    "Observability into censorship, network interference, and civil "
-    f"liberties pressure ({COUNTRY} pilot; network/platform data currently "
+    "Historical network-measurement anomalies and derived civil-liberties "
+    f"pressure indicators ({COUNTRY} pilot; network/platform data currently "
     "covers Jun 2023 – Jun 2025, ACLED coverage extends to 1997 – 2026)"
 )
 

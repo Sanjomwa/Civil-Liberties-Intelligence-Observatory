@@ -62,23 +62,25 @@ latest = df.iloc[-1] if not df.empty else event_df.iloc[-1]
 st.title("📡 Protocol ↔ Repression Correlation Engine")
 
 st.caption("""
-Measures rolling correlation between protocol-level anomaly escalation and
-national repression pressure, damped by sample quality and confidence. This
-is not a significance-tested statistic -- no p-value or equivalent test is
-computed anywhere in this pipeline.
+Compares protocol-level OONI anomaly measures with the composite pressure
+index (experimental): the rolling correlation between them (damped by
+sample quality and confidence), the alignment and synchronization measures
+derived from it, and how far the two series diverge. **The rolling correlation is retired
+(ADR-0016) and is no longer used for findings;** it is kept here for
+transparency. It was never a significance-tested statistic -- no p-value
+or equivalent test is computed anywhere in this pipeline.
 
 Two ways to explore this same mart: **Protocol Drill-Down** follows one
-protocol's correlation over time; **Date Snapshot** follows every protocol
-on one specific date -- useful for reconstructing what happened around a
-specific incident. (TD-98: the Date Snapshot tab is merged in from the
-former, separate "Suppression Event Explorer" page -- same underlying data,
-two views, one honest weak-correlation disclosure instead of two.)
+protocol over time; **Date Snapshot** shows every protocol's values on
+one date. (TD-98: the Date Snapshot tab is merged in from a former,
+separate page -- same underlying data, two views, one weak-correlation
+disclosure instead of two.)
 
-**Protocol anomalies here are observed as unreachable from OONI's Kenyan
-measurement vantage points, not confirmed en-route interference location
-(TD-95)** -- the pipeline cannot yet distinguish local Kenyan interference
-from upstream/transit interference or a destination service's own
-geoblocking decision. See Methodology & Statistical Guardrails for detail.
+**Protocol anomalies here are measured as unreachable from OONI's Kenyan
+probe vantage points; they do not locate where any blocking happened
+(TD-95)** -- the pipeline cannot distinguish blocking inside Kenya from
+upstream/transit networks or a destination service's own geoblocking
+decision. See Methodology & Statistical Guardrails for detail.
 """)
 
 
@@ -99,6 +101,7 @@ _any_qualifying_engine = bool(
 _max_abs_corr_engine = df["rolling_pressure_corr"].abs().max() if not df.empty else None
 
 if _max_abs_corr_engine is not None:
+    st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
     st.caption(
         (
             "At least one protocol-day row in the selected date range reaches "
@@ -208,12 +211,13 @@ with tab_drilldown:
         )
 
         st.info("""
-        Positive values indicate protocol disruption rising with national pressure.
+        Positive values mean the protocol's anomaly rate and the composite
+        pressure index moved in the same direction over the window.
 
-        Negative values suggest inverse movement.
+        Negative values mean they moved in opposite directions.
 
-        Strong sustained positive correlation is a potential synchronized
-        suppression signal.
+        Correlation is not evidence that one caused the other, and this
+        retired measure is not used for findings.
         """)
 
         st.divider()
@@ -236,14 +240,15 @@ with tab_drilldown:
             "Escalation Synchronization Strength"
         )
 
+        st.caption("Retired pending removal (ADR-0016): this measure is the 15-day average of the retired rolling correlation and is no longer used for findings.")
         st.plotly_chart(
             fig2,
             use_container_width=True
         )
 
         st.info("""
-        Measures how consistently protocol interference and national pressure
-        move together over rolling windows.
+        The 15-day average size of the rolling correlation between this
+        protocol's anomaly rate and the composite pressure index.
         """)
 
         st.divider()
@@ -271,10 +276,10 @@ with tab_drilldown:
         )
 
         st.info("""
-        Large divergence means protocol behavior is moving independently
-        from national repression pressure.
+        Large divergence means the protocol's anomaly rate is moving
+        independently of the composite pressure index (experimental).
 
-        This may indicate isolated protocol anomalies or alternate drivers.
+        It describes a gap between two measured series, not its cause.
         """)
 
         st.divider()
@@ -303,6 +308,7 @@ with tab_drilldown:
             "Observed Alignment States"
         )
 
+        st.caption("Retired pending removal (ADR-0016): alignment states are partly derived from the retired rolling correlation and are no longer used for findings.")
         st.plotly_chart(
             fig4,
             use_container_width=True
@@ -325,7 +331,7 @@ with tab_drilldown:
             )
         )
 
-        st.subheader("Current Protocol Correlation Ranking")
+        st.subheader("Protocol Correlation Ranking (latest date in range, retired measure)")
 
         st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
         st.dataframe(
@@ -349,10 +355,10 @@ with tab_drilldown:
 
 with tab_snapshot:
     if event_df.empty:
-        st.info("No event intelligence available for this date range.")
+        st.info("No date-snapshot data available for this date range.")
     else:
         event_date = st.selectbox(
-            "Select Event Date",
+            "Select Date",
             sorted(event_df["measurement_date"].unique(), reverse=True),
             key="corr_engine_event_date",
         )
@@ -424,7 +430,7 @@ with tab_snapshot:
 
         st.markdown(f"""
         Color scale fixed to [-1, 1]. Each cell is one protocol's own correlation
-        with national pressure on this date, computed independently -- this does not
+        with the composite pressure index on this date, computed independently -- this does not
         measure cross-protocol coordination. Values shown here run
         **{_heat_min:.2f} to {_heat_max:.2f}**, against a 0.55 MODERATE-relationship
         threshold on the same scale.
@@ -499,18 +505,13 @@ with tab_snapshot:
             use_container_width=True
         )
 
-        st.markdown("""
-        Large divergence suggests protocol-specific interference
-        that national pressure context alone cannot explain.
-        """)
-
         st.divider()
 
         # ----------------------------------------------------
         # RAW EVENT TABLE
         # ----------------------------------------------------
 
-        st.subheader("Event Intelligence Table")
+        st.subheader("Date Snapshot Table")
 
         st.caption("Retired pending removal (ADR-0016): this rolling correlation is no longer used for findings.")
         st.dataframe(
