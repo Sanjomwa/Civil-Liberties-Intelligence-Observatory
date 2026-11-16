@@ -1,4 +1,5 @@
 name: civil_liberties_pipeline
+# Declared for Bruin; no scheduler runs this pipeline (historical backfill only).
 schedule: "@daily"
 start_date: "2023-06-01"
 

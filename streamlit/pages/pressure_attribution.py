@@ -4,15 +4,14 @@ import streamlit as st
 
 from core.state import init_state
 from core.config import COUNTRY
-from core.constants import REGIME_EXPERIMENTAL_NOTE, REGIME_STATES
+from core.constants import LABELS_HIDDEN_NOTE
 from core.filters import render_sidebar
-from core.theme import apply_layout, pressure_level_color, regime_color, inject_css
+from core.theme import apply_layout, inject_css
 from services.marts import (
     get_ooni_corroboration,
     get_platform_drivers,
     get_pressure_attribution_daily,
 )
-from components.status import render_state_badge
 from components.trust import render_trust_strip, attribution_footer
 
 
@@ -89,17 +88,16 @@ selected_date = st.selectbox(
 
 row = df[df["measurement_date"] == selected_date].iloc[0]
 date_str = pd.Timestamp(selected_date).strftime("%Y-%m-%d")
-week_start = pd.Timestamp(row["conflict_week_start_date"]).date()
 
 
 # ============================================================
 # HEADLINE KPIs
 # ============================================================
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2 = st.columns(2)
 
 c1.metric(
-    "Composite Pressure",
+    "Composite index (experimental; not validated)",
     f"{row['composite_pressure_score']:.2f}",
     delta=(
         f"{row['composite_delta_7d']:+.2f} vs prior week"
@@ -108,43 +106,16 @@ c1.metric(
     delta_color="inverse",
 )
 
-with c2:
-    render_state_badge(
-        "Pressure Level",
-        row["pressure_level"],
-        pressure_level_color(row["pressure_level"]),
-    )
-
-c3.metric(
+c2.metric(
     "Conflict Share",
     f"{row['conflict_share'] * 100:.1f}%"
     if pd.notna(row["conflict_share"]) else "—",
 )
 
-regime = row["regime_primary_regime"]
-
-with c4:
-    render_state_badge(
-        "Regime (ACLED Path A)",
-        regime if pd.notna(regime) else "No classification",
-        regime_color(regime),
-    )
-
-st.info(REGIME_EXPERIMENTAL_NOTE)
-
-if pd.notna(regime) and regime in REGIME_STATES:
-    st.markdown(
-        f"Regime engine classifies the week of **{week_start}** as "
-        f"<span style='color:{REGIME_STATES[regime]}'><b>{regime}</b></span> "
-        f"(confidence: {row['regime_confidence_level']})"
-        + (
-            f" — transition: {row['regime_transition_type']}"
-            if pd.notna(row.get("regime_transition_type"))
-            and bool(row.get("regime_transition_detected"))
-            else ""
-        ),
-        unsafe_allow_html=True,
-    )
+# Item 34 (2026-11-16): the pressure-level badge, the ACLED path A regime
+# badge and the regime sentence for the selected week were removed from
+# public view until the labels are validated.
+st.info(LABELS_HIDDEN_NOTE)
 
 st.divider()
 

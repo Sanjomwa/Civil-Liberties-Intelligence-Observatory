@@ -114,7 +114,8 @@ st.subheader("What's on each page")
 
 page_guide = [
     ("📈 National Stress Observatory",
-     "Country-level composite pressure index (experimental), protocol escalation load, and the ACLED regime classification."),
+     "Country-level composite pressure index (an experimental value, not validated; band and regime labels are "
+     "hidden until validated), protocol escalation load, and OONI weekly anomalous and blocked rates."),
     ("🔗 Protocol Intelligence",
      "Protocol-level (DNS/TCP/TLS/HTTP) regime classification, stress heatmap, and per-app blocking breakdown."),
     ("📡 Protocol Anomalies vs. Composite Index",

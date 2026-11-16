@@ -86,7 +86,7 @@ ACLED_ATTRIBUTION_HTML = (
     "Source: Armed Conflict Location &amp; Event Data (ACLED), "
     "acleddata.com. Aggregated weekly data for Kenya, release covering "
     "weeks up to 2026-03-14, accessed March 2026. CLIO transformed the "
-    "data (log-scaled composite indices and experimental regime labels); "
+    "data into a log-scaled, experimental composite index; "
     "no ACLED records or raw counts are shown."
 )
 

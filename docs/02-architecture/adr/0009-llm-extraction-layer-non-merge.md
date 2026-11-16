@@ -51,3 +51,7 @@ What was actually removed from the working tree:
 What was deliberately **not** touched: the live `encoded-joy-485413-k5.llm_derived.article_extractions` BigQuery dataset and its 60 rows. Dropping a live BigQuery dataset is a separate, more consequential decision than deleting working-tree code and was explicitly out of scope for the deletion pass — confirmed still present via `bq ls` on 2026-08-03.
 
 `llm_report_writer/` (see ADR-0010, once landed in this repo) is the prototype taking this ADR's place as CLIO's flagship AI-layer story going forward — a narration-of-already-verified-data design rather than this ADR's raw-article-extraction design. This amendment does not retract this ADR's findings; it records that the code has been superseded and removed.
+
+## Correction (2026-11-16): the non-merge CI guard no longer exists
+
+Decision item 2 and both paragraphs of "Consequences" above describe a CI guard (`llm_extraction/ci_check_no_merge.py`, run from `.github/workflows/tests.yml`) as enforcing the non-merge rule, including the statements that it "now makes that a tested property" and "will fail any Bruin asset that attempts this". Those statements stopped being true on 2026-08-03, when the amendment above removed both the script and its CI step. Checked 2026-11-16: `.github/workflows/tests.yml` runs only `pytest -q`, and the `llm_extraction/` folder does not exist. No Bruin asset references `llm_derived` today, but nothing in CI checks this. The text above is left as written, as the historical record.

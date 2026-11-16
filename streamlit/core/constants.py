@@ -124,14 +124,14 @@ REGIME_STATES = {
     "CRISIS": "#FF3B5C",
 }
 
-# Item 29 (2026-11-16): shown once, near the first ACLED path A regime
-# display, on every page that shows regime labels.
-REGIME_EXPERIMENTAL_NOTE = (
-    "Regime labels come from an experimental classifier that has not been "
-    "validated. It has known misses: for example, a week in late June 2025 "
-    "with dozens of recorded events and many fatalities across most "
-    "counties is labelled STABLE with high confidence. Read the labels as a "
-    "rough description, not an assessment."
+# Item 34 (2026-11-16): replaces item 29's REGIME_EXPERIMENTAL_NOTE. The
+# composite pressure band labels and the ACLED path A regime labels are no
+# longer shown on any public page; this note is shown where the regime
+# display used to be.
+LABELS_HIDDEN_NOTE = (
+    "Band and regime labels are hidden until they are validated against a "
+    "pre-specified list of events. The index value is shown as an "
+    "experimental number."
 )
 
 # TD-96 fix (2026-08-17): CRISIS/SEVERE were both #B42318, which measured
