@@ -49,6 +49,10 @@ streamlit = [
     "db-dtypes>=1.2.0,<2.0",
 ]
 
+[tool.ruff]
+# Frozen, hash-published files (ADR-0016 Step 4/5); never edited, so never linted.
+extend-exclude = ["registrations"]
+
 [tool.ruff.lint]
 # Pin the enabled rule set explicitly. ruff 0.16.0 changed its own default
 # selection to a much broader set (I, SIM, UP, RUF, YTT, ...); this codebase
