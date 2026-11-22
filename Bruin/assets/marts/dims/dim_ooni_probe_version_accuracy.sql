@@ -9,6 +9,20 @@ type: bq.sql
 connection: bigquery-default
 
 description: |
+  SUPERSEDED AS A RULE SOURCE (ADR-0017, 2026-11-22): this table is NOT
+  OONI's current rule set. marts.dim_ooni_zero_accuracy_rules now governs
+  which measurements are set aside, from OONI's live scoring code
+  (ooni/backend fastpath/fastpath/core.py at commit 27f2b28). This table
+  was built from the archived ooni/pipeline repository and lacks that
+  code's newer Signal rules (test_version 0.2.4; <= 0.2.3 from
+  2023-11-07; engine_version < 3.17.2 from 2023-05-02). It is kept only so
+  int.ooni_measurement_verdicts_candidate can tell SCORED from
+  UNKNOWN_VERSION; its 0.2.0 row is now reached by no measurement, since
+  every signal 0.2.0 measurement meets SIG-B3 or SIG-B4 first. Point 4
+  below is also wrong: engine_version exists, at
+  $.annotations.engine_version in raw_measurement, on every signal row.
+  The text below is kept as the historical record.
+
   TD-87 Phase 2 (2026-08-15). Grounds a real, earlier-measured finding: an
   audit found 80 of 361 BLOCKED TLS rows and 99 of 100 residual `ssl_*`
   UNKNOWN rows carry OONI's own `scores.accuracy = 0.0` in OONI's live API

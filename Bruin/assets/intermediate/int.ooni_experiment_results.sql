@@ -18,6 +18,7 @@ depends:
   - stg.ooni_http_observations
   - marts.dim_tls_failure_evidence
   - marts.dim_tcp_failure_evidence
+  - int.ooni_zero_accuracy_measurements
 
 materialization:
   type: table
@@ -44,6 +45,39 @@ columns:
       verdict; this column exists so the original evidence and the reason
       it was excluded stay visible and auditable, rather than silently
       disappearing into 'OK'.
+
+      ADR-0017 (2026-11-22): also 'OONI_ZERO_ACCURACY:<rule_id>' when the
+      row's measurement meets an adopted rule in
+      marts.dim_ooni_zero_accuracy_rules (see ooni_zero_accuracy_rule_id).
+      result_state is NOT changed for these rows; is_blocking_signal is
+      FALSE. A row that already carries KNOWN_SIGNAL_ROOT_CA keeps that
+      value here (34,146 signal 0.2.0 TLS rows on 2026-11-22, all of whose
+      measurements also meet SIG-B3/SIG-B4); ooni_zero_accuracy_rule_id is
+      still set on those rows, so they are left out of counts with the
+      rest of their measurement.
+  - name: ooni_zero_accuracy_rule_id
+    type: string
+    description: |
+      ADR-0017 (2026-11-22). The first adopted rule (OONI code order) the
+      row's measurement meets, from int.ooni_zero_accuracy_measurements;
+      NULL otherwise. Every asset that counts observations filters on
+      this column being NULL, numerators and denominators alike: today
+      that is marts.fact_ooni_censorship_signals (shared by
+      features.protocol_daily_signals, marts.fact_protocol_blocking_summary
+      and reporting.mart_pressure_attribution_ooni_daily) and
+      features.ooni_weekly_signals' direct read. Flagged rows are kept
+      here, not deleted, so they stay traceable.
+
+custom_checks:
+  - name: zero_accuracy_rows_never_blocking
+    description: |
+      ADR-0017. A row flagged by OONI's zero-accuracy rules must never
+      count as a blocking signal. Must stay 0.
+    query: |
+      SELECT COUNT(*)
+      FROM `{{ var.project_id }}.int.ooni_experiment_results`
+      WHERE ooni_zero_accuracy_rule_id IS NOT NULL AND is_blocking_signal
+    value: 0
 @bruin */
 
 WITH dns_source AS (
@@ -456,10 +490,23 @@ unioned AS (
   SELECT * FROM http
 )
 
+-- ADR-0017 (2026-11-22): rows whose measurement OONI's current scoring
+-- code gives zero accuracy are kept and flagged, never deleted. Their
+-- result_state is left as computed above; is_blocking_signal is forced
+-- FALSE, and an existing exclusion_reason (KNOWN_SIGNAL_ROOT_CA) wins over
+-- the new one. See the exclusion_reason / ooni_zero_accuracy_rule_id
+-- column descriptions in this file's header.
 SELECT
-  TO_HEX(MD5(CONCAT(observation_id, '|', result_state, '|', blocking_detail))) AS experiment_result_id,
-  *,
-  result_state = 'BLOCKED' AS is_blocking_signal,
+  TO_HEX(MD5(CONCAT(u.observation_id, '|', u.result_state, '|', u.blocking_detail))) AS experiment_result_id,
+  u.* EXCEPT (exclusion_reason),
+  COALESCE(
+    u.exclusion_reason,
+    CONCAT('OONI_ZERO_ACCURACY:', za.ooni_zero_accuracy_rule_id)
+  ) AS exclusion_reason,
+  za.ooni_zero_accuracy_rule_id,
+  u.result_state = 'BLOCKED' AND za.ooni_zero_accuracy_rule_id IS NULL AS is_blocking_signal,
   CURRENT_TIMESTAMP() AS int_extracted_at
-FROM unioned;
+FROM unioned AS u
+LEFT JOIN `{{ var.project_id }}.int.ooni_zero_accuracy_measurements` AS za
+  ON za.measurement_id = u.measurement_id;
 

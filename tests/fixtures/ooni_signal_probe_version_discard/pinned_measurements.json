@@ -79,8 +79,8 @@
       "report_id": "20240112T003234Z_signal_KE_30844_n1_Y33fF90QkRKDzo33",
       "test_version": "0.2.4",
       "before_fix_verdict": "ANOMALOUS",
-      "expected_ooni_verdict": "ANOMALOUS",
-      "note": "Regression guard: test_version=0.2.4, unrelated to and unaffected by either TD-102 fix (0.2.4 removed the dead api.directory.signal.org target entirely, and postdates the November 2023 event cleanly). OONI's own live API confirms ANOMALOUS. Must stay ANOMALOUS, byte-for-byte, after this fix."
+      "expected_ooni_verdict": null,
+      "note": "Regression guard: test_version=0.2.4, unrelated to and unaffected by either TD-102 fix (0.2.4 removed the dead api.directory.signal.org target entirely, and postdates the November 2023 event cleanly). OONI's own live API confirms ANOMALOUS. Must stay ANOMALOUS, byte-for-byte, after this fix. CHANGED 2026-11-22 (ADR-0017): OONI's current scoring code (ooni/backend fastpath/fastpath/core.py at 27f2b28, rule SIG-B2, ooni/probe#2636) gives every test_version 0.2.4 measurement zero accuracy, so this row is now DISCARDED_OONI_ZERO_ACCURACY and its verdict is NULL. The ANOMALOUS reading above is OONI's stored record from before that rule; ADR-0017 takes the current code as the reference and lists the stored-score disagreement as a known limit."
     },
     {
       "measurement_id": "33ea43d44bf1086ae1e38dc32451a62a23a922e77f29d692214bb33c13704e34",

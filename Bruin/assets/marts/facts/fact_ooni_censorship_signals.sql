@@ -11,6 +11,16 @@ description: |
   OONI censorship signal fact.
   Grain: one protocol-level experiment result.
 
+  ADR-0017 (2026-11-22): rows whose measurement OONI's current scoring code
+  gives zero accuracy (int.ooni_experiment_results.ooni_zero_accuracy_rule_id
+  IS NOT NULL) are left out here. This is the one shared filter point for
+  every asset that counts observations through this table
+  (features.protocol_daily_signals, marts.fact_protocol_blocking_summary,
+  reporting.mart_pressure_attribution_ooni_daily), so their numerators and
+  denominators both drop those rows. The rows stay in
+  int.ooni_experiment_results, flagged. features.ooni_weekly_signals reads
+  int.ooni_experiment_results directly and applies the same filter itself.
+
 depends:
   - int.ooni_experiment_results
 
@@ -48,5 +58,6 @@ SELECT
   failure_reason,
   confidence_score,
   int_extracted_at
-FROM `{{ var.project_id }}.int.ooni_experiment_results`;
+FROM `{{ var.project_id }}.int.ooni_experiment_results`
+WHERE ooni_zero_accuracy_rule_id IS NULL;
 

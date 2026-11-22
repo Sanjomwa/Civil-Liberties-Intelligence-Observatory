@@ -20,7 +20,7 @@
         "blocked_results": 9,
         "down_results": 401,
         "unknown_results": 1460,
-        "blocking_signal_count": 9
+        "blocking_signal_count": 0
       },
       "telegram": {
         "total_experiment_results": 9557,
@@ -57,7 +57,7 @@
         "blocked_results": 9,
         "down_results": 502,
         "unknown_results": 1689,
-        "blocking_signal_count": 9
+        "blocking_signal_count": 0
       },
       "telegram": {
         "total_experiment_results": 10924,
@@ -131,7 +131,7 @@
         "blocked_results": 2,
         "down_results": 255,
         "unknown_results": 1359,
-        "blocking_signal_count": 2
+        "blocking_signal_count": 0
       },
       "telegram": {
         "total_experiment_results": 8995,
@@ -168,7 +168,7 @@
         "blocked_results": 5,
         "down_results": 377,
         "unknown_results": 1781,
-        "blocking_signal_count": 5
+        "blocking_signal_count": 0
       },
       "telegram": {
         "total_experiment_results": 11901,
@@ -205,7 +205,7 @@
         "blocked_results": 10,
         "down_results": 395,
         "unknown_results": 2422,
-        "blocking_signal_count": 10
+        "blocking_signal_count": 1
       },
       "telegram": {
         "total_experiment_results": 16394,
@@ -242,7 +242,7 @@
         "blocked_results": 12,
         "down_results": 447,
         "unknown_results": 4767,
-        "blocking_signal_count": 12
+        "blocking_signal_count": 3
       },
       "telegram": {
         "total_experiment_results": 33268,
@@ -279,7 +279,7 @@
         "blocked_results": 3,
         "down_results": 245,
         "unknown_results": 3466,
-        "blocking_signal_count": 3
+        "blocking_signal_count": 0
       },
       "telegram": {
         "total_experiment_results": 24512,
@@ -316,7 +316,7 @@
         "blocked_results": 8,
         "down_results": 288,
         "unknown_results": 3214,
-        "blocking_signal_count": 8
+        "blocking_signal_count": 0
       },
       "telegram": {
         "total_experiment_results": 22233,
@@ -353,7 +353,7 @@
         "blocked_results": 1,
         "down_results": 12,
         "unknown_results": 361,
-        "blocking_signal_count": 1
+        "blocking_signal_count": 0
       },
       "telegram": {
         "total_experiment_results": 2599,

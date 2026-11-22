@@ -130,6 +130,9 @@ anomalous_weekly AS (
   WHERE country = '{{ var.iso2 }}'
     -- Excludes NULL (NOT_IMPLEMENTED tor + DISCARDED_BAD_PROBE_VERSION
     -- signal rows) -- see header for the 17.9% vs 15.1% denominator note.
+    -- ADR-0017 (2026-11-22): also DISCARDED_OONI_ZERO_ACCURACY rows, which
+    -- now include signal test_version 0.2.4, so the 17.9% figure above is
+    -- historical.
     AND ooni_verdict IS NOT NULL
   GROUP BY week_start_date, test_name
 ),
@@ -142,6 +145,11 @@ blocked_weekly AS (
     COUNTIF(result_state = 'BLOCKED') AS blocked_count
   FROM `{{ var.project_id }}.int.ooni_experiment_results`
   WHERE country = '{{ var.iso2 }}'
+    -- ADR-0017 (2026-11-22): leave out observations whose measurement
+    -- OONI's current scoring code gives zero accuracy, from the
+    -- denominator as well as the BLOCKED count. Same filter as
+    -- marts.fact_ooni_censorship_signals.
+    AND ooni_zero_accuracy_rule_id IS NULL
   GROUP BY week_start_date, test_name
 ),
 

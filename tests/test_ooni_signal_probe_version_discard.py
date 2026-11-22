@@ -84,7 +84,9 @@ reverted), 2 discarded via the 0.2.3 date-gated fix (both demonstrating
 the real TD-93 interaction above), 2 regression guards proving 0.2.3's
 pre-cutoff population is untouched, 2 regression guards proving
 0.2.4/0.2.5 are unaffected, and 1 guard proving the pre-existing 0.2.0
-rule is undisturbed.
+rule is undisturbed. (ADR-0017, 2026-11-22: the 0.2.4 guard now expects
+NULL -- OONI's current scoring code gives every 0.2.4 measurement zero
+accuracy. See tests/test_ooni_zero_accuracy_rules.py.)
 """
 import json
 import os

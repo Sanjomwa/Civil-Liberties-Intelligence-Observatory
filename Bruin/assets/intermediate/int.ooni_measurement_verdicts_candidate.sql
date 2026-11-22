@@ -285,9 +285,28 @@ description: |
   TD-102 session entries (characterization, first build, rescoping
   build).
 
+  ADR-0017 (2026-11-22): OONI's CURRENT zero-accuracy rules now come first
+  in probe_accuracy_gate. A measurement listed in
+  int.ooni_zero_accuracy_measurements (built from
+  marts.dim_ooni_zero_accuracy_rules, ooni/backend fastpath/fastpath/
+  core.py at commit 27f2b28) gets probe_accuracy_gate =
+  'DISCARDED_OONI_ZERO_ACCURACY', ooni_zero_accuracy_rule_id = the first
+  matching rule, and ooni_verdict = NULL -- the same exclude-not-flag
+  outcome as DISCARDED_BAD_PROBE_VERSION. On 2026-11-22 this covers 15,302
+  signal measurements (14,141 of them previously
+  DISCARDED_BAD_PROBE_VERSION, plus all 1,146 signal test_version 0.2.4
+  measurements previously ANOMALOUS, ooni/probe#2636) and 2 tor
+  measurements with no targets. The three CLIO-only branches below
+  (dim 0.2.0, 0.2.3 date-gated, 0.2.2 blocked-only) are unchanged; they
+  now catch only the 15 signal measurements no current OONI rule covers
+  (0.2.2: 9, 0.2.3: 6), which keep DISCARDED_BAD_PROBE_VERSION.
+  int.ooni_experiment_results reads the same table, so the observation
+  level sets aside the same measurements.
+
 depends:
   - stg.ooni_measurement_summary
   - marts.dim_ooni_probe_version_accuracy
+  - int.ooni_zero_accuracy_measurements
 
 materialization:
   type: table
@@ -309,7 +328,7 @@ custom_checks:
       FROM `{{ var.project_id }}.int.ooni_measurement_verdicts_candidate`
       WHERE ooni_verdict IS NULL
         AND ooni_verdict_source != 'NOT_IMPLEMENTED'
-        AND probe_accuracy_gate != 'DISCARDED_BAD_PROBE_VERSION'
+        AND probe_accuracy_gate NOT IN ('DISCARDED_BAD_PROBE_VERSION', 'DISCARDED_OONI_ZERO_ACCURACY')
     value: 0
 
 columns:
@@ -323,6 +342,12 @@ columns:
     checks:
       - name: accepted_values
         value: [OK, CONFIRMED, ANOMALOUS, FAILED]
+  - name: probe_accuracy_gate
+    type: string
+    checks:
+      - name: not_null
+      - name: accepted_values
+        value: [SCORED, DISCARDED_OONI_ZERO_ACCURACY, DISCARDED_BAD_PROBE_VERSION, UNKNOWN_VERSION]
 @bruin */
 
 WITH summary AS (
@@ -557,7 +582,14 @@ verdicts AS (
       ELSE 'NOT_IMPLEMENTED'
     END AS ooni_verdict_source,
 
+    -- ADR-0017 (2026-11-22): the rule that set this measurement aside, or
+    -- NULL. See int.ooni_zero_accuracy_measurements.
+    za.ooni_zero_accuracy_rule_id,
+
     CASE
+      -- ADR-0017 (2026-11-22): OONI's current zero-accuracy rules first.
+      -- See this file's header and marts.dim_ooni_zero_accuracy_rules.
+      WHEN za.ooni_zero_accuracy_rule_id IS NOT NULL THEN 'DISCARDED_OONI_ZERO_ACCURACY'
       WHEN dim.is_known_bad_version IS TRUE THEN 'DISCARDED_BAD_PROBE_VERSION'
       -- TD-102 (2026-08-22, characterization through build sessions).
       -- signal test_version=0.2.3 measurements dated after OONI's own
@@ -640,6 +672,8 @@ verdicts AS (
   LEFT JOIN `{{ var.project_id }}.marts.dim_ooni_probe_version_accuracy` AS dim
     ON dim.test_name = s.test_name
     AND dim.test_version = s.test_version
+  LEFT JOIN `{{ var.project_id }}.int.ooni_zero_accuracy_measurements` AS za
+    ON za.measurement_id = s.measurement_id
 )
 
 SELECT
@@ -663,7 +697,9 @@ SELECT
     -- probe_accuracy_gate itself (tor's ooni_verdict_source stays
     -- NOT_IMPLEMENTED, never DISCARDED_BAD_PROBE_VERSION), so a
     -- downstream consumer can always tell the two apart.
-    WHEN probe_accuracy_gate = 'DISCARDED_BAD_PROBE_VERSION' THEN NULL
+    -- ADR-0017 (2026-11-22): DISCARDED_OONI_ZERO_ACCURACY routes to NULL
+    -- the same way, for the same reason.
+    WHEN probe_accuracy_gate IN ('DISCARDED_BAD_PROBE_VERSION', 'DISCARDED_OONI_ZERO_ACCURACY') THEN NULL
     -- psiphon_failure added here, moved out of test_anomaly_flag. Live
     -- verification (TD-91 relay session) found CLIO's original
     -- measurement_failure source (the raw measurement envelope's
