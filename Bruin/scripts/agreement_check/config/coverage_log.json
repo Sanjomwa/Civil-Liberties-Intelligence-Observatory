@@ -6,14 +6,14 @@
       "test_type": "signal",
       "ooni_verdict": "OK",
       "failure_type": "none",
-      "last_sampled_at": "2026-11-23T08:31:00.177341+00:00",
+      "last_sampled_at": "2026-11-23T09:34:35.470842+00:00",
       "sampled_count": 10
     },
     "signal|None|none": {
       "test_type": "signal",
       "ooni_verdict": null,
       "failure_type": "none",
-      "last_sampled_at": "2026-11-23T08:31:03.838586+00:00",
+      "last_sampled_at": "2026-11-23T09:34:38.185973+00:00",
       "sampled_count": 10
     },
     "signal|FAILED|signal_legacy_nxdomain": {
@@ -27,14 +27,14 @@
       "test_type": "signal",
       "ooni_verdict": "ANOMALOUS",
       "failure_type": "none",
-      "last_sampled_at": "2026-11-23T08:31:07.168039+00:00",
+      "last_sampled_at": "2026-11-23T09:34:41.064943+00:00",
       "sampled_count": 10
     },
     "signal|None|signal_legacy_nxdomain": {
       "test_type": "signal",
       "ooni_verdict": null,
       "failure_type": "signal_legacy_nxdomain",
-      "last_sampled_at": "2026-11-23T08:31:10.504237+00:00",
+      "last_sampled_at": "2026-11-23T09:34:43.805651+00:00",
       "sampled_count": 10
     },
     "dnscheck|OK|none": {
@@ -55,14 +55,14 @@
       "test_type": "dnscheck",
       "ooni_verdict": "OK",
       "failure_type": "(null)",
-      "last_sampled_at": "2026-11-23T09:07:52.426665+00:00",
+      "last_sampled_at": "2026-11-23T09:24:19.541779+00:00",
       "sampled_count": 10
     },
     "dnscheck|ANOMALOUS|dns_bogon_error": {
       "test_type": "dnscheck",
       "ooni_verdict": "ANOMALOUS",
       "failure_type": "dns_bogon_error",
-      "last_sampled_at": "2026-11-23T09:07:54.561766+00:00",
+      "last_sampled_at": "2026-11-23T09:24:22.193921+00:00",
       "sampled_count": 10
     },
     "dnscheck|ANOMALOUS|dns_nxdomain_error": {
@@ -104,35 +104,35 @@
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "dns_nxdomain_error",
-      "last_sampled_at": "2026-11-23T09:07:40.743443+00:00",
+      "last_sampled_at": "2026-11-23T09:24:07.950375+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|generic_timeout_error": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "generic_timeout_error",
-      "last_sampled_at": "2026-11-23T09:07:43.066764+00:00",
+      "last_sampled_at": "2026-11-23T09:24:10.046236+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|android_dns_cache_no_data": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "android_dns_cache_no_data",
-      "last_sampled_at": "2026-11-23T09:07:45.580770+00:00",
+      "last_sampled_at": "2026-11-23T09:24:12.747742+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|dns_temporary_failure": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "dns_temporary_failure",
-      "last_sampled_at": "2026-11-23T09:07:47.752982+00:00",
+      "last_sampled_at": "2026-11-23T09:24:14.873267+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|dns_server_misbehaving": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "dns_server_misbehaving",
-      "last_sampled_at": "2026-11-23T09:07:49.701274+00:00",
+      "last_sampled_at": "2026-11-23T09:24:16.800898+00:00",
       "sampled_count": 10
     },
     "telegram|OK|none": {

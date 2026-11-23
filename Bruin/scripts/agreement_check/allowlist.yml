@@ -57,3 +57,28 @@ entries:
       harness's own precedence -- not a false positive, a real, understood,
       deliberately-deferred classification-boundary question. Documented,
       not silently ignored.
+
+  # ADR-0017 / TD-161 (2026-11-23): OONI's fastpath has no DNSCheck scorer;
+  # its unsupported-test branch sets scores.accuracy=0 for every DNSCheck
+  # measurement (rule GEN-U, not adopted by CLIO). OONI's anomaly=false,
+  # confirmed=false, failure=true for these is therefore not a verdict.
+  # The signature format cannot match on scores.accuracy, so the narrowest
+  # available grain is test_name + clio_verdict + the three OONI booleans,
+  # one entry per CLIO verdict seen (OK, ANOMALOUS via dns_bogon_error).
+  # Prune if CLIO adopts GEN-U or OONI adds a DNSCheck scorer.
+  - test_name: dnscheck
+    clio_verdict: OK
+    ooni_anomaly: false
+    ooni_confirmed: false
+    ooni_failure: true
+    hostname_or_target: "*"
+    td_ref: TD-161
+    reason: "OONI fastpath has no dnscheck scorer: failure=true with accuracy 0 is not a verdict (ADR-0017, GEN-U not adopted)"
+  - test_name: dnscheck
+    clio_verdict: ANOMALOUS
+    ooni_anomaly: false
+    ooni_confirmed: false
+    ooni_failure: true
+    hostname_or_target: "*"
+    td_ref: TD-161
+    reason: "OONI fastpath has no dnscheck scorer: failure=true with accuracy 0 is not a verdict (ADR-0017, GEN-U not adopted)"
