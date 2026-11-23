@@ -13,9 +13,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -29,9 +29,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -45,9 +45,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -61,9 +61,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -77,9 +77,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -93,9 +93,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -109,9 +109,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -125,9 +125,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -141,9 +141,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -157,9 +157,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -173,9 +173,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -189,9 +189,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -205,9 +205,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -221,9 +221,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -237,9 +237,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -253,9 +253,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -269,9 +269,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -285,9 +285,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -301,9 +301,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -316,10 +316,10 @@
       "ooni_confirmed": false,
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
-      "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_now": null,
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -332,10 +332,10 @@
       "ooni_confirmed": false,
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
-      "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_now": null,
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -349,9 +349,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -364,10 +364,10 @@
       "ooni_confirmed": false,
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
-      "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_now": null,
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -380,10 +380,10 @@
       "ooni_confirmed": false,
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
-      "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_now": null,
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -396,10 +396,10 @@
       "ooni_confirmed": false,
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
-      "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_now": null,
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -412,10 +412,10 @@
       "ooni_confirmed": false,
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
-      "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_now": null,
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -428,10 +428,10 @@
       "ooni_confirmed": false,
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
-      "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_now": null,
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -445,9 +445,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -461,9 +461,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -476,10 +476,10 @@
       "ooni_confirmed": false,
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
-      "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_now": null,
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -492,10 +492,10 @@
       "ooni_confirmed": false,
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
-      "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_now": null,
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -508,10 +508,10 @@
       "ooni_confirmed": false,
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
-      "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_now": null,
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -525,9 +525,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -541,9 +541,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -557,9 +557,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -572,10 +572,10 @@
       "ooni_confirmed": false,
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
-      "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_now": null,
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -589,9 +589,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -605,9 +605,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -621,9 +621,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -637,9 +637,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -653,9 +653,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -669,9 +669,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -685,9 +685,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -701,9 +701,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -717,9 +717,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -733,9 +733,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -749,9 +749,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -765,9 +765,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -781,9 +781,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -797,9 +797,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -813,9 +813,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -829,9 +829,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -845,9 +845,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -861,9 +861,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -877,9 +877,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -893,9 +893,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -909,9 +909,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -925,9 +925,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -941,9 +941,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -957,9 +957,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -973,9 +973,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -989,9 +989,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1005,9 +1005,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1021,9 +1021,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1037,9 +1037,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1053,9 +1053,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1069,9 +1069,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1085,9 +1085,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1101,9 +1101,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1117,9 +1117,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1133,9 +1133,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1149,9 +1149,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1165,9 +1165,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1181,9 +1181,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1197,9 +1197,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1213,9 +1213,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1229,9 +1229,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1245,9 +1245,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1261,9 +1261,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1277,9 +1277,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1293,9 +1293,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1309,9 +1309,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1325,9 +1325,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1341,9 +1341,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1357,9 +1357,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1373,9 +1373,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1389,9 +1389,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1405,9 +1405,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1421,9 +1421,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1437,9 +1437,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1453,9 +1453,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1469,9 +1469,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1485,9 +1485,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1501,9 +1501,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1517,9 +1517,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1533,9 +1533,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1549,9 +1549,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1565,9 +1565,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1581,9 +1581,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1597,9 +1597,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1613,9 +1613,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1629,9 +1629,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1645,9 +1645,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1661,9 +1661,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1677,9 +1677,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1693,9 +1693,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1709,9 +1709,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1725,9 +1725,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "ANOMALOUS",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1741,9 +1741,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1757,9 +1757,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1773,9 +1773,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1789,9 +1789,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1805,9 +1805,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1821,9 +1821,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1837,9 +1837,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1853,9 +1853,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1869,9 +1869,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1885,9 +1885,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1901,9 +1901,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1917,9 +1917,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1933,9 +1933,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1949,9 +1949,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1965,9 +1965,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1981,9 +1981,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -1997,9 +1997,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2013,9 +2013,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2029,9 +2029,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2045,9 +2045,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2061,9 +2061,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2077,9 +2077,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2093,9 +2093,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2109,9 +2109,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2125,9 +2125,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2141,9 +2141,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2157,9 +2157,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2173,9 +2173,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2189,9 +2189,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2205,9 +2205,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2221,9 +2221,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2237,9 +2237,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2253,9 +2253,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2269,9 +2269,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2285,9 +2285,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T10:16:32Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     },
     {
@@ -2301,9 +2301,9 @@
       "ooni_failure": false,
       "recorded_at": "2026-08-30T12:20:00Z",
       "clio_verdict_now": "OK",
-      "clio_verdict_refreshed_at": "2026-08-30T14:11:22.801896+00:00",
+      "clio_verdict_refreshed_at": "2026-11-23T08:30:44.458257+00:00",
       "clio_verdict_source": {
-        "verdict_table_modified": "2026-08-30T14:00:21.641000+00:00"
+        "verdict_table_modified": "2026-11-22T20:09:16.163000+00:00"
       }
     }
   ]
