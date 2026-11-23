@@ -29,21 +29,32 @@ description: |
   measurements: the earlier-returning sites that are not adopted (SIG-B1,
   SIG-B6) meet no row in CLIO's corpus (2026-11-22 sweep).
 
-  Reads stg.ooni_measurements' raw_measurement (needed for
-  annotations.engine_version and test_keys.targets, neither of which any
-  typed column carries). The scan is restricted to the test names that
-  have adopted rules, so the table's test_name clustering prunes it:
-  ~246 MB billed per rebuild on 2026-11-22, against ~33 GB for the whole
-  raw_measurement column. The custom check below fails if an adopted rule
-  is ever added for a test name outside that restriction, rather than
-  letting the new rule silently match nothing.
+  Two kinds of rule (marts.dim_ooni_zero_accuracy_rules.rule_stage):
+  - SCORE rules are evaluated here from stg.ooni_measurements'
+    raw_measurement (needed for annotations.engine_version and
+    test_keys.targets, neither of which any typed column carries). That
+    scan is restricted to the test names that have adopted scorer rules,
+    so the table's test_name clustering prunes it: ~246 MB billed per
+    rebuild on 2026-11-22, against ~33 GB for the whole raw_measurement
+    column. The first custom check below fails if an adopted scorer rule
+    is ever added for a test name outside that restriction, rather than
+    letting the new rule silently match nothing.
+  - DATE rules (ADR-0018, GEN-F and GEN-O, test_name '*' = every test)
+    are read from int.ooni_receive_time.date_rule_state, for all test
+    names. A measurement whose state is UNDETERMINED meets neither and has
+    no row here unless a scorer rule matches it.
+  OONI applies the date flag after scoring, so the DATE rules carry
+  rule_order 101/102 and come after every scorer rule in
+  ooni_zero_accuracy_rule_id; ooni_zero_accuracy_rules_met lists both.
 
-  Expected on 2026-11-22: signal 15,302 (SIG-B2 1,146; SIG-B3 11,304;
-  SIG-B4 2,700; SIG-B5 152 by first rule), tor 2 (TOR-1).
+  Expected on 2026-11-22 (ADR-0017, before ADR-0018): signal 15,302
+  (SIG-B2 1,146; SIG-B3 11,304; SIG-B4 2,700; SIG-B5 152 by first rule),
+  tor 2 (TOR-1). ADR-0018 figures: see the TD entry for ADR-0018.
 
 depends:
   - stg.ooni_measurements
   - marts.dim_ooni_zero_accuracy_rules
+  - int.ooni_receive_time
 
 materialization:
   type: table
@@ -52,13 +63,24 @@ materialization:
 custom_checks:
   - name: adopted_rules_within_scanned_test_names
     description: |
-      The scan below reads only test_name IN ('signal', 'tor'). An
-      adopted rule for any other test would match nothing. Must stay 0;
-      if it fails, widen the scan's test_name list in the same change.
+      The scorer scan below reads only test_name IN ('signal', 'tor'). An
+      adopted SCORE rule for any other test would match nothing. Must stay
+      0; if it fails, widen the scan's test_name list in the same change.
+      Adopted DATE rules (ADR-0018) apply to every test and are exempt.
     query: |
       SELECT COUNT(*)
       FROM `{{ var.project_id }}.marts.dim_ooni_zero_accuracy_rules`
-      WHERE adopted AND test_name NOT IN ('signal', 'tor')
+      WHERE adopted AND rule_stage = 'SCORE' AND test_name NOT IN ('signal', 'tor')
+    value: 0
+  - name: date_rules_cover_every_test
+    description: |
+      ADR-0018. Every DATE rule must carry test_name '*' and a
+      date_rule_state, so it is matched for every test. Must stay 0.
+    query: |
+      SELECT COUNT(*)
+      FROM `{{ var.project_id }}.marts.dim_ooni_zero_accuracy_rules`
+      WHERE rule_stage = 'DATE'
+        AND (test_name != '*' OR date_rule_state IS NULL)
     value: 0
 
 columns:
@@ -165,12 +187,32 @@ matches AS (
   FROM measurements_keyed AS m
   JOIN rules_keyed AS r
     ON r.test_name = m.test_name
+    AND r.rule_stage = 'SCORE'
   WHERE (r.test_version_equals IS NULL OR m.test_version = r.test_version_equals)
     AND (r.test_version_max IS NULL OR m.test_version_key <= r.test_version_max_key)
     AND (r.test_version_below IS NULL OR m.test_version_key < r.test_version_below_key)
     AND (r.start_time_from IS NULL OR m.measurement_start_time >= r.start_time_from)
     AND (r.engine_version_below IS NULL OR m.engine_version_key < r.engine_version_below_key)
     AND (NOT r.requires_no_targets OR m.targets_empty)
+
+  UNION ALL
+
+  -- ADR-0018: OONI's date-consistency rules, every test. The state is
+  -- decided in int.ooni_receive_time (archive hour, or measurement_uid
+  -- where the hour cannot decide). UNDETERMINED matches no rule.
+  SELECT
+    rt.measurement_id,
+    rt.test_name,
+    COALESCE(rt.test_version, '0.0.0') AS test_version,
+    r.rule_id,
+    r.rule_order,
+    r.rules_version,
+    r.ooni_commit
+  FROM `{{ var.project_id }}.int.ooni_receive_time` AS rt
+  JOIN rules AS r
+    ON r.rule_stage = 'DATE'
+    AND r.test_name = '*'
+    AND r.date_rule_state = rt.date_rule_state
 )
 
 SELECT

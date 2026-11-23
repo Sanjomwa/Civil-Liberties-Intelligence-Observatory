@@ -15,7 +15,8 @@ description: |
   int.ooni_zero_accuracy_measurements evaluates the adopted rows against
   each measurement, and both int.ooni_measurement_verdicts_candidate
   (measurement level) and int.ooni_experiment_results (observation level)
-  read that result.
+  read that result. ADR-0018 (2026-11-23) added OONI's two
+  date-consistency rules (GEN-F, GEN-O) for every test.
 
   Reference: ooni/backend, fastpath/fastpath/core.py, pinned at commit
   27f2b28cd021c51a42ac6418fba44335d5de4ca8. Every condition below is
@@ -36,6 +37,19 @@ description: |
     compares a naive datetime parsed from the same string).
   - engine_version_below: annotations.engine_version < this version.
   - requires_no_targets: test_keys.targets is missing or empty.
+  These conditions apply to rule_stage = 'SCORE' rows only.
+
+  rule_stage (ADR-0018, rules_version 2026-11-23.1):
+  - 'SCORE': a site inside OONI's per-test score function. Matched by
+    test_name and the conditions above.
+  - 'DATE': OONI's flag_measurements_with_wrong_date, which OONI calls
+    after scoring, for every test (core.py:1732). These rows carry
+    test_name = '*', meaning every test name (the column is NOT NULL and
+    one rule_id per rule is kept unique, so a wildcard is used rather
+    than one row per test). They are matched on date_rule_state, read
+    from int.ooni_receive_time, not on the conditions above, which are
+    all NULL for them. Their rule_order (101, 102) puts them after every
+    scorer rule, as in OONI's code.
   Version comparison follows packaging.Version for the forms present in
   CLIO (N.N.N with an optional -alpha / -beta[.N] suffix, pre-releases
   ordered before the release). As in OONI's code, a missing test_version
@@ -51,8 +65,10 @@ description: |
     SIG-B6, SIG-B7, TOR-2..TOR-4) meet no row in CLIO's corpus today. They
     are not adopted; a future row meeting one of them is not excluded by
     this table.
-  - OONI's two date-consistency checks (flag_measurements_with_wrong_date)
-    need measurement_uid, which CLIO does not store. Recorded as a limit.
+  - (Superseded by ADR-0018, 2026-11-23: OONI's two date-consistency
+    checks are now rows GEN-F and GEN-O below. Receive time comes from
+    the archive hour in source_file, or from measurement_uid fetched from
+    OONI's API where the hour cannot decide; see int.ooni_receive_time.)
   - CLIO's own 15 Signal discards with no matching OONI rule (0.2.2: 9,
     0.2.3: 6) stay in int.ooni_measurement_verdicts_candidate's
     probe_accuracy_gate CASE as DISCARDED_BAD_PROBE_VERSION.
@@ -79,11 +95,23 @@ columns:
     type: boolean
     checks:
       - name: not_null
+  - name: rule_stage
+    type: string
+    checks:
+      - name: not_null
+      - name: accepted_values
+        value: [SCORE, DATE]
+  - name: date_rule_state
+    type: string
+    description: |
+      ADR-0018. For rule_stage = 'DATE' rows, the
+      int.ooni_receive_time.date_rule_state value this rule matches
+      (GEN_F or GEN_O). NULL for scorer rules.
 @bruin */
 
 SELECT * FROM UNNEST([
   STRUCT(
-    '2026-11-22.1' AS rules_version,
+    '2026-11-23.1' AS rules_version,
     'TOR-1' AS rule_id,
     1 AS rule_order,
     'tor' AS test_name,
@@ -98,46 +126,74 @@ SELECT * FROM UNNEST([
     'fastpath/fastpath/core.py:1273-1276 (score_tor)' AS ooni_file_line,
     CAST(NULL AS STRING) AS issue_url,
     TRUE AS adopted,
-    'targets = tk.get("targets", {}); if not targets: accuracy 0.0. No issue linked in the code (logbug "missing Tor targets"). 2 measurements in CLIO; tor has no observation rows.' AS note
+    'targets = tk.get("targets", {}); if not targets: accuracy 0.0. No issue linked in the code (logbug "missing Tor targets"). 2 measurements in CLIO; tor has no observation rows.' AS note,
+    'SCORE' AS rule_stage,
+    CAST(NULL AS STRING) AS date_rule_state
   ),
   STRUCT(
-    '2026-11-22.1', 'SIG-B2', 1, 'signal',
+    '2026-11-23.1', 'SIG-B2', 1, 'signal',
     '0.2.4', NULL, NULL, NULL, NULL, FALSE,
     'ooni/backend', '27f2b28cd021c51a42ac6418fba44335d5de4ca8',
     'fastpath/fastpath/core.py:1395-1399 (score_signal)',
     'https://github.com/ooni/probe/issues/2636', TRUE,
-    'if tv == "0.2.4": accuracy 0.0 ("the breakage here is affecting just v0.2.4 of the test"; also cites ooni/probe-cli#1421). 1,146 measurements in CLIO.'
+    'if tv == "0.2.4": accuracy 0.0 ("the breakage here is affecting just v0.2.4 of the test"; also cites ooni/probe-cli#1421). 1,146 measurements in CLIO.',
+    'SCORE', NULL
   ),
   STRUCT(
-    '2026-11-22.1', 'SIG-B3', 2, 'signal',
+    '2026-11-23.1', 'SIG-B3', 2, 'signal',
     NULL, '0.2.3', NULL, TIMESTAMP('2023-11-07 00:00:00'), NULL, FALSE,
     'ooni/backend', '27f2b28cd021c51a42ac6418fba44335d5de4ca8',
     'fastpath/fastpath/core.py:1402-1406 (score_signal)',
     'https://github.com/ooni/probe/issues/2627', TRUE,
-    'Version(tv) <= Version("0.2.3") and start_time >= datetime(2023, 11, 7): accuracy 0.0.'
+    'Version(tv) <= Version("0.2.3") and start_time >= datetime(2023, 11, 7): accuracy 0.0.',
+    'SCORE', NULL
   ),
   STRUCT(
-    '2026-11-22.1', 'SIG-B4', 3, 'signal',
+    '2026-11-23.1', 'SIG-B4', 3, 'signal',
     NULL, NULL, '0.2.2', TIMESTAMP('2022-10-19 00:00:00'), NULL, FALSE,
     'ooni/backend', '27f2b28cd021c51a42ac6418fba44335d5de4ca8',
     'fastpath/fastpath/core.py:1409-1412 (score_signal)',
     'https://github.com/ooni/probe/issues/2344', TRUE,
-    'Version(tv) < Version("0.2.2") and start_time >= datetime(2022, 10, 19): accuracy 0.0. The rule itself carries no issue link; ooni/probe#2344 is cited at line 1386 for the enclosing block. Same rule as the 0.2.0 row of marts.dim_ooni_probe_version_accuracy.'
+    'Version(tv) < Version("0.2.2") and start_time >= datetime(2022, 10, 19): accuracy 0.0. The rule itself carries no issue link; ooni/probe#2344 is cited at line 1386 for the enclosing block. Same rule as the 0.2.0 row of marts.dim_ooni_probe_version_accuracy.',
+    'SCORE', NULL
   ),
   STRUCT(
-    '2026-11-22.1', 'SIG-B5', 4, 'signal',
+    '2026-11-23.1', 'SIG-B5', 4, 'signal',
     NULL, NULL, NULL, TIMESTAMP('2023-05-02 00:00:00'), '3.17.2', FALSE,
     'ooni/backend', '27f2b28cd021c51a42ac6418fba44335d5de4ca8',
     'fastpath/fastpath/core.py:1415-1422 (score_signal)',
     'https://github.com/ooni/backend/issues/679', TRUE,
-    'ev = g_or(annot, "engine_version", "0.0.0"); Version(ev) < Version("3.17.2") and start_time >= datetime(2023, 5, 2): accuracy 0.0.'
+    'ev = g_or(annot, "engine_version", "0.0.0"); Version(ev) < Version("3.17.2") and start_time >= datetime(2023, 5, 2): accuracy 0.0.',
+    'SCORE', NULL
   ),
   STRUCT(
-    '2026-11-22.1', 'GEN-U', 1, 'dnscheck',
+    '2026-11-23.1', 'GEN-U', 1, 'dnscheck',
     NULL, NULL, NULL, NULL, NULL, FALSE,
     'ooni/backend', '27f2b28cd021c51a42ac6418fba44335d5de4ca8',
     'fastpath/fastpath/core.py:1576-1578 (score_measurement, unsupported test name)',
     NULL, FALSE,
-    'OONI has no dnscheck scorer; not a quality judgement'
+    'OONI has no dnscheck scorer; not a quality judgement',
+    'SCORE', NULL
+  ),
+  -- ADR-0018 (2026-11-23): OONI's date-consistency rules. test_name '*'
+  -- = every test (see header). Conditions are all NULL; matched on
+  -- date_rule_state from int.ooni_receive_time instead.
+  STRUCT(
+    '2026-11-23.1', 'GEN-F', 101, '*',
+    NULL, NULL, NULL, NULL, NULL, FALSE,
+    'ooni/backend', '27f2b28cd021c51a42ac6418fba44335d5de4ca8',
+    'fastpath/fastpath/core.py:1634-1652 (flag_measurements_with_wrong_date), called at 1732 after score_measurement',
+    NULL, TRUE,
+    'recv_time = strptime(msmt_uid[:22], "%Y%m%d%H%M%S.%f_"); delta = recv_time - start_time; delta < -3600: accuracy 0.0 ("Measurement start time from the future"). OONI applies this to every test; adopted for DNSCheck too (ADR-0018).',
+    'DATE', 'GEN_F'
+  ),
+  STRUCT(
+    '2026-11-23.1', 'GEN-O', 102, '*',
+    NULL, NULL, NULL, NULL, NULL, FALSE,
+    'ooni/backend', '27f2b28cd021c51a42ac6418fba44335d5de4ca8',
+    'fastpath/fastpath/core.py:1634-1652 (flag_measurements_with_wrong_date), called at 1732 after score_measurement',
+    NULL, TRUE,
+    'Same function, elif branch: delta > 31536000 (one year): accuracy 0.0 ("Measurement start time too old"). OONI applies this to every test; adopted for DNSCheck too (ADR-0018).',
+    'DATE', 'GEN_O'
   )
 ])

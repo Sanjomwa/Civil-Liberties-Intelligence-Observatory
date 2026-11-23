@@ -272,6 +272,12 @@ def test_live_signal_0_2_2_ok_status_restored_not_discarded():
         WHERE s.test_name = 'signal' AND s.test_version = '0.2.2'
           AND s.signal_backend_status = 'ok'
           AND v.ooni_verdict IS NULL
+          -- ADR-0018 (2026-11-23): 9 of these measurements are excluded by
+          -- OONI's date-consistency rule GEN-F (device clock), which applies
+          -- to every test and version. That is not the version-wide
+          -- over-discard this test guards against, so date-rule exclusions
+          -- are left out here.
+          AND COALESCE(v.ooni_zero_accuracy_rule_id, '') NOT IN ('GEN-F', 'GEN-O')
     """
     n = next(client.query(query).result()).n
     assert n == 0, (

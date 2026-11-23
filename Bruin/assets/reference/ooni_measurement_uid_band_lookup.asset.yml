@@ -1,0 +1,59 @@
+name: int.ooni_measurement_uid_band_lookup
+type: bq.seed
+description: |
+  ADR-0018 (2026-11-23). OONI's measurement_uid for the OONI measurements
+  whose archive hour (from source_file) cannot decide OONI's
+  date-consistency rules GEN-F / GEN-O. Covers those band rows only
+  (2,813 measurements on 2026-11-23), not the whole corpus: for every
+  other measurement the archive hour decides the rules on its own (see
+  int.ooni_receive_time).
+
+  One row per (report_id, input) of a band row; input is empty where the
+  measurement has no input (stg.ooni_measurements.input IS NULL, never an
+  empty string, so readers join on COALESCE(input, '')). Fetched once from
+  https://api.ooni.org/api/v1/measurements?report_id=<id>, one request per
+  distinct report_id (following metadata.next_url), at most one request
+  per second. retrieved_at is the UTC time of the response used.
+
+  match_state:
+  - MATCHED: exactly one API result with this report_id and input;
+    measurement_uid is that result's.
+  - MULTIPLE_RESULTS: more than one API result, or more than one band
+    row, for this report_id and input. No choice is made between them;
+    measurement_uid is empty and the row stays UNDETERMINED downstream.
+  - NO_RESULT: the API returned no result for this report_id and input.
+  - FETCH_FAILED: the request failed after one retry.
+
+  A one-off snapshot. Measurements ingested later need the same band
+  check before this table is assumed to cover them.
+parameters:
+  path: ./ooni_measurement_uid_band_lookup.csv
+columns:
+  - name: report_id
+    type: string
+    checks:
+      - name: not_null
+  - name: input
+    type: string
+  - name: measurement_uid
+    type: string
+  - name: retrieved_at
+    type: timestamp
+  - name: http_status
+    type: integer
+  - name: match_state
+    type: string
+    checks:
+      - name: not_null
+      - name: accepted_values
+        value: [MATCHED, MULTIPLE_RESULTS, NO_RESULT, FETCH_FAILED]
+custom_checks:
+  - name: one_row_per_report_id_and_input
+    description: Each (report_id, input) appears once.
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT report_id, COALESCE(input, '') AS k
+        FROM `{{ var.project_id }}.int.ooni_measurement_uid_band_lookup`
+        GROUP BY 1, 2 HAVING COUNT(*) > 1
+      )
+    value: 0

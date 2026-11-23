@@ -5,7 +5,8 @@ Static layer (always runs): the rules table holds the adopted rules with
 conditions copied from ooni/backend fastpath/fastpath/core.py at commit
 27f2b28, DNSCheck's unsupported-test branch is recorded but not adopted,
 and both levels plus every observation-counting asset read the shared
-match table.
+match table. ADR-0018 (2026-11-23) adds OONI's two date-consistency
+rules (GEN-F, GEN-O) for every test, decided in int.ooni_receive_time.
 
 Live layer (RUN_BIGQUERY_TESTS=1): the figures the fix session verified on
 2026-11-22. These are data-dependent: they hold for CLIO's historical
@@ -59,7 +60,45 @@ def test_rules_table_conditions_match_pinned_ooni_code():
     for row in expected:
         assert row in sql, f"ADR-0017: rules table row drifted from the pinned OONI code: {row}"
     assert "'TOR-1' AS rule_id" in sql and "TRUE AS requires_no_targets" in sql
-    assert sql.count(OONI_COMMIT) == 6, "every rule must cite the pinned ooni/backend commit"
+    assert sql.count(OONI_COMMIT) == 8, "every rule must cite the pinned ooni/backend commit"
+
+
+def test_date_rules_adopted_for_every_test():
+    """ADR-0018: GEN-F / GEN-O are adopted, cover every test ('*'), carry
+    OONI's thresholds, and come after every scorer rule (order 101/102)."""
+    sql = _body(RULES_SQL)
+    assert "'2026-11-23.1', 'GEN-F', 101, '*'," in sql
+    assert "'2026-11-23.1', 'GEN-O', 102, '*'," in sql
+    gen_f = sql[sql.index("'GEN-F'"):sql.index("'GEN-O'")]
+    gen_o = sql[sql.index("'GEN-O'"):]
+    assert "NULL, TRUE, 'recv_time = strptime(msmt_uid[:22]" in gen_f and "delta < -3600" in gen_f
+    assert "'DATE', 'GEN_F'" in gen_f
+    assert "NULL, TRUE, 'Same function, elif branch: delta > 31536000" in gen_o
+    assert "'DATE', 'GEN_O'" in gen_o
+    assert "core.py:1634-1652" in gen_f and "core.py:1634-1652" in gen_o
+    assert "'2026-11-22.1'" not in sql, "rules_version must be bumped on every row together"
+
+
+def test_receive_time_applies_ooni_thresholds():
+    sql = _body(ASSETS / "intermediate" / "int.ooni_receive_time.sql")
+    assert "SAFE.PARSE_TIMESTAMP('%Y%m%d%H%M%E*S_', SUBSTR(measurement_uid, 1, 22))" in sql
+    assert "STARTS_WITH(measurement_uid, '20') AND LENGTH(measurement_uid) >= 20" in sql
+    assert "WHEN uid_delta_seconds < -3600 THEN 'GEN_F' WHEN uid_delta_seconds > 31536000 THEN 'GEN_O'" in sql
+    assert "WHERE match_state = 'MATCHED'" in sql, "only unambiguous API matches may decide a band row"
+    assert "ELSE 'UNDETERMINED'" in sql
+
+
+def test_matches_asset_reads_date_rules_for_every_test():
+    sql = _body(MATCHES_SQL)
+    assert "ON r.test_name = m.test_name AND r.rule_stage = 'SCORE'" in sql
+    assert (
+        "FROM `{{ var.project_id }}.int.ooni_receive_time` AS rt JOIN rules AS r "
+        "ON r.rule_stage = 'DATE' AND r.test_name = '*' AND r.date_rule_state = rt.date_rule_state"
+    ) in sql
+    header = _normalized(MATCHES_SQL).split("@bruin */", 1)[0]
+    assert "WHERE adopted AND rule_stage = 'SCORE' AND test_name NOT IN ('signal', 'tor')" in header, (
+        "the scan-restriction check must still hold scorer rules to signal and tor"
+    )
 
 
 def test_dnscheck_unsupported_branch_recorded_not_adopted():
@@ -139,7 +178,42 @@ def test_live_measurement_counts():
     n = _scalar(f"""
         SELECT COUNT(*) FROM `{PROJECT_ID}.int.ooni_measurement_verdicts`
         WHERE probe_accuracy_gate = 'DISCARDED_OONI_ZERO_ACCURACY'""")
-    assert n == 15302 + 2
+    # ADR-0017: signal 15,302 + tor 2. ADR-0018 (2026-11-23): + 640 measurements
+    # excluded by the date rules only (643 meet GEN-F/GEN-O; 3 signal ones were
+    # already excluded by a scorer rule).
+    assert n == 15302 + 2 + 640
+
+
+@requires_bigquery
+def test_live_date_rule_states():
+    """ADR-0018 figures on 2026-11-23: 527 decided by archive hour, 116 GEN-F
+    decided by measurement_uid, none left UNDETERMINED."""
+    from google.cloud import bigquery
+
+    client = bigquery.Client(project=PROJECT_ID)
+    rows = {
+        (r.date_rule_state, r.receive_time_source): r.n
+        for r in client.query(f"""
+            SELECT date_rule_state, receive_time_source, COUNT(*) n
+            FROM `{PROJECT_ID}.int.ooni_receive_time`
+            WHERE date_rule_state != 'NEITHER' GROUP BY 1, 2""").result()
+    }
+    assert rows == {
+        ("GEN_F", "ARCHIVE_HOUR"): 480,
+        ("GEN_O", "ARCHIVE_HOUR"): 47,
+        ("GEN_F", "MEASUREMENT_UID"): 116,
+    }
+
+
+@requires_bigquery
+def test_live_whatsapp_future_case_excluded():
+    n = _scalar(f"""
+        SELECT COUNT(*) FROM `{PROJECT_ID}.int.ooni_measurement_verdicts` v
+        JOIN `{PROJECT_ID}.int.ooni_receive_time` rt USING (measurement_id)
+        WHERE rt.measurement_uid = '20241011071247.739797_KE_whatsapp_f56040603deb14ed'
+          AND v.probe_accuracy_gate = 'DISCARDED_OONI_ZERO_ACCURACY'
+          AND v.ooni_zero_accuracy_rule_id = 'GEN-F'""")
+    assert n == 1
 
 
 @requires_bigquery
