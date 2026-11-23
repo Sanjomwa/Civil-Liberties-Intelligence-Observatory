@@ -37,6 +37,15 @@ Bruin materializes seven layers, in dependency order:
 
 **Retired, do not treat as live**: `dim_platforms`, `dim_reasons`, `dim_regions`, `dim_requestors` — all four deleted (asset file removed, table dropped) in the 2026-07-06 cost-audit cleanup pass (TD-56), after direct consumer-tracing found zero external references to any of them. If you see them referenced in older documentation (including the archived pre-restructure docs this file replaces), that documentation is describing a state that no longer exists.
 
+## OONI receive time and date-consistency rules (ADR-0018)
+
+Added 2026-11-23. These two assets sit outside the marts layer but feed `marts.dim_ooni_zero_accuracy_rules`' date rules (GEN-F, GEN-O, rules version `2026-11-23.1`), so they are listed here with that table.
+
+| Asset | Grain | Purpose |
+|---|---|---|
+| `int.ooni_receive_time` | one row per OONI measurement in `stg.ooni_measurements` | OONI's receive time and the result of OONI's date-consistency rules (`flag_measurements_with_wrong_date`, `ooni/backend` `fastpath/fastpath/core.py:1634-1652` at commit `27f2b28`). OONI's `raw/` archive carries no `measurement_uid`, so the receive time is taken from the archive hour in `source_file` (`bucket_start`; it contained OONI's receive time for 360 of 360 measurements checked against OONI's API), or, for measurements where the hour cannot decide the rule, from `measurement_uid` in the lookup below (`uid_receive_time`). `receive_time_source` is `ARCHIVE_HOUR` or `MEASUREMENT_UID`; `date_rule_state` is `GEN_F` (start time more than an hour after receipt), `GEN_O` (more than a year before receipt), `NEITHER`, or `UNDETERMINED` (hour cannot decide and no single matching `measurement_uid`; kept and counted, not excluded). `int.ooni_zero_accuracy_measurements` reads `GEN_F`/`GEN_O` rows for every test, DNSCheck included. Reads only typed columns of `stg.ooni_measurements`, which is not changed. |
+| `int.ooni_measurement_uid_band_lookup` | one row per `(report_id, input)` of a measurement whose archive hour cannot decide the date rules (2,813 on 2026-11-23) | A Bruin seed (`Bruin/assets/reference/ooni_measurement_uid_band_lookup.csv`): `measurement_uid` fetched once from OONI's public API (`/api/v1/measurements?report_id=…`, one request per distinct `report_id`, at most one per second), with `retrieved_at`, `http_status` and `match_state` (`MATCHED`, `MULTIPLE_RESULTS`, `NO_RESULT`, `FETCH_FAILED`). Only `MATCHED` rows are used. It covers those band rows only, and it is a one-off snapshot: measurements ingested later need the same band check. `input` is empty where the measurement has none; readers join on `COALESCE(input, '')`. |
+
 ## Live facts
 
 | Fact | Grain | Purpose |
