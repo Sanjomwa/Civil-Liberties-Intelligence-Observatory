@@ -818,6 +818,36 @@ Found by the audit's Phase 1 (2026-09-18); characterized with live data on 2026-
 |---|---|---|---|
 | TD-155 | `scripts/download_ooni.ps1`; `Bruin/assets/ingest/ooni_raw.py` (no test filter); the OONI staging and verdict chain | Medium. The download script's include patterns used `web_connectivity` and `facebook_messenger`, but OONI's bucket names those folders `webconnectivity` and `facebookmessenger`, so nothing matched and nothing warned. CLIO's corpus therefore holds six of OONI's tests and not Web Connectivity, OONI's main website-blocking test and its only source of "confirmed" blocks. OONI holds 5,100,913 Web Connectivity and 50,790 Facebook Messenger measurements for Kenya, 2023-06-01 to 2025-06-30 (aggregation API, 2026-11-05). Web Connectivity's raw files average about 115 MB a day compressed for Kenya, roughly 90 GB for the window. **Script fixed 2026-11-05:** correct folder names, Web Connectivity off by default, and a warning when a requested test produces no files. | Download and ingest Facebook Messenger (small; extraction code already exists). For Web Connectivity: keep raw files in object storage rather than as raw JSON in BigQuery, load only the fields CLIO uses (verdict, domain, ASN, failure, OONI's anomaly and confirmed flags), partitioned by date; pilot one month and measure size and cost before deciding on the full window. |
 
+## TD-156 — OPEN (largely addressed 2026-11-16): public headlines promised findings the data doesn't establish
+
+| ID | Location | Description | Recommended action |
+|---|---|---|---|
+| TD-156 | `README.md` tagline; headers, captions and chart titles in `streamlit/pages/finance_bill_2024_incident_report.py` and `streamlit/pages/methodology_statistical_guardrails.py` | Raised by an outside review, 2026-11-10. Page bodies reported careful nulls and caveats, but titles, headers and captions promised findings the data doesn't establish (for example, phrasing that implied interference or coincidence with mobilization, while the composite is mostly ACLED protest counts and no significance test exists). **Largely addressed 2026-11-16** by the public wording sweep (titles renamed, captions and README reworded, band and regime labels hidden until validated). | Recheck any remaining headline wording against page bodies after the OTF decision. |
+
+## TD-157 — OPEN: Pearson correlation on an ordinal coding of regime states
+
+| ID | Location | Description | Recommended action |
+|---|---|---|---|
+| TD-157 | `Bruin/assets/intelligence/ooni_acled_lag_correlation.sql` and the correlation marts (regime ordinal mapping) | Raised by an outside review, 2026-11-10; not yet verified. Pearson correlation is run on an ordinal coding of regime states (CRISIS=7 … REPRESSION=4, CONFLICT=3, STABLE=1). The code flags it as an approximation, but the order and equal spacing are substantive choices for a repression observatory. | After OTF, inside TD-80's method review: justify the order and spacing, or use a rank or per-state method (Spearman, or indicator variables). |
+
+## TD-158 — OPEN: ACLED EULA §7 (use with AI, ML and LLMs)
+
+| ID | Location | Description | Recommended action |
+|---|---|---|---|
+| TD-158 | `llm_report_writer/` (ADR-0010); any AI-assisted step that reads ACLED rows or ACLED-derived tables | ACLED's EULA of 1 November 2026 adds §7, "Use with AI, ML and LLMs" (limits on using content as model input or knowledge-base input without written consent; AI agents may access content only via ACLED's API; attribution and anti-extraction controls). CLIO's earlier licensing confirmation predates this version. **2026-11-23:** a clarification request was sent to ACLED covering dashboard display, AI-assisted analysis (with disclosure of past practice) and derived values. Until ACLED replies, no new AI processing of ACLED rows or ACLED-derived tables, and the report writer is not run. | Act on ACLED's reply. |
+
+## TD-159 — OPEN: invalid-input ACLED weeks may be returned as STABLE
+
+| ID | Location | Description | Recommended action |
+|---|---|---|---|
+| TD-159 | ACLED regime layer (weekly classifier) | Raised by an outside review: a week with invalid input data appears to be returned as STABLE with a low-confidence tier, which the methodology rules out as a silent default ("insufficient evidence" should be a named output). Not yet checked against the SQL. | Verify read-only; fix after OTF if confirmed. |
+
+## TD-160 — RESOLVED 2026-11-22 (ADR-0017, TD-161): Kenyan Signal test version 0.2.4 anomaly spike
+
+| ID | Location | Description | Recommended action |
+|---|---|---|---|
+| TD-160 | `int.ooni_measurement_verdicts` (Signal); `features.ooni_weekly_signals`; National Stress Observatory page | Found 2026-11-12. From December 2023 the only non-failed Kenyan Signal measurements were test version 0.2.4, and every one was ANOMALOUS, matching OONI's own weekly aggregation (Dec 2023: 355, Jan 2024: 664, Feb 2024: 127 anomalies, against 0–64 in other months). Real blocking or a test artefact was unknown at the time. **RESOLVED 2026-11-22 (ADR-0017, TD-161):** OONI's current scoring code treats Signal test version 0.2.4 as broken (ooni/probe#2636); its 1,146 measurements are now excluded, and the spike disappears. | None. |
+
 ## TD-161 — RESOLVED 2026-11-22: OONI zero-accuracy measurements were set aside at measurement level but still counted at observation level, and CLIO's copy of OONI's rules was out of date (ADR-0017)
 
 | ID | Location | Description | Recommended action |

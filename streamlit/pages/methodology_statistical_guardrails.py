@@ -406,6 +406,10 @@ known-bad-probe-version exclusion, not a genuine disagreement.
 """)
 
 st.warning("""
+A November 2026 re-check (ADR-0017) found that these 80 measurements had been explained against OONI's records but never excluded from CLIO's counts, and that CLIO's copy of OONI's discard rules was out of date. CLIO now applies OONI's current zero-accuracy rules at both measurement and observation level: 90 of the 361 TLS observations are excluded, and 271 remain classified BLOCKED.
+""")
+
+st.warning("""
 **OONI findings are attributed at Kenya-country grain from probe location
 alone (TD-95, Phase 0).** OONI's vantage point is the probe's own network
 location -- this pipeline cannot currently distinguish local Kenyan
