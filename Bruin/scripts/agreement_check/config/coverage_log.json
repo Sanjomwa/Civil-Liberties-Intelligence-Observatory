@@ -6,14 +6,14 @@
       "test_type": "signal",
       "ooni_verdict": "OK",
       "failure_type": "none",
-      "last_sampled_at": "2026-11-23T09:34:35.470842+00:00",
+      "last_sampled_at": "2026-11-23T11:16:42.310251+00:00",
       "sampled_count": 10
     },
     "signal|None|none": {
       "test_type": "signal",
       "ooni_verdict": null,
       "failure_type": "none",
-      "last_sampled_at": "2026-11-23T09:34:38.185973+00:00",
+      "last_sampled_at": "2026-11-23T11:16:45.011187+00:00",
       "sampled_count": 10
     },
     "signal|FAILED|signal_legacy_nxdomain": {
@@ -27,14 +27,14 @@
       "test_type": "signal",
       "ooni_verdict": "ANOMALOUS",
       "failure_type": "none",
-      "last_sampled_at": "2026-11-23T09:34:41.064943+00:00",
+      "last_sampled_at": "2026-11-23T11:16:47.925091+00:00",
       "sampled_count": 10
     },
     "signal|None|signal_legacy_nxdomain": {
       "test_type": "signal",
       "ooni_verdict": null,
       "failure_type": "signal_legacy_nxdomain",
-      "last_sampled_at": "2026-11-23T09:34:43.805651+00:00",
+      "last_sampled_at": "2026-11-23T11:16:50.550845+00:00",
       "sampled_count": 10
     },
     "dnscheck|OK|none": {
@@ -55,14 +55,14 @@
       "test_type": "dnscheck",
       "ooni_verdict": "OK",
       "failure_type": "(null)",
-      "last_sampled_at": "2026-11-23T09:24:19.541779+00:00",
+      "last_sampled_at": "2026-11-23T11:41:15.729065+00:00",
       "sampled_count": 10
     },
     "dnscheck|ANOMALOUS|dns_bogon_error": {
       "test_type": "dnscheck",
       "ooni_verdict": "ANOMALOUS",
       "failure_type": "dns_bogon_error",
-      "last_sampled_at": "2026-11-23T09:24:22.193921+00:00",
+      "last_sampled_at": "2026-11-23T11:41:17.924179+00:00",
       "sampled_count": 10
     },
     "dnscheck|ANOMALOUS|dns_nxdomain_error": {
@@ -104,126 +104,126 @@
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "dns_nxdomain_error",
-      "last_sampled_at": "2026-11-23T09:24:07.950375+00:00",
+      "last_sampled_at": "2026-11-23T11:41:04.687622+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|generic_timeout_error": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "generic_timeout_error",
-      "last_sampled_at": "2026-11-23T09:24:10.046236+00:00",
+      "last_sampled_at": "2026-11-23T11:41:06.771834+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|android_dns_cache_no_data": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "android_dns_cache_no_data",
-      "last_sampled_at": "2026-11-23T09:24:12.747742+00:00",
+      "last_sampled_at": "2026-11-23T11:41:08.665442+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|dns_temporary_failure": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "dns_temporary_failure",
-      "last_sampled_at": "2026-11-23T09:24:14.873267+00:00",
+      "last_sampled_at": "2026-11-23T11:41:11.011075+00:00",
       "sampled_count": 10
     },
     "dnscheck|FAILED|dns_server_misbehaving": {
       "test_type": "dnscheck",
       "ooni_verdict": "FAILED",
       "failure_type": "dns_server_misbehaving",
-      "last_sampled_at": "2026-11-23T09:24:16.800898+00:00",
+      "last_sampled_at": "2026-11-23T11:41:13.072762+00:00",
       "sampled_count": 10
     },
     "telegram|OK|none": {
       "test_type": "telegram",
       "ooni_verdict": "OK",
       "failure_type": "none",
-      "last_sampled_at": "2026-11-23T08:44:36.732253+00:00",
+      "last_sampled_at": "2026-11-23T11:34:08.251798+00:00",
       "sampled_count": 10
     },
     "telegram|ANOMALOUS|none": {
       "test_type": "telegram",
       "ooni_verdict": "ANOMALOUS",
       "failure_type": "none",
-      "last_sampled_at": "2026-11-23T08:44:39.842748+00:00",
+      "last_sampled_at": "2026-11-23T11:34:10.949637+00:00",
       "sampled_count": 10
     },
     "whatsapp|OK|none": {
       "test_type": "whatsapp",
       "ooni_verdict": "OK",
       "failure_type": "none",
-      "last_sampled_at": "2026-11-23T08:40:14.946614+00:00",
+      "last_sampled_at": "2026-11-23T11:26:38.622628+00:00",
       "sampled_count": 10
     },
     "whatsapp|ANOMALOUS|none": {
       "test_type": "whatsapp",
       "ooni_verdict": "ANOMALOUS",
       "failure_type": "none",
-      "last_sampled_at": "2026-11-23T08:40:18.094519+00:00",
+      "last_sampled_at": "2026-11-23T11:26:41.588516+00:00",
       "sampled_count": 10
     },
     "psiphon|OK|none": {
       "test_type": "psiphon",
       "ooni_verdict": "OK",
       "failure_type": "none",
-      "last_sampled_at": "2026-11-23T08:51:07.240308+00:00",
+      "last_sampled_at": "2026-11-23T11:50:34.521244+00:00",
       "sampled_count": 10
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: clientlib: tunnel establishment timeout": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: clientlib: tunnel establishment timeout",
-      "last_sampled_at": "2026-11-23T08:51:09.923255+00:00",
+      "last_sampled_at": "2026-11-23T11:50:37.131825+00:00",
       "sampled_count": 10
     },
     "psiphon|FAILED|psiphon_failure:generic_timeout_error": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:generic_timeout_error",
-      "last_sampled_at": "2026-11-23T08:51:12.641263+00:00",
+      "last_sampled_at": "2026-11-23T11:50:39.866920+00:00",
       "sampled_count": 10
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: socks connect tcp [scrubbed]->www.google.com:443: unknown error connection refused": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: socks connect tcp [scrubbed]->www.google.com:443: unknown error connection refused",
-      "last_sampled_at": "2026-11-23T08:51:14.925371+00:00",
+      "last_sampled_at": "2026-11-23T11:50:42.115098+00:00",
       "sampled_count": 10
     },
     "psiphon|FAILED|psiphon_failure:eof_error": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:eof_error",
-      "last_sampled_at": "2026-11-23T08:51:17.693246+00:00",
+      "last_sampled_at": "2026-11-23T11:50:44.779863+00:00",
       "sampled_count": 10
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: socks connect tcp [scrubbed]->www.google.com:443: unknown error general SOCKS server failure": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: socks connect tcp [scrubbed]->www.google.com:443: unknown error general SOCKS server failure",
-      "last_sampled_at": "2026-11-23T08:51:20.339629+00:00",
+      "last_sampled_at": "2026-11-23T11:50:47.192803+00:00",
       "sampled_count": 10
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: clientlib: StartTunnel called multiple times": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: clientlib: StartTunnel called multiple times",
-      "last_sampled_at": "2026-11-23T08:51:22.955871+00:00",
+      "last_sampled_at": "2026-11-23T11:50:49.976129+00:00",
       "sampled_count": 10
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: psiphonfeat: not enabled": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: psiphonfeat: not enabled",
-      "last_sampled_at": "2026-11-23T08:51:25.613850+00:00",
+      "last_sampled_at": "2026-11-23T11:50:52.263771+00:00",
       "sampled_count": 10
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: Get \"https://www.google.com/humans.txt\": socks connect tcp [scrubbed]->www.google.com:443: unknown error connection refused": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: Get \"https://www.google.com/humans.txt\": socks connect tcp [scrubbed]->www.google.com:443: unknown error connection refused",
-      "last_sampled_at": "2026-11-23T08:51:27.932841+00:00",
+      "last_sampled_at": "2026-11-23T11:50:54.978807+00:00",
       "sampled_count": 10
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: Get \"https://www.google.com/humans.txt\": socks connect tcp [scrubbed]->www.google.com:443: unknown error general SOCKS server failure": {
@@ -251,71 +251,99 @@
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: stat /data/user/0/org.openobservatory.ooniprobe/cache/ooniengine3365192424: no such file or directory",
-      "last_sampled_at": "2026-08-30T13:14:20.681379+00:00",
+      "last_sampled_at": "2026-11-23T11:50:11.636562+00:00",
       "sampled_count": 1
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: stat /data/data/org.openobservatory.ooniprobe/cache/ooniengine1545144795: no such file or directory": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: stat /data/data/org.openobservatory.ooniprobe/cache/ooniengine1545144795: no such file or directory",
-      "last_sampled_at": "2026-08-30T13:14:22.933369+00:00",
+      "last_sampled_at": "2026-11-23T11:50:13.787547+00:00",
       "sampled_count": 1
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: Request failed: 401 Unauthorized": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: Request failed: 401 Unauthorized",
-      "last_sampled_at": "2026-11-23T08:50:48.305325+00:00",
+      "last_sampled_at": "2026-11-23T11:50:15.973792+00:00",
       "sampled_count": 1
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: stat /data/user/0/org.openobservatory.ooniprobe/cache/ooniengine2028170584: no such file or directory": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: stat /data/user/0/org.openobservatory.ooniprobe/cache/ooniengine2028170584: no such file or directory",
-      "last_sampled_at": "2026-11-23T08:50:50.573937+00:00",
+      "last_sampled_at": "2026-11-23T11:50:18.355269+00:00",
       "sampled_count": 1
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: CreateFile C:\\Users\\hp\\AppData\\Local\\Temp\\ooni355756127\\ooniengine1398570104: The system cannot find the path specified.": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: CreateFile C:\\Users\\hp\\AppData\\Local\\Temp\\ooni355756127\\ooniengine1398570104: The system cannot find the path specified.",
-      "last_sampled_at": "2026-11-23T08:50:52.871769+00:00",
+      "last_sampled_at": "2026-11-23T11:50:20.505656+00:00",
       "sampled_count": 1
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: stat /data/data/org.openobservatory.ooniprobe/cache/ooniengine2301231906: no such file or directory": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: stat /data/data/org.openobservatory.ooniprobe/cache/ooniengine2301231906: no such file or directory",
-      "last_sampled_at": "2026-11-23T08:50:55.028865+00:00",
+      "last_sampled_at": "2026-11-23T11:50:22.767069+00:00",
       "sampled_count": 1
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: stat /data/data/org.openobservatory.ooniprobe/cache/ooniengine3158840408: no such file or directory": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: stat /data/data/org.openobservatory.ooniprobe/cache/ooniengine3158840408: no such file or directory",
-      "last_sampled_at": "2026-11-23T08:50:57.059140+00:00",
+      "last_sampled_at": "2026-11-23T11:50:25.527774+00:00",
       "sampled_count": 1
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: CreateFile C:\\Users\\hp\\AppData\\Local\\Temp\\ooni1829175846\\ooniengine1565563710: The system cannot find the path specified.": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: CreateFile C:\\Users\\hp\\AppData\\Local\\Temp\\ooni1829175846\\ooniengine1565563710: The system cannot find the path specified.",
-      "last_sampled_at": "2026-11-23T08:50:59.427942+00:00",
+      "last_sampled_at": "2026-11-23T11:50:27.568571+00:00",
       "sampled_count": 1
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: stat /data/data/org.openobservatory.ooniprobe/cache/ooniengine818583659: no such file or directory": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: stat /data/data/org.openobservatory.ooniprobe/cache/ooniengine818583659: no such file or directory",
-      "last_sampled_at": "2026-11-23T08:51:01.548269+00:00",
+      "last_sampled_at": "2026-11-23T11:50:29.640417+00:00",
       "sampled_count": 1
     },
     "psiphon|FAILED|psiphon_failure:unknown_failure: stat /data/data/org.openobservatory.ooniprobe/cache/ooniengine2372260580: no such file or directory": {
       "test_type": "psiphon",
       "ooni_verdict": "FAILED",
       "failure_type": "psiphon_failure:unknown_failure: stat /data/data/org.openobservatory.ooniprobe/cache/ooniengine2372260580: no such file or directory",
-      "last_sampled_at": "2026-11-23T08:51:03.805615+00:00",
+      "last_sampled_at": "2026-11-23T11:50:31.811400+00:00",
       "sampled_count": 1
+    },
+    "whatsapp|None|none": {
+      "test_type": "whatsapp",
+      "ooni_verdict": null,
+      "failure_type": "none",
+      "last_sampled_at": "2026-11-23T11:26:35.957302+00:00",
+      "sampled_count": 10
+    },
+    "telegram|None|none": {
+      "test_type": "telegram",
+      "ooni_verdict": null,
+      "failure_type": "none",
+      "last_sampled_at": "2026-11-23T11:34:05.292331+00:00",
+      "sampled_count": 10
+    },
+    "dnscheck|None|(null)": {
+      "test_type": "dnscheck",
+      "ooni_verdict": null,
+      "failure_type": "(null)",
+      "last_sampled_at": "2026-11-23T11:41:02.707292+00:00",
+      "sampled_count": 10
+    },
+    "psiphon|None|none": {
+      "test_type": "psiphon",
+      "ooni_verdict": null,
+      "failure_type": "none",
+      "last_sampled_at": "2026-11-23T11:50:09.244237+00:00",
+      "sampled_count": 10
     }
   }
 }
