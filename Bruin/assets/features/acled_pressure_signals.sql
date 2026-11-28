@@ -137,8 +137,8 @@ description: |
   A PROTEST row with is_suppression_marker = TRUE contributes to:
     - protest_events / protest_pressure_index
     - suppression_events / suppression_intensity_index
-  Validated markers: Protest with intervention (9,441 events),
-    Arrests (4,199), Excessive force against protesters (2,769).
+  Validated markers: Protest with intervention (withdrawn),
+    Arrests (withdrawn), Excessive force against protesters (withdrawn).
 
   ──────────────────────────────────────────────────────────────────────
   DOWNSTREAM CONTRACT — int.acled_pressure_regimes
