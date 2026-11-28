@@ -54,7 +54,9 @@ What the template baseline does NOT answer: whether the LLM's prose reads better
 | `tests/test_style_lint.py` | 7 | The non-blocking style lint correctly flags filler/hype/hedge/cliche phrasing and passes plain sentences clean |
 | `tests/test_template_writer.py` | 6 | The template baseline renders every claim type, always passes full verification, and produces output shaped identically to the LLM path for a fair side-by-side comparison |
 
-Fixture data (`fixtures/finance_bill_2024_fixture.py`) is a small mock of CLIO's real mart schema for the Finance Bill 2024 window, reconstructed from this project's own documented, already-verified history (ADR-0002's backfill findings) — not live-queried, but shaped exactly like the real tables so the live build only has to swap the lookup implementation, not the checking logic.
+**Withdrawn November 2026:** the fixture module (`fixtures/finance_bill_2024_fixture.py`) was removed pending ACLED's review, together with the five test files that depended on it (`test_claim_check.py`, `test_deterministic_analysis.py`, `test_completeness_check.py`, `test_template_writer.py`, `test_verify_report.py`). The report-writer path that uses it (`run_report.py`, `run_baseline_comparison.py`, `deterministic_analysis.py`) is disabled: the scripts exit with a "fixture withdrawn" message. The table above and the paragraph below are kept as a historical record.
+
+Fixture data (`fixtures/finance_bill_2024_fixture.py`) was a small mock of CLIO's real mart schema for the Finance Bill 2024 window, reconstructed from this project's own documented, already-verified history (ADR-0002's backfill findings) — not live-queried, but shaped exactly like the real tables so the live build only has to swap the lookup implementation, not the checking logic.
 
 ## How to run it
 

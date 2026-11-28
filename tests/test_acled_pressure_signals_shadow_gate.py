@@ -16,6 +16,8 @@ import os
 
 import pytest
 
+ACLED_WITHDRAWN_REASON = "ACLED-derived fixture withdrawn 2026-11 pending ACLED review"
+
 requires_bigquery = pytest.mark.skipif(
     os.environ.get("RUN_BIGQUERY_TESTS") != "1",
     reason="Set RUN_BIGQUERY_TESTS=1 to run tests against live BigQuery data",
@@ -26,22 +28,22 @@ PROJECT_ID = "encoded-joy-485413-k5"
 # Established 2026-09-21 against live materialized data. A change to either
 # number is a drift signal on the observation baseline this build sets, not
 # necessarily a bug -- but it must be understood before proceeding.
-KENYA_TOTAL_ROWS = 1523
-KENYA_FLIPPED_ROWS = 564
+KENYA_TOTAL_ROWS = "[withdrawn]"
+KENYA_FLIPPED_ROWS = "[withdrawn]"
 
-# 2007-11-24 through 2008-01-12: the 8-week run immediately preceding the
+# 2007-11-24 through 2008-01-12: the [withdrawn]-week run immediately preceding the
 # Jan-Feb 2008 post-election violence window, all signal_valid = FALSE under
 # the current (buggy) flat gate. Confirmed live (2026-09-21): all three live
-# z-scores are NULL for all 8 weeks. On the shadow side, NOT all three are
+# z-scores are NULL for all [withdrawn] weeks. On the shadow side, NOT all three are
 # uniformly un-suppressed -- shadow_suppression_z stays NULL throughout
 # (still correctly gated by its own sparse_suppression_baseline_flag, a
 # per-family flag TD-136's fix does not touch), and shadow_protest_pressure_z
-# is NULL for the first week only (2007-11-24, same per-family reason).
-# Only shadow_violence_pressure_z is non-NULL across the full 8 weeks.
+# is NULL for the first week only ([withdrawn], same per-family reason).
+# Only shadow_violence_pressure_z is non-NULL across the full [withdrawn] weeks.
 PRE_WINDOW_START = "2007-11-24"
 PRE_WINDOW_END = "2008-01-12"
-PRE_WINDOW_WEEK_COUNT = 8
-PROTEST_STILL_NULL_WEEKS = {"2007-11-24"}
+PRE_WINDOW_WEEK_COUNT = "[withdrawn]"
+PROTEST_STILL_NULL_WEEKS = "[withdrawn]"
 
 
 def _client():
@@ -50,6 +52,7 @@ def _client():
     return bigquery.Client(project=PROJECT_ID)
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 @requires_bigquery
 def test_superset_invariant_holds_for_every_country():
     query = f"""
@@ -76,6 +79,7 @@ def test_superset_invariant_holds_for_every_country():
         )
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 @requires_bigquery
 def test_shadow_global_conditions_valid_never_true_when_a_global_flag_fires():
     query = f"""
@@ -92,6 +96,7 @@ def test_shadow_global_conditions_valid_never_true_when_a_global_flag_fires():
     )
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 @requires_bigquery
 def test_pre_window_null_pattern_matches_observed_shape():
     query = f"""
@@ -143,6 +148,7 @@ def test_pre_window_null_pattern_matches_observed_shape():
             )
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 @requires_bigquery
 def test_kenya_flipped_rows_matches_observation_baseline():
     query = f"""

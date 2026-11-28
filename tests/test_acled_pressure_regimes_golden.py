@@ -24,6 +24,8 @@ requires_bigquery = pytest.mark.skipif(
 )
 
 PROJECT_ID = "encoded-joy-485413-k5"
+ACLED_WITHDRAWN_REASON = "ACLED-derived fixture withdrawn 2026-11 pending ACLED review"
+
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures" / "acled_regimes_golden"
 FIELDS = ["primary_regime", "confidence_level", "transition_detected", "transition_type", "previous_regime"]
 
@@ -61,6 +63,7 @@ def _assert_matches_golden(actual, golden):
             )
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 @requires_bigquery
 def test_finance_bill_2024_golden_window():
     from google.cloud import bigquery
@@ -71,6 +74,7 @@ def test_finance_bill_2024_golden_window():
     _assert_matches_golden(actual, golden)
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 @requires_bigquery
 def test_post_election_2008_golden_window():
     from google.cloud import bigquery

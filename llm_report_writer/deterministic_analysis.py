@@ -29,11 +29,24 @@ claim_check.py's tests already use.
 
 from __future__ import annotations
 
-from fixtures.finance_bill_2024_fixture import (
-    ACLED_PRESSURE_REGIMES,
-    FACT_COUNTRY_PRESSURE_DAILY,
-    count_weeks_at_or_above,
-)
+try:
+    from fixtures.finance_bill_2024_fixture import (
+        ACLED_PRESSURE_REGIMES,
+        FACT_COUNTRY_PRESSURE_DAILY,
+        count_weeks_at_or_above,
+    )
+    FIXTURE_AVAILABLE = True
+except ImportError:  # ACLED-derived fixture withdrawn 2026-11 pending ACLED review
+    FIXTURE_WITHDRAWN_MESSAGE = (
+        "ACLED-derived fixture withdrawn 2026-11; this report-writer path is "
+        "disabled pending ACLED review"
+    )
+    FIXTURE_AVAILABLE = False
+    ACLED_PRESSURE_REGIMES = None
+    FACT_COUNTRY_PRESSURE_DAILY = None
+
+    def count_weeks_at_or_above(*args, **kwargs):
+        raise RuntimeError(FIXTURE_WITHDRAWN_MESSAGE)
 
 REGIME_SEVERITY_ORDER = ["STABLE", "MOBILISATION", "ESCALATION", "CONFLICT", "CRISIS"]
 

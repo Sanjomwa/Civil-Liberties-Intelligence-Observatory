@@ -13,9 +13,11 @@ These files contain OONI measurement data or identifiers (for example `report_id
 - `ooni_whatsapp_web_accessible_classification/`
 - `ooni_weekly_golden/` (weekly counts aggregated from OONI measurements)
 
-## ACLED-derived labels: ACLED's terms
+## ACLED-derived labels: ACLED's terms (withdrawn November 2026)
 
-These files contain weekly regime labels, bands and related fields that CLIO's classifier derived from ACLED's weekly aggregated data. They are subject to ACLED's terms of use (free for non-commercial use with registration; commercial use needs a separate licence from ACLED). Source: Armed Conflict Location & Event Data (ACLED), acleddata.com.
+**Withdrawn:** ACLED use was withdrawn in November 2026 pending ACLED's review, and the files in `acled_regimes_golden/` have been removed from this repository. The tests that used them are skipped. The text below is kept as a historical record.
+
+These files contained weekly regime labels, bands and related fields that CLIO's classifier derived from ACLED's weekly aggregated data. They are subject to ACLED's terms of use (free for non-commercial use with registration; commercial use needs a separate licence from ACLED). Source: Armed Conflict Location & Event Data (ACLED), acleddata.com.
 
 - `acled_regimes_golden/`
 

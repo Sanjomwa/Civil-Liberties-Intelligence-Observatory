@@ -18,14 +18,32 @@ Usage:
 from __future__ import annotations
 
 import json
+import sys
 
 from claim_check import DataContext
 from coherence_check import check_report_coherence
 from deterministic_analysis import analyze_window, summarize_window_for_prompt
-from fixtures.finance_bill_2024_fixture import count_weeks_at_or_above, lookup_daily, lookup_regime
 from report_writer_openai import generate_report_sentences
 from style_lint import lint_report
 from verify_report import verify_report
+
+FIXTURE_WITHDRAWN_MESSAGE = (
+    "ACLED-derived fixture withdrawn 2026-11; this report-writer path is "
+    "disabled pending ACLED review"
+)
+
+try:
+    from fixtures.finance_bill_2024_fixture import count_weeks_at_or_above, lookup_daily, lookup_regime
+    FIXTURE_AVAILABLE = True
+except ImportError:  # ACLED-derived fixture withdrawn 2026-11 pending ACLED review
+    FIXTURE_AVAILABLE = False
+
+    def _fixture_withdrawn(*args, **kwargs):
+        raise RuntimeError(FIXTURE_WITHDRAWN_MESSAGE)
+
+    count_weeks_at_or_above = _fixture_withdrawn
+    lookup_daily = _fixture_withdrawn
+    lookup_regime = _fixture_withdrawn
 
 COUNTRY = "Kenya"
 WEEK_START = "2024-06-15"
@@ -33,6 +51,9 @@ WEEK_END = "2024-07-13"
 
 
 def run():
+    if not FIXTURE_AVAILABLE:
+        print(FIXTURE_WITHDRAWN_MESSAGE, file=sys.stderr)
+        sys.exit(1)
     ctx = DataContext(lookup_regime=lookup_regime, lookup_daily=lookup_daily, count_weeks_at_or_above=count_weeks_at_or_above)
 
     claims = analyze_window(COUNTRY, WEEK_START, WEEK_END)

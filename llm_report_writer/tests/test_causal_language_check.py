@@ -9,13 +9,18 @@ attached claim (checked separately by claim_check.py) is itself honest.
 import os
 import sys
 
+import pytest
+
+ACLED_WITHDRAWN_REASON = "ACLED-derived fixture withdrawn 2026-11 pending ACLED review"
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from causal_language_check import check_sentence_language  # noqa: E402
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 def test_clean_sentence_passes():
-    sentence = "Kenya's regime classification was CRISIS for the week of June 22, 2024."
+    sentence = "Kenya's regime classification was [withdrawn] for the week of June 22, 2024."
     result = check_sentence_language(sentence)
     assert result.clean is True, result.reason
 
@@ -27,8 +32,9 @@ def test_causal_connective_flagged():
     assert any("causal connective" in f for f in result.flagged_phrases)
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 def test_led_to_flagged():
-    sentence = "The bill's tabling led to a MOBILISATION classification."
+    sentence = "The bill's tabling led to a [withdrawn] classification."
     result = check_sentence_language(sentence)
     assert result.clean is False
 
@@ -52,17 +58,19 @@ def test_sharply_flagged():
     assert result.clean is False
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 def test_pure_temporal_following_the_is_flagged_conservatively():
     # "following the" is treated as causal-leaning even in a fairly neutral
     # sentence -- a deliberate conservative default (false positives are
     # cheap, false negatives are the real risk here).
-    sentence = "Following the announcement, the regime classification changed to MOBILISATION."
+    sentence = "Following the announcement, the regime classification changed to [withdrawn]."
     result = check_sentence_language(sentence)
     assert result.clean is False
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 def test_neutral_temporal_sequencing_passes():
-    sentence = "The classification changed from ESCALATION on June 15 to CRISIS on June 22."
+    sentence = "The classification changed from [withdrawn] on June 15 to [withdrawn] on June 22."
     result = check_sentence_language(sentence)
     assert result.clean is True, result.reason
 

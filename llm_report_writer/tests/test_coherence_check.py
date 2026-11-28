@@ -12,20 +12,26 @@ anything (it doesn't; verify_report.py never calls this module).
 import os
 import sys
 
+import pytest
+
+ACLED_WITHDRAWN_REASON = "ACLED-derived fixture withdrawn 2026-11 pending ACLED review"
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from coherence_check import check_sentence_coherence  # noqa: E402
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 def test_plain_english_sentence_is_clean():
-    result = check_sentence_coherence("Kenya's regime classification for the week of June 22, 2024 was CRISIS.")
+    result = check_sentence_coherence("Kenya's regime classification for the week of June 22, 2024 was [withdrawn].")
     assert result.clean is True, result.flagged_tokens
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 def test_the_actual_td78_sentence_is_flagged():
     """The real sentence that surfaced this gap during the 2026-08-03 live
     comparison run, verbatim."""
-    result = check_sentence_coherence("Kenya was classified as STABLE for the week սկս starting 2024-03-23.")
+    result = check_sentence_coherence("Kenya was classified as [withdrawn] for the week սկս starting 2024-03-23.")
     assert result.clean is False
     assert "սկս" in result.flagged_tokens
 
@@ -48,8 +54,9 @@ def test_common_punctuation_and_symbols_pass_clean():
     assert result.clean is True, result.flagged_tokens
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 def test_numbers_and_dates_pass_clean():
-    result = check_sentence_coherence("Kenya had 3 weeks at CRISIS or above from 2024-05-11 through 2024-07-13.")
+    result = check_sentence_coherence("Kenya had [withdrawn] weeks at [withdrawn] or above from 2024-05-11 through 2024-07-13.")
     assert result.clean is True, result.flagged_tokens
 
 

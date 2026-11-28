@@ -10,13 +10,18 @@ see verify_report.py, which never calls this module).
 import os
 import sys
 
+import pytest
+
+ACLED_WITHDRAWN_REASON = "ACLED-derived fixture withdrawn 2026-11 pending ACLED review"
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from style_lint import lint_sentence  # noqa: E402
 
 
+@pytest.mark.skip(reason=ACLED_WITHDRAWN_REASON)
 def test_plain_sentence_is_clean():
-    result = lint_sentence("Kenya's regime classification for the week of June 22, 2024 was CRISIS.")
+    result = lint_sentence("Kenya's regime classification for the week of June 22, 2024 was [withdrawn].")
     assert result.clean is True, result.flags
 
 
