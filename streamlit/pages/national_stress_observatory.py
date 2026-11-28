@@ -3,6 +3,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 
+from content_flags import ACLED_CONTENT_ENABLED, ACLED_WITHDRAWN_NOTICE
 from core.config import COUNTRY
 from core.constants import LABELS_HIDDEN_NOTE
 from core.state import init_state
@@ -39,182 +40,197 @@ init_state()
 render_sidebar()
 
 
-# ============================================================
-# DATA
-# ============================================================
+# Item 48 (2026-11): every section below that reads
+# reporting.mart_political_stress_windows (ACLED-derived) runs only while
+# ACLED_CONTENT_ENABLED is True (content_flags.py). With the flag False the
+# query does not run; only the OONI weekly signal section renders.
+if ACLED_CONTENT_ENABLED:
 
-df = get_national_stress(
-    st.session_state.start_date,
-    st.session_state.end_date
-)
+    # ============================================================
+    # DATA
+    # ============================================================
 
-if df.empty:
-    st.warning("No national stress data available.")
-    st.stop()
-
-
-latest = df.iloc[-1]
-
-
-# ============================================================
-# HEADER
-# ============================================================
-
-st.title("National Stress Observatory")
-
-st.caption(
-    f"Country-level composite pressure index (experimental) for {COUNTRY} "
-    "(data currently covers June 2023 – June 2025)"
-)
-
-
-# ============================================================
-# TRUST STRIP
-# ============================================================
-
-render_trust_strip(
-    reporting_version=latest["reporting_version"],
-    snapshot_at=latest["snapshot_at"],
-    max_date=df["date_key"].max()
-)
-
-st.divider()
-
-
-# ============================================================
-# KPI ROW
-# ============================================================
-
-metric_row([
-    (
-        "Composite index (experimental; not validated), latest date",
-        f"{latest['composite_pressure_score']:.2f}"
-    ),
-    (
-        "Elevated Protocols",
-        f"{int(latest['elevated_protocol_count'])}"
-    ),
-    (
-        "Sample Quality",
-        f"{latest['avg_sample_quality_score']:.2f}"
-    ),
-])
-
-st.metric(
-    "OONI Protocol-Stress Signal (independent, not included in composite)",
-    f"{latest['max_protocol_stress_score']:.1f}",
-    help=(
-        "intelligence.protocol_signal_regimes' statistically-qualified "
-        "protocol_stress_score (0-100, z-score-based), shown here alongside "
-        "the composite as a separate measurement. Not a term in the "
-        "composite index -- "
-        "composite_pressure_score is conflict (75%) and platform (25%) "
-        "only, per ADR-0004/ADR-0006."
+    df = get_national_stress(
+        st.session_state.start_date,
+        st.session_state.end_date
     )
-)
 
-st.divider()
+    if df.empty:
+        st.warning("No national stress data available.")
+        st.stop()
 
 
-# ============================================================
-# NATIONAL PRESSURE TIMELINE
-# ============================================================
+    latest = df.iloc[-1]
 
-st.subheader("National Digital Pressure Trend")
 
-st.markdown(f"""
-This chart shows {COUNTRY}'s **composite pressure index (experimental)**
--- `composite_pressure_score`, conflict (75%) and platform (25%),
-per ADR-0004. The line is the index value on each date; it is an
-experimental number, not a validated measure.
-""")
+    # ============================================================
+    # HEADER
+    # ============================================================
 
-fig = go.Figure()
+    st.title("National Stress Observatory")
 
-fig.add_trace(go.Scatter(
-    x=df["date_key"],
-    y=df["composite_pressure_score"],
-    name="Composite index (experimental; not validated)",
-    line=dict(
-        color="#E8593C",
-        width=3
+    st.caption(
+        f"Country-level composite pressure index (experimental) for {COUNTRY} "
+        "(data currently covers June 2023 – June 2025)"
     )
-))
-
-apply_layout(
-    fig,
-    "Composite index (experimental; not validated)"
-)
-
-fig.update_layout(
-    hovermode="x unified",
-    yaxis_title="Composite index",
-    xaxis_title="Date"
-)
-
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
-
-st.divider()
 
 
-# ============================================================
-# PROTOCOL ESCALATION LOAD
-# ============================================================
+    # ============================================================
+    # TRUST STRIP
+    # ============================================================
 
-st.subheader("Protocol Escalation Load")
+    render_trust_strip(
+        reporting_version=latest["reporting_version"],
+        snapshot_at=latest["snapshot_at"],
+        max_date=df["date_key"].max()
+    )
 
-st.markdown("""
-This shows how many monitored protocols had OONI measurements classed
-as anomalous against their own baseline on each day.
-
-A day when several protocols are elevated at once is a measurement
-pattern, not evidence of what caused it; it can reflect network
-conditions, measurement coverage, or changes at the services tested.
-""")
-
-fig3 = go.Figure()
-
-fig3.add_trace(go.Scatter(
-    x=df["date_key"],
-    y=df["elevated_protocol_count"],
-    fill="tozeroy",
-    line=dict(
-        color="#EF9F27",
-        width=2
-    ),
-    name="Elevated Protocol Count"
-))
-
-apply_layout(
-    fig3,
-    "Elevated Protocol Load"
-)
-
-fig3.update_layout(
-    yaxis_title="Protocol Count",
-    xaxis_title="Date"
-)
-
-st.plotly_chart(
-    fig3,
-    use_container_width=True
-)
-
-st.divider()
+    st.divider()
 
 
-# Item 34 (2026-11-16): the ACLED path A regime display (latest-week regime
-# and confidence badges, transition metrics, weekly regime scatter, regime
-# table with per-family bands, the regime-coloured vrects behind the OONI
-# weekly chart, and the lag-correlation-vs-regime badge and text) was
-# removed from public view until the labels are validated against a
-# pre-specified list of events. get_regime_classification() in
-# services/marts.py is kept, unused.
+    # ============================================================
+    # KPI ROW
+    # ============================================================
 
-st.info(LABELS_HIDDEN_NOTE)
+    metric_row([
+        (
+            "Composite index (experimental; not validated), latest date",
+            f"{latest['composite_pressure_score']:.2f}"
+        ),
+        (
+            "Elevated Protocols",
+            f"{int(latest['elevated_protocol_count'])}"
+        ),
+        (
+            "Sample Quality",
+            f"{latest['avg_sample_quality_score']:.2f}"
+        ),
+    ])
+
+    st.metric(
+        "OONI Protocol-Stress Signal (independent, not included in composite)",
+        f"{latest['max_protocol_stress_score']:.1f}",
+        help=(
+            "intelligence.protocol_signal_regimes' statistically-qualified "
+            "protocol_stress_score (0-100, z-score-based), shown here alongside "
+            "the composite as a separate measurement. Not a term in the "
+            "composite index -- "
+            "composite_pressure_score is conflict (75%) and platform (25%) "
+            "only, per ADR-0004/ADR-0006."
+        )
+    )
+
+    st.divider()
+
+
+    # ============================================================
+    # NATIONAL PRESSURE TIMELINE
+    # ============================================================
+
+    st.subheader("National Digital Pressure Trend")
+
+    st.markdown(f"""
+    This chart shows {COUNTRY}'s **composite pressure index (experimental)**
+    -- `composite_pressure_score`, conflict (75%) and platform (25%),
+    per ADR-0004. The line is the index value on each date; it is an
+    experimental number, not a validated measure.
+    """)
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(
+        x=df["date_key"],
+        y=df["composite_pressure_score"],
+        name="Composite index (experimental; not validated)",
+        line=dict(
+            color="#E8593C",
+            width=3
+        )
+    ))
+
+    apply_layout(
+        fig,
+        "Composite index (experimental; not validated)"
+    )
+
+    fig.update_layout(
+        hovermode="x unified",
+        yaxis_title="Composite index",
+        xaxis_title="Date"
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+    st.divider()
+
+
+    # ============================================================
+    # PROTOCOL ESCALATION LOAD
+    # ============================================================
+
+    st.subheader("Protocol Escalation Load")
+
+    st.markdown("""
+    This shows how many monitored protocols had OONI measurements classed
+    as anomalous against their own baseline on each day.
+
+    A day when several protocols are elevated at once is a measurement
+    pattern, not evidence of what caused it; it can reflect network
+    conditions, measurement coverage, or changes at the services tested.
+    """)
+
+    fig3 = go.Figure()
+
+    fig3.add_trace(go.Scatter(
+        x=df["date_key"],
+        y=df["elevated_protocol_count"],
+        fill="tozeroy",
+        line=dict(
+            color="#EF9F27",
+            width=2
+        ),
+        name="Elevated Protocol Count"
+    ))
+
+    apply_layout(
+        fig3,
+        "Elevated Protocol Load"
+    )
+
+    fig3.update_layout(
+        yaxis_title="Protocol Count",
+        xaxis_title="Date"
+    )
+
+    st.plotly_chart(
+        fig3,
+        use_container_width=True
+    )
+
+    st.divider()
+
+
+    # Item 34 (2026-11-16): the ACLED path A regime display (latest-week regime
+    # and confidence badges, transition metrics, weekly regime scatter, regime
+    # table with per-family bands, the regime-coloured vrects behind the OONI
+    # weekly chart, and the lag-correlation-vs-regime badge and text) was
+    # removed from public view until the labels are validated against a
+    # pre-specified list of events. get_regime_classification() in
+    # services/marts.py is kept, unused.
+
+    st.info(LABELS_HIDDEN_NOTE)
+
+else:
+    st.title("National Stress Observatory")
+
+    st.caption(f"OONI weekly network-measurement signal for {COUNTRY}")
+
+    st.info(ACLED_WITHDRAWN_NOTICE)
+
+    st.divider()
 
 
 # ============================================================
@@ -305,26 +321,31 @@ else:
 st.divider()
 
 
-# ============================================================
-# RAW TABLE
-# ============================================================
+if ACLED_CONTENT_ENABLED:
 
-st.subheader("Observatory Data")
+    # ============================================================
+    # RAW TABLE
+    # ============================================================
 
-st.dataframe(
-    df[
-        [
-            "date_key",
-            "composite_pressure_score",
-            "max_protocol_stress_score",
-            "elevated_protocol_count",
-            "avg_sample_quality_score"
-        ]
-    ],
-    use_container_width=True,
-    hide_index=True
-)
+    st.subheader("Observatory Data")
 
-st.divider()
+    st.dataframe(
+        df[
+            [
+                "date_key",
+                "composite_pressure_score",
+                "max_protocol_stress_score",
+                "elevated_protocol_count",
+                "avg_sample_quality_score"
+            ]
+        ],
+        use_container_width=True,
+        hide_index=True
+    )
 
-attribution_footer(["ACLED", "OONI"], snapshot_at=latest["snapshot_at"])
+    st.divider()
+
+    attribution_footer(["ACLED", "OONI"], snapshot_at=latest["snapshot_at"])
+
+else:
+    attribution_footer(["OONI"])

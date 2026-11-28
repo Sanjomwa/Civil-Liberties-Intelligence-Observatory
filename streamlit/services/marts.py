@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import pandas as pd
 import streamlit as st
 
+from content_flags import ACLED_CONTENT_ENABLED
 from core.constants import FEATURES, MARTS, REPORTING
 from core.contracts import guard_dataframe_schema
 from services.bq import run_query
@@ -34,6 +36,8 @@ def get_national_stress(start_date, end_date):
     downstream rolling-baseline/delta/window-class chain) was retired
     outright, not renamed -- see political_stress_windows_mart.sql's
     header for the recalibration test that supported deleting it."""
+    if not ACLED_CONTENT_ENABLED:  # ACLED-derived; withdrawn 2026-11 (item 48)
+        return pd.DataFrame()
     sql = f"""
         SELECT
             date_key,
@@ -95,6 +99,8 @@ def get_regime_classification(start_date, end_date):
     Weekly-grain values repeat across each day of their week; regime_*
     columns are nullable where no classification exists for that date.
     """
+    if not ACLED_CONTENT_ENABLED:  # ACLED-derived; withdrawn 2026-11 (item 48)
+        return pd.DataFrame()
     sql = f"""
         SELECT
             date_key,
@@ -311,6 +317,8 @@ def get_protocol_regimes(start_date, end_date):
 
 @st.cache_data(ttl=3600)
 def get_protocol_correlation(start_date, end_date):
+    if not ACLED_CONTENT_ENABLED:  # ACLED-derived; withdrawn 2026-11 (item 48)
+        return pd.DataFrame()
     sql = f"""
         SELECT
             measurement_date,
@@ -479,6 +487,8 @@ def get_asn_behavior():
 
 @st.cache_data(ttl=3600)
 def get_event_explorer(start_date, end_date):
+    if not ACLED_CONTENT_ENABLED:  # ACLED-derived; withdrawn 2026-11 (item 48)
+        return pd.DataFrame()
     sql = f"""
         SELECT
             c.measurement_date,
@@ -563,6 +573,8 @@ def get_finance_bill_incident():
     correlation row once per qualifying ASN (3x at last count). Returned
     as two separate, ungrouped dataframes instead of one fabricated join.
     """
+    if not ACLED_CONTENT_ENABLED:  # ACLED-derived; withdrawn 2026-11 (item 48)
+        return pd.DataFrame(), pd.DataFrame()
     correlation_sql = f"""
         SELECT
             measurement_date,
@@ -774,6 +786,8 @@ def get_pressure_attribution_daily(start_date, end_date):
     markers and evidence-pointer join keys. OONI is deliberately absent
     here -- it is not a composite input; see get_ooni_corroboration.
     """
+    if not ACLED_CONTENT_ENABLED:  # ACLED-derived; withdrawn 2026-11 (item 48)
+        return pd.DataFrame()
     sql = f"""
         SELECT
             measurement_date,
@@ -908,6 +922,8 @@ def get_conflict_drivers(week_start_date):
     share of the week's pre-log intensity mass (events + 3*fatalities),
     never of the log-scale score itself.
     """
+    if not ACLED_CONTENT_ENABLED:  # ACLED-derived; withdrawn 2026-11 (item 48)
+        return pd.DataFrame()
     sql = f"""
         SELECT
             week_start_date,
@@ -1163,6 +1179,8 @@ def get_correlation_history_summary():
     zero_variance_flag already exclude from rolling_pressure_corr -- surfacing
     raw_corr on this page would manufacture a new misleading number.
     """
+    if not ACLED_CONTENT_ENABLED:  # ACLED-derived; withdrawn 2026-11 (item 48)
+        return pd.DataFrame()
     sql = f"""
         SELECT
             COUNT(*) AS total_rows,

@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 
+from content_flags import ACLED_CONTENT_ENABLED
 from core.config import COUNTRY
 from core.state import init_state
 from core.filters import render_sidebar
@@ -252,50 +253,54 @@ st.divider()
 # CORRELATION STRENGTH: HISTORICAL TRACK RECORD
 # ============================================================
 
-st.caption("Retired pending removal (ADR-0016): the rolling correlation is no longer used for findings; this record is kept for transparency.")
-st.subheader("Correlation Strength: Historical Track Record")
+# Item 48 (2026-11): this section reads
+# reporting.protocol_repression_correlation_mart (ACLED-derived) and runs
+# only while ACLED_CONTENT_ENABLED is True (content_flags.py).
+if ACLED_CONTENT_ENABLED:
+    st.caption("Retired pending removal (ADR-0016): the rolling correlation is no longer used for findings; this record is kept for transparency.")
+    st.subheader("Correlation Strength: Historical Track Record")
 
-try:
-    _corr_summary = get_correlation_history_summary()
-except Exception:
-    _corr_summary = pd.DataFrame()
+    try:
+        _corr_summary = get_correlation_history_summary()
+    except Exception:
+        _corr_summary = pd.DataFrame()
 
-if _corr_summary.empty:
-    st.warning(
-        "Live summary unavailable (query failed or returned no data). "
-        "By definition, `correlation_state` is `STRONG_RELATIONSHIP` at "
-        "`ABS(rolling_pressure_corr) >= 0.82` and `MODERATE_RELATIONSHIP` at "
-        "`>= 0.55` (`protocol_repression_correlation_mart.sql`)."
-    )
-else:
-    _row = _corr_summary.iloc[0]
-    _total = int(_row["total_rows"])
-    _qualifying = int(_row["qualifying_rows"])
-    _max_abs_corr = float(_row["max_abs_corr"])
-    _max_damping = float(_row["max_damping"])
-    _as_of = pd.Timestamp(_row["snapshot_at"]).strftime("%Y-%m-%d %H:%M UTC")
+    if _corr_summary.empty:
+        st.warning(
+            "Live summary unavailable (query failed or returned no data). "
+            "By definition, `correlation_state` is `STRONG_RELATIONSHIP` at "
+            "`ABS(rolling_pressure_corr) >= 0.82` and `MODERATE_RELATIONSHIP` at "
+            "`>= 0.55` (`protocol_repression_correlation_mart.sql`)."
+        )
+    else:
+        _row = _corr_summary.iloc[0]
+        _total = int(_row["total_rows"])
+        _qualifying = int(_row["qualifying_rows"])
+        _max_abs_corr = float(_row["max_abs_corr"])
+        _max_damping = float(_row["max_damping"])
+        _as_of = pd.Timestamp(_row["snapshot_at"]).strftime("%Y-%m-%d %H:%M UTC")
 
-    st.markdown(f"""
-    As of **{_as_of}**, across this mart's full history ({_total:,}
-    protocol-day rows): **{_qualifying} of {_total}** rows have ever reached
-    the MODERATE (>=0.55) or STRONG (>=0.82) correlation threshold. The
-    largest magnitude `rolling_pressure_corr` observed, ever, is
-    **{_max_abs_corr:.2f}**.
+        st.markdown(f"""
+        As of **{_as_of}**, across this mart's full history ({_total:,}
+        protocol-day rows): **{_qualifying} of {_total}** rows have ever reached
+        the MODERATE (>=0.55) or STRONG (>=0.82) correlation threshold. The
+        largest magnitude `rolling_pressure_corr` observed, ever, is
+        **{_max_abs_corr:.2f}**.
 
-    These thresholds are mathematically reachable -- the quality/confidence
-    damping product (`sample_quality_score x final_confidence_score`) has
-    reached as high as **{_max_damping:.2f}**, above the STRONG threshold --
-    but no protocol-day row in this pipeline's history has actually crossed
-    either threshold yet.
+        These thresholds are mathematically reachable -- the quality/confidence
+        damping product (`sample_quality_score x final_confidence_score`) has
+        reached as high as **{_max_damping:.2f}**, above the STRONG threshold --
+        but no protocol-day row in this pipeline's history has actually crossed
+        either threshold yet.
 
-    **0.55 and 0.82 are inherited default thresholds. They have never been
-    independently calibrated against Kenya's actual pilot data, and are not
-    adjusted here to make more windows qualify** -- lowering them to produce
-    more "findings" would misrepresent what the data shows, which is the
-    opposite of what this disclosure is for.
-    """)
+        **0.55 and 0.82 are inherited default thresholds. They have never been
+        independently calibrated against Kenya's actual pilot data, and are not
+        adjusted here to make more windows qualify** -- lowering them to produce
+        more "findings" would misrepresent what the data shows, which is the
+        opposite of what this disclosure is for.
+        """)
 
-st.divider()
+    st.divider()
 
 
 # ============================================================
@@ -336,6 +341,11 @@ st.dataframe(
         "Status": [
             "Real",
             "Real",
+            "Real",
+            "Synthetic (fabricated)"
+        ] if ACLED_CONTENT_ENABLED else [
+            "Real",
+            "Withdrawn (Nov 2026)",
             "Real",
             "Synthetic (fabricated)"
         ],
@@ -427,7 +437,10 @@ the underlying marts is designed but not yet implemented -- see TD-95 for
 the full remediation plan.
 """)
 
-attribution_footer(["ACLED", "OONI"])
+if ACLED_CONTENT_ENABLED:
+    attribution_footer(["ACLED", "OONI"])
+else:
+    attribution_footer(["OONI"])
 
 st.divider()
 

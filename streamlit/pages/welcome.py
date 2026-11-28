@@ -1,5 +1,6 @@
 import streamlit as st
 
+from content_flags import ACLED_CONTENT_ENABLED, ACLED_WITHDRAWN_NOTICE
 from core.config import COUNTRY
 from core.filters import render_sidebar
 from core.state import init_state
@@ -29,11 +30,22 @@ render_sidebar()
 
 st.title("🛰️ CLIO — Civil Liberties Intelligence Observatory")
 
-st.caption(
-    f"Historical network-measurement anomalies, aggregated conflict data, "
-    f"and derived civil-liberties pressure indicators. {COUNTRY} is the "
-    f"current pilot country."
-)
+# Item 48 (2026-11): ACLED-based content is switched off behind
+# ACLED_CONTENT_ENABLED (content_flags.py). The original ACLED wording is
+# kept under the flag; the else branches carry the withdrawn-state text.
+if ACLED_CONTENT_ENABLED:
+    st.caption(
+        f"Historical network-measurement anomalies, aggregated conflict data, "
+        f"and derived civil-liberties pressure indicators. {COUNTRY} is the "
+        f"current pilot country."
+    )
+else:
+    st.caption(
+        f"Historical network-measurement anomalies and platform "
+        f"takedown-request data. {COUNTRY} is the current pilot country."
+    )
+
+st.info(ACLED_WITHDRAWN_NOTICE)
 
 st.divider()
 
@@ -42,24 +54,39 @@ st.divider()
 # SYSTEM STATUS
 # ============================================================
 
-try:
-    national = get_national_stress(st.session_state.start_date, st.session_state.end_date)
-    protocols = get_protocol_regimes(st.session_state.start_date, st.session_state.end_date)
-except Exception:
-    national = []
-    protocols = []
+if ACLED_CONTENT_ENABLED:
+    try:
+        national = get_national_stress(st.session_state.start_date, st.session_state.end_date)
+        protocols = get_protocol_regimes(st.session_state.start_date, st.session_state.end_date)
+    except Exception:
+        national = []
+        protocols = []
 
-if _is_empty(national) or _is_empty(protocols):
-    st.warning(
-        "Dashboard summary data is currently unavailable. This page remains "
-        "available while deployment credentials, BigQuery permissions, or "
-        "reporting mart availability are checked."
-    )
+    if _is_empty(national) or _is_empty(protocols):
+        st.warning(
+            "Dashboard summary data is currently unavailable. This page remains "
+            "available while deployment credentials, BigQuery permissions, or "
+            "reporting mart availability are checked."
+        )
 
-status_col1, status_col2 = st.columns(2)
-with status_col1:
-    st.metric("National Stress Records", _safe_count(national))
-with status_col2:
+    status_col1, status_col2 = st.columns(2)
+    with status_col1:
+        st.metric("National Stress Records", _safe_count(national))
+    with status_col2:
+        st.metric("Protocol Observations", _safe_count(protocols))
+else:
+    try:
+        protocols = get_protocol_regimes(st.session_state.start_date, st.session_state.end_date)
+    except Exception:
+        protocols = []
+
+    if _is_empty(protocols):
+        st.warning(
+            "Dashboard summary data is currently unavailable. This page remains "
+            "available while deployment credentials, BigQuery permissions, or "
+            "reporting mart availability are checked."
+        )
+
     st.metric("Protocol Observations", _safe_count(protocols))
 
 st.divider()
@@ -71,8 +98,9 @@ st.divider()
 
 st.subheader("What CLIO is")
 
-st.markdown(
-    """
+if ACLED_CONTENT_ENABLED:
+    st.markdown(
+        """
 CLIO shows three kinds of evidence side by side: network-measurement
 results from OONI probes, ACLED's weekly aggregated conflict and protest
 data, and platform takedown-request counts from the Google Transparency
@@ -87,7 +115,22 @@ retired and are labelled as such on the page. Where evidence is sparse or a stat
 is unreliable, the platform says so rather than manufacturing false
 precision.
 """
-)
+    )
+else:
+    st.markdown(
+        """
+CLIO shows network-measurement results from OONI probes, with
+confidence-qualified indicators derived from them, some of them
+experimental. The data is historical: OONI measurements run to June 2025.
+Kenya is the current pilot country — the methodology is built to
+generalize, not to stay Kenya-only.
+
+Each page names its data sources. Several measures are experimental and
+are labelled as such on the page. Where evidence is sparse or a statistical
+window is unreliable, the platform says so rather than manufacturing false
+precision.
+"""
+    )
 
 st.subheader("What CLIO isn't")
 
@@ -133,6 +176,24 @@ page_guide = [
      "Splits the composite pressure index for a chosen date into its two arithmetic inputs (ACLED weekly conflict intensity and Google Transparency platform pressure), with that day's OONI measurements shown alongside."),
 ]
 
+if not ACLED_CONTENT_ENABLED:
+    # Item 48: drop the guide entries for withdrawn pages and describe the
+    # National Stress Observatory as it now renders (OONI weekly signal only).
+    _withdrawn_page_labels = {
+        "📡 Protocol Anomalies vs. Composite Index",
+        "📘 Finance Bill 2024: what the retired correlation method showed",
+        "🧾 Pressure Attribution",
+    }
+    _withdrawn_state_descriptions = {
+        "📈 National Stress Observatory":
+            "OONI weekly anomalous and blocked rates, per protocol.",
+    }
+    page_guide = [
+        (label, _withdrawn_state_descriptions.get(label, desc))
+        for label, desc in page_guide
+        if label not in _withdrawn_page_labels
+    ]
+
 for label, desc in page_guide:
     st.markdown(f"**{label}** — {desc}")
 
@@ -149,13 +210,21 @@ col_a, col_b = st.columns(2)
 
 with col_a:
     st.markdown("**If you're a journalist or NGO / human-rights / legal reader**")
-    st.markdown(
-        """
-        1. 🧾 Pressure Attribution — see which inputs make up the composite index on a date
-        2. 📘 Finance Bill 2024 (retired method) — the Finance Bill 2024 case study (a null result for a retired method)
-        3. 🧠 Methodology & Statistical Guardrails — how to responsibly cite a finding
-        """
-    )
+    if ACLED_CONTENT_ENABLED:
+        st.markdown(
+            """
+            1. 🧾 Pressure Attribution — see which inputs make up the composite index on a date
+            2. 📘 Finance Bill 2024 (retired method) — the Finance Bill 2024 case study (a null result for a retired method)
+            3. 🧠 Methodology & Statistical Guardrails — how to responsibly cite a finding
+            """
+        )
+    else:
+        st.markdown(
+            """
+            1. 🔗 Protocol Intelligence — see what OONI measured, per protocol
+            2. 🧠 Methodology & Statistical Guardrails — how to responsibly cite a finding
+            """
+        )
     st.caption(
         "These are CLIO's two identified primary users — both need to know "
         "what a number was derived from and what it does not show, not just "
@@ -164,13 +233,21 @@ with col_a:
 
 with col_b:
     st.markdown("**If you're evaluating the methodology itself**")
-    st.markdown(
-        """
-        1. 🧠 Methodology & Statistical Guardrails — start with the guardrails
-        2. 🔗 Protocol Intelligence — see the underlying signal quality
-        3. 🧾 Pressure Attribution — see how signals combine into a score
-        """
-    )
+    if ACLED_CONTENT_ENABLED:
+        st.markdown(
+            """
+            1. 🧠 Methodology & Statistical Guardrails — start with the guardrails
+            2. 🔗 Protocol Intelligence — see the underlying signal quality
+            3. 🧾 Pressure Attribution — see how signals combine into a score
+            """
+        )
+    else:
+        st.markdown(
+            """
+            1. 🧠 Methodology & Statistical Guardrails — start with the guardrails
+            2. 🔗 Protocol Intelligence — see the underlying signal quality
+            """
+        )
 
 st.divider()
 
@@ -181,21 +258,39 @@ st.divider()
 
 st.subheader("Before you rely on a finding")
 
-st.warning(
-    """
-    **Data coverage is uneven across sources.** ACLED weekly aggregated
-    conflict data spans 1997 to the week of 2026-03-14. OONI/Google-Transparency-driven
-    daily marts (behind the composite pressure score) are currently bounded
-    to June 2023 – June 2025, pending a data-spine widening. This is a real,
-    disclosed limitation — see the Methodology page for detail.
-    """
-)
+if ACLED_CONTENT_ENABLED:
+    st.warning(
+        """
+        **Data coverage is uneven across sources.** ACLED weekly aggregated
+        conflict data spans 1997 to the week of 2026-03-14. OONI/Google-Transparency-driven
+        daily marts (behind the composite pressure score) are currently bounded
+        to June 2023 – June 2025, pending a data-spine widening. This is a real,
+        disclosed limitation — see the Methodology page for detail.
+        """
+    )
 
-st.info(
-    """
-    **CLIO's OONI- and ACLED-derived intelligence layer is non-commercial and
-    grant/public-interest-funded** for the foreseeable term, not a product
-    for sale — see the project README's "Data Licensing & Attribution"
-    section before using any finding commercially.
-    """
-)
+    st.info(
+        """
+        **CLIO's OONI- and ACLED-derived intelligence layer is non-commercial and
+        grant/public-interest-funded** for the foreseeable term, not a product
+        for sale — see the project README's "Data Licensing & Attribution"
+        section before using any finding commercially.
+        """
+    )
+else:
+    st.warning(
+        """
+        **Data coverage is bounded.** OONI-driven daily marts are currently
+        bounded to June 2023 – June 2025, pending a data-spine widening. This
+        is a real, disclosed limitation — see the Methodology page for detail.
+        """
+    )
+
+    st.info(
+        """
+        **CLIO's OONI-derived intelligence layer is non-commercial and
+        grant/public-interest-funded** for the foreseeable term, not a product
+        for sale — see the project README's "Data Licensing & Attribution"
+        section before using any finding commercially.
+        """
+    )
